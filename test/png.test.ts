@@ -48,6 +48,21 @@ describe('parsePng', () => {
       parsePng(bytes, { maximumBytes: 1024, maximumHeight: 100, maximumPixels: 10_000, maximumWidth: 100 }),
     ).toThrow('PNG width is 5000');
   });
+
+  it('rejects dimensions whose pixel count is not a safe integer', () => {
+    const bytes = makePng(1, 1, [0, 0, 0, 255]);
+    bytes.writeUInt32BE(0xffff_ffff, 16);
+    bytes.writeUInt32BE(0xffff_ffff, 20);
+
+    expect(() =>
+      parsePng(bytes, {
+        maximumBytes: 1024,
+        maximumHeight: 0xffff_ffff,
+        maximumPixels: Number.MAX_SAFE_INTEGER,
+        maximumWidth: 0xffff_ffff,
+      }),
+    ).toThrow("exceed JavaScript's safe integer range");
+  });
 });
 
 function makePng(width: number, height: number, pixels: readonly number[], deflateLevel = 6, filterType = -1): Buffer {

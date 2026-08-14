@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { copyFile, lstat, mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -590,13 +590,12 @@ function assertPreviousImage(
 }
 
 async function createNewDirectory(path: string): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
   try {
-    await lstat(path);
-    throw new Error(`output directory already exists: ${path}`);
+    await mkdir(path);
   } catch (error) {
-    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
-      await mkdir(path, { recursive: true });
-      return;
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'EEXIST') {
+      throw new Error(`output directory already exists: ${path}`);
     }
     throw new Error(`cannot create output directory ${path}: ${errorMessage(error)}`);
   }

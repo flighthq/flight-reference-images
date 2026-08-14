@@ -105,8 +105,12 @@ export function parsePng(bytes: Buffer, limits: Readonly<PngLimits> = DEFAULT_PN
   if (headerHeight < 1 || headerHeight > limits.maximumHeight) {
     throw new Error(`PNG height is ${headerHeight}; maximum is ${limits.maximumHeight}`);
   }
-  if (headerWidth * headerHeight > limits.maximumPixels) {
-    throw new Error(`PNG has ${headerWidth * headerHeight} pixels; maximum is ${limits.maximumPixels}`);
+  const pixelCount = headerWidth * headerHeight;
+  if (!Number.isSafeInteger(pixelCount)) {
+    throw new Error(`PNG dimensions ${headerWidth}x${headerHeight} exceed JavaScript's safe integer range`);
+  }
+  if (pixelCount > limits.maximumPixels) {
+    throw new Error(`PNG has ${pixelCount} pixels; maximum is ${limits.maximumPixels}`);
   }
   if (bytes[24] !== 8) throw new Error(`PNG must use 8-bit channels, got bit depth ${bytes[24] ?? 'unknown'}`);
 

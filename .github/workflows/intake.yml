@@ -180,6 +180,7 @@ jobs:
     name: Write allowlisted metadata and open approval PR
     needs: prepare
     runs-on: ubuntu-latest
+    # GITHUB_TOKEN stays read-only; checkout, push, and gh use the scoped App token minted below.
     permissions:
       actions: read
       contents: read

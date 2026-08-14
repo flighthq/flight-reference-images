@@ -36,16 +36,7 @@ export async function readRepository(root: string): Promise<RepositoryState> {
   const locatorMap = await readDirectory<CandidateLocator>(root, 'candidates', 'candidate-locator', problems);
 
   if (manifest !== null && packConfiguration !== null) {
-    validateRepositoryRelationships(
-      root,
-      manifest,
-      packConfiguration,
-      environments,
-      policies,
-      records,
-      locatorMap,
-      problems,
-    );
+    validateRepositoryRelationships(manifest, packConfiguration, environments, policies, records, locatorMap, problems);
   }
 
   if (problems.length > 0)
@@ -96,7 +87,6 @@ async function readTyped<T>(root: string, path: string, schema: SchemaName, prob
 }
 
 function validateRepositoryRelationships(
-  root: string,
   manifest: Readonly<OracleManifest>,
   packConfiguration: Readonly<PackConfiguration>,
   environments: ReadonlyMap<string, EnvironmentDescriptor>,
@@ -191,8 +181,6 @@ function validateRepositoryRelationships(
     if (manifest.releaseTag !== locator.releaseTag) problems.push(`${path} release does not match manifest release`);
     if (!requestIds.has(locator.requestId)) problems.push(`${path} request is absent from manifest sourceRequests`);
   }
-
-  void root;
 }
 
 const IDENTIFIER_PATTERN = /^[a-z0-9][a-z0-9-]*$/u;
