@@ -1,1 +1,74 @@
 # flight-oracles
+
+`flight-oracles` is the durable store for Flight's blessed full-resolution render references. Git contains compact, reviewable JSON records; immutable GitHub releases contain the encoded PNG bytes in deterministic packs.
+
+This repository implements the cross-repository contract proposed in Flight's [`agents/render-oracle-repository.md`](https://github.com/flighthq/flight/blob/develop/agents/render-oracle-repository.md): exact request binding, separate transport and pixel hashes, old/new/delta review, exact-byte promotion, and an immutable consumer lock.
+
+The repository intentionally starts with no blessed images, capture environment, or comparison policy. Those are measured evidence, not scaffold defaults. The first policy must be calibrated from repeated captures on independent clean hosts before the first candidate can enter intake.
+
+## Lifecycle
+
+```mermaid
+flowchart LR
+  A[Flight request lands] --> B[Flight captures requested cells]
+  B --> C[Read-only Oracle intake]
+  C --> D[Oracle-owned candidate artifact]
+  D --> E[Approval PR: JSON and review report]
+  E -->|merge blesses| F[Rebuild exact deterministic packs]
+  F --> G[Immutable GitHub release]
+  G --> H[Flight lock-bump PR]
+```
+
+The capture job never receives an Oracle write credential. Intake processes candidate-controlled PNGs with read-only repository permissions. The privileged PR writer accepts only schema-validated metadata and writes only `manifest.json`, `oracles/**`, and `candidates/**`. Release reconstruction also runs without contents-write permission; a separate publisher receives already-verified pack bytes and checks their fixed hashes without decoding candidate images.
+
+## Stored records
+
+- `manifest.json` names the current immutable release and maps each complete pack to its SHA-256.
+- `oracles/<subject>/<entry>/<renderer>.json` records stable identity, Flight request and commit, capture provenance, environment and policy, dimensions, `artifactSha256`, `pixelSha256`, and pack.
+- `candidates/<request-id>.json` locates the Oracle-owned artifact containing the exact reviewed bytes. Merging its PR is the approval; there is no mutable `approved` field.
+- `environments/*.json` describes a canonical capture environment. Its content-derived id prevents silent environment drift.
+- `comparison-policies/*.json` contains independently calibrated pixel thresholds.
+- `pack-config.json` assigns identities to independently downloadable packs.
+- `intake-policy.json` bounds how long a Flight request may remain pending and how long its candidate artifact is retained.
+- `schemas/*.schema.json` is the machine-readable contract used on both sides of the boundary.
+
+Within a pack, the PNG for a record is `images/<subject>/<entry>/<renderer>.png`. Every pack includes `pack-manifest.json`, so transport verification does not depend on trusting an extracted directory listing.
+
+## Local checks
+
+Use Node.js 20 or newer and npm.
+
+```sh
+npm ci
+npm run check
+```
+
+`npm run check` runs formatting, linting, strict TypeScript checking, the firing tests, and repository relationship validation. The individual operational commands are:
+
+```sh
+npm run repository:check
+npm run packs:download -- --output .artifacts/previous-packs
+npm run intake:prepare -- --candidate <dir> --request <request.json> --envelope <envelope.json> --previous-packs <dir> --output <new-dir>
+npm run intake:apply -- --prepared <dir> --artifact-id <id> --artifact-digest sha256:<hash> --workflow-run-id <id>
+npm run intake:replay -- --prepared <dir> --previous-packs <dir> --output <new-dir>
+npm run release:verify -- --packs <dir>
+```
+
+Generated output directories must not already exist. This makes accidental reuse or partial overlay a hard error.
+
+## First commissioning
+
+Before dispatching the first candidate:
+
+1. Measure a canonical environment across at least two independent clean hosts and commit its descriptor under `environments/`.
+2. Compute the descriptor id with `npm run environment:id -- --file <descriptor.json>`; use that id both in the record and filename.
+3. Calibrate full-resolution pixel thresholds from repeated captures and commit a matching policy under `comparison-policies/`.
+4. Add the `referenceImage` identity and request to Flight. The request remains in Flight until the release completion PR removes it.
+
+Do not copy Flight's fingerprint tolerances. They are mean differences over a 16×16 averaged grid and have different units from per-pixel mismatch fraction and channel delta.
+
+The candidate bundle format and dispatch envelope are specified in [docs/contract.md](docs/contract.md). Repository setup and workflow recovery are in [docs/operations.md](docs/operations.md).
+
+## License
+
+MIT. See [LICENSE.md](LICENSE.md).
