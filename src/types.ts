@@ -141,6 +141,19 @@ export interface PackManifest {
   schemaVersion: 1;
 }
 
+export interface PreparedIntake {
+  baseManifestSha256: string;
+  baseRecordsSha256: string;
+  candidateSha256: string;
+  envelopeSha256: string;
+  expectedManifestSha256: string;
+  packs: ManifestPack[];
+  records: Array<{ path: string; sha256: string }>;
+  releaseTag: string;
+  requestSha256: string;
+  schemaVersion: 1;
+}
+
 export interface OracleRecord {
   $schema?: string;
   artifactSha256: string;

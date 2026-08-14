@@ -12,6 +12,7 @@ export type SchemaName =
   | 'oracle-record'
   | 'pack-manifest'
   | 'pack-config'
+  | 'prepared-intake'
   | 'request';
 
 const schemaNames: readonly SchemaName[] = [
@@ -24,6 +25,7 @@ const schemaNames: readonly SchemaName[] = [
   'oracle-record',
   'pack-manifest',
   'pack-config',
+  'prepared-intake',
   'request',
 ];
 
