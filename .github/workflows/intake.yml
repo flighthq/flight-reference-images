@@ -140,6 +140,16 @@ jobs:
           repository: ${{ env.SOURCE_REPOSITORY }}
           run-id: ${{ env.SOURCE_RUN_ID }}
           path: .artifacts/source
+          # download-artifact@v4 treats artifact-ids as a multi-artifact selection even when one id is
+          # supplied. Without this it adds an artifact-named directory and candidate.json is not at the
+          # archive root that intake validates.
+          merge-multiple: true
+      - name: Assert candidate archive root
+        run: |
+          if [ -f .artifacts/source/candidate.json ]; then exit 0; fi
+          echo "::error::candidate.json is not at the downloaded artifact root; extracted files:" >&2
+          find .artifacts/source -maxdepth 5 -type f -print >&2
+          exit 1
       - name: Download current blessed packs
         run: npm run packs:download -- --output .artifacts/previous-packs
         env:
