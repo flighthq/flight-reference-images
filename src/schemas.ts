@@ -10,6 +10,7 @@ export type SchemaName =
   | 'environment'
   | 'manifest'
   | 'oracle-record'
+  | 'pack-manifest'
   | 'pack-config'
   | 'request';
 
@@ -21,6 +22,7 @@ const schemaNames: readonly SchemaName[] = [
   'environment',
   'manifest',
   'oracle-record',
+  'pack-manifest',
   'pack-config',
   'request',
 ];

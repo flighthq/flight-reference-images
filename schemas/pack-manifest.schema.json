@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flighthq/flight-oracles/schemas/pack-manifest.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "pack", "images"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "pack": { "$ref": "common.schema.json#/$defs/identifier" },
+    "images": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "artifactSha256", "pixelSha256", "width", "height"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^images/[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*\\.png$"
+          },
+          "artifactSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+          "pixelSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+          "width": { "type": "integer", "minimum": 1 },
+          "height": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}

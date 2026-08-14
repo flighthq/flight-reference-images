@@ -127,6 +127,20 @@ export interface OracleManifest {
   }>;
 }
 
+export interface PackImage {
+  artifactSha256: string;
+  height: number;
+  path: string;
+  pixelSha256: string;
+  width: number;
+}
+
+export interface PackManifest {
+  images: PackImage[];
+  pack: string;
+  schemaVersion: 1;
+}
+
 export interface OracleRecord {
   $schema?: string;
   artifactSha256: string;
