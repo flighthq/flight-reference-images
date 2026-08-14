@@ -16,6 +16,7 @@
     "captures": {
       "type": "array",
       "minItems": 1,
+      "maxItems": 800,
       "items": {
         "oneOf": [
           {

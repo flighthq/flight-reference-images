@@ -39,6 +39,8 @@ Download the `oracle-review-*` artifact linked by the approval PR and open `inde
 
 If the Oracle-owned candidate artifact expires before merge, close the PR and redispatch. Release never recaptures or substitutes bytes. Increase `retention-days` if ordinary review time approaches the configured 30 days.
 
+The candidate locator remains as current-release audit metadata after publishing, but CI replays it only when `manifest.json`, `oracles/**`, or a candidate locator changes. Unrelated future PRs therefore do not become dependent on an expired artifact.
+
 ## Release recovery
 
 Release tags and assets are immutable. If release creation fails before the tag exists, rerun the workflow. If a tag exists, the workflow deliberately fails rather than clobbering it; inspect the existing release and create a new commissioning request for any correction.

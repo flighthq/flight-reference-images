@@ -3,5 +3,9 @@
   "schemaVersion": 1,
   "maximumRequestAgeHours": 336,
   "maximumFutureSkewMinutes": 10,
-  "candidateArtifactRetentionDays": 30
+  "candidateArtifactRetentionDays": 30,
+  "maximumImageBytes": 26214400,
+  "maximumImageWidth": 4096,
+  "maximumImageHeight": 4096,
+  "maximumImagePixels": 16777216
 }

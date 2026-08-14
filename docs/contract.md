@@ -31,7 +31,7 @@ Each capture is explicitly either:
 - `captured`, with its exact image path and Flight `CaptureBaselineProvenance` fields; or
 - `missing`, with a non-empty error.
 
-A missing row is written to `report.json` and the intake fails. Absence is never interpreted as success. Captured provenance `frames` must equal the request. Undeclared files, omitted cells, duplicate cells, and out-of-scope cells fail before metadata is authored.
+A missing row is written to `report.json` and the intake fails. Absence is never interpreted as success. Captured provenance `frames` must equal the request. Undeclared files, omitted cells, duplicate cells, and out-of-scope cells fail before metadata is authored. `intake-policy.json` bounds encoded size, dimensions, and total pixels before PNG decoding allocates the image buffer.
 
 ## Oracle record
 

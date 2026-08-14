@@ -12,6 +12,7 @@ Read [README.md](README.md) and [docs/contract.md](docs/contract.md) before chan
 - Keep `artifactSha256` and `pixelSha256` distinct. The first hashes encoded PNG bytes; the second hashes decoded top-down RGBA8 bytes.
 - Treat merging an approval PR as the blessing. Do not add an approval boolean or recapture during release.
 - Preserve the credential split. Candidate-controlled bytes are decoded only in jobs with read-only contents permission. Privileged writers accept fixed, schema-validated metadata and allowlisted paths.
+- Preserve the pre-decode size and dimension bounds in `intake-policy.json`; candidate PNG headers are untrusted input.
 - A new gate needs a defeating test that observes it fail. Required cases include zero comparisons, missing capture, unexpected candidate scope, corrupt pack, and dimension mismatch.
 
 ## Layout

@@ -3,12 +3,25 @@
   "$id": "https://github.com/flighthq/flight-oracles/schemas/intake-policy.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "maximumRequestAgeHours", "maximumFutureSkewMinutes", "candidateArtifactRetentionDays"],
+  "required": [
+    "schemaVersion",
+    "maximumRequestAgeHours",
+    "maximumFutureSkewMinutes",
+    "candidateArtifactRetentionDays",
+    "maximumImageBytes",
+    "maximumImageWidth",
+    "maximumImageHeight",
+    "maximumImagePixels"
+  ],
   "properties": {
     "$schema": { "type": "string" },
     "schemaVersion": { "const": 1 },
     "maximumRequestAgeHours": { "type": "integer", "minimum": 1, "maximum": 720 },
     "maximumFutureSkewMinutes": { "type": "integer", "minimum": 0, "maximum": 60 },
-    "candidateArtifactRetentionDays": { "type": "integer", "minimum": 1, "maximum": 90 }
+    "candidateArtifactRetentionDays": { "type": "integer", "minimum": 1, "maximum": 90 },
+    "maximumImageBytes": { "type": "integer", "minimum": 1024, "maximum": 104857600 },
+    "maximumImageWidth": { "type": "integer", "minimum": 1, "maximum": 8192 },
+    "maximumImageHeight": { "type": "integer", "minimum": 1, "maximum": 8192 },
+    "maximumImagePixels": { "type": "integer", "minimum": 1, "maximum": 33554432 }
   }
 }

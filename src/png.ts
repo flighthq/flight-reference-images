@@ -20,6 +20,13 @@ export interface DecodedPng {
   width: number;
 }
 
+export interface PngLimits {
+  maximumBytes: number;
+  maximumHeight: number;
+  maximumPixels: number;
+  maximumWidth: number;
+}
+
 export class DimensionMismatchError extends Error {
   readonly actualHeight: number;
   readonly actualWidth: number;
@@ -85,8 +92,22 @@ export function evaluateMismatch(mismatch: Readonly<BitmapMismatch>, policy: Rea
   return policy.maximumChannelDelta.mode !== 'gate' || mismatch.maxChannelDelta <= policy.maximumChannelDelta.maximum;
 }
 
-export function parsePng(bytes: Buffer): DecodedPng {
+export function parsePng(bytes: Buffer, limits: Readonly<PngLimits> = DEFAULT_PNG_LIMITS): DecodedPng {
   if (!bytes.subarray(0, 8).equals(PNG_SIGNATURE)) throw new Error('image is not a PNG');
+  if (bytes.length < 33) throw new Error('PNG header is truncated');
+  if (bytes.length > limits.maximumBytes)
+    throw new Error(`PNG is ${bytes.length} bytes; maximum is ${limits.maximumBytes}`);
+  const headerWidth = bytes.readUInt32BE(16);
+  const headerHeight = bytes.readUInt32BE(20);
+  if (headerWidth < 1 || headerWidth > limits.maximumWidth) {
+    throw new Error(`PNG width is ${headerWidth}; maximum is ${limits.maximumWidth}`);
+  }
+  if (headerHeight < 1 || headerHeight > limits.maximumHeight) {
+    throw new Error(`PNG height is ${headerHeight}; maximum is ${limits.maximumHeight}`);
+  }
+  if (headerWidth * headerHeight > limits.maximumPixels) {
+    throw new Error(`PNG has ${headerWidth * headerHeight} pixels; maximum is ${limits.maximumPixels}`);
+  }
   if (bytes[24] !== 8) throw new Error(`PNG must use 8-bit channels, got bit depth ${bytes[24] ?? 'unknown'}`);
 
   let decoded: PNG;
@@ -105,8 +126,14 @@ export function parsePng(bytes: Buffer): DecodedPng {
   };
 }
 
-export async function readPng(path: string): Promise<DecodedPng> {
-  return parsePng(await readFile(path));
+export async function readPng(path: string, limits?: Readonly<PngLimits>): Promise<DecodedPng> {
+  return parsePng(await readFile(path), limits);
 }
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const DEFAULT_PNG_LIMITS: PngLimits = {
+  maximumBytes: 64 * 1024 * 1024,
+  maximumHeight: 8192,
+  maximumPixels: 32 * 1024 * 1024,
+  maximumWidth: 8192,
+};

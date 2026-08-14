@@ -138,6 +138,10 @@ describe('assertRequestFreshness', () => {
         {
           candidateArtifactRetentionDays: 30,
           maximumFutureSkewMinutes: 10,
+          maximumImageBytes: 1024 * 1024,
+          maximumImageHeight: 1024,
+          maximumImagePixels: 1024 * 1024,
+          maximumImageWidth: 1024,
           maximumRequestAgeHours: 336,
           schemaVersion: 1,
         },
@@ -205,6 +209,10 @@ async function makeFixture(status: 'captured' | 'missing'): Promise<{
   await writeCanonicalJson(join(repositoryRoot, 'intake-policy.json'), {
     candidateArtifactRetentionDays: 30,
     maximumFutureSkewMinutes: 10,
+    maximumImageBytes: 1024 * 1024,
+    maximumImageHeight: 1024,
+    maximumImagePixels: 1024 * 1024,
+    maximumImageWidth: 1024,
     maximumRequestAgeHours: 336,
     schemaVersion: 1,
   });

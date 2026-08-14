@@ -40,6 +40,14 @@ describe('parsePng', () => {
   it('rejects arbitrary bytes before asking the decoder to interpret them', () => {
     expect(() => parsePng(Buffer.from('not a png'))).toThrow('image is not a PNG');
   });
+
+  it('rejects oversized IHDR dimensions before allocating decoded pixels', () => {
+    const bytes = makePng(1, 1, [0, 0, 0, 255]);
+    bytes.writeUInt32BE(5000, 16);
+    expect(() =>
+      parsePng(bytes, { maximumBytes: 1024, maximumHeight: 100, maximumPixels: 10_000, maximumWidth: 100 }),
+    ).toThrow('PNG width is 5000');
+  });
 });
 
 function makePng(width: number, height: number, pixels: readonly number[], deflateLevel = 6, filterType = -1): Buffer {

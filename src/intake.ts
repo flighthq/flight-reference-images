@@ -230,7 +230,12 @@ async function produceIntake(
       if (capture.file === undefined || capture.provenance === undefined)
         throw new Error(`${key} captured row is incomplete`);
       const sourcePath = resolveInside(candidateDirectory, capture.file);
-      const decoded = await readPng(sourcePath);
+      const decoded = await readPng(sourcePath, {
+        maximumBytes: base.intakePolicy.maximumImageBytes,
+        maximumHeight: base.intakePolicy.maximumImageHeight,
+        maximumPixels: base.intakePolicy.maximumImagePixels,
+        maximumWidth: base.intakePolicy.maximumImageWidth,
+      });
       const recordPath = oracleRecordPath(capture.identity);
       const previousRecord = base.records.get(recordPath);
       const pack = resolvePack(capture.identity, base.packConfiguration);

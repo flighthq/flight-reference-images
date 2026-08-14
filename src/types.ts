@@ -73,6 +73,10 @@ export interface IntakePolicy {
   $schema?: string;
   candidateArtifactRetentionDays: number;
   maximumFutureSkewMinutes: number;
+  maximumImageBytes: number;
+  maximumImageHeight: number;
+  maximumImagePixels: number;
+  maximumImageWidth: number;
   maximumRequestAgeHours: number;
   schemaVersion: 1;
 }

@@ -28,13 +28,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Detect oracle metadata changes
+        id: metadata
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [[ -z "${BASE_SHA}" || "${BASE_SHA}" =~ ^0+$ ]]; then
+            echo 'changed=true' >> "${GITHUB_OUTPUT}"
+          elif git diff --quiet "${BASE_SHA}" HEAD -- manifest.json oracles 'candidates/*.json'; then
+            echo 'changed=false' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'changed=true' >> "${GITHUB_OUTPUT}"
+          fi
       - name: Read current candidate locator
         id: locator
+        if: steps.metadata.outputs.changed == 'true'
         run: |
           node --input-type=module <<'NODE'
           import { appendFileSync, readFileSync, readdirSync } from 'node:fs';

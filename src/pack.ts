@@ -174,9 +174,12 @@ async function extractPack(archivePath: string, destination: string): Promise<vo
     },
     strict: true,
   });
+  const seen = new Set<string>();
   for (const entry of entries) {
     const path = entry.path.startsWith('./') ? entry.path.slice(2) : entry.path;
     assertSafeRelativePath(path);
+    if (seen.has(path)) throw new Error(`${basename(archivePath)} repeats archive entry ${path}`);
+    seen.add(path);
     if (entry.type !== 'File' && entry.type !== 'Directory')
       throw new Error(`${basename(archivePath)} contains ${entry.type} ${path}`);
     if (entry.type === 'File' && path !== 'pack-manifest.json' && !/^images\/.+\.png$/u.test(path)) {
