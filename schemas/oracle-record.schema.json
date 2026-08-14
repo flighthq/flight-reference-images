@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flighthq/flight-oracles/schemas/oracle-record.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "identity",
+    "request",
+    "flightCommit",
+    "environmentId",
+    "provenance",
+    "width",
+    "height",
+    "pixelFormat",
+    "colorSpace",
+    "artifactSha256",
+    "pixelSha256",
+    "pack",
+    "comparisonPolicyId"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "identity": { "$ref": "common.schema.json#/$defs/identity" },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sha256"],
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/identifier" },
+        "sha256": { "$ref": "common.schema.json#/$defs/sha256" }
+      }
+    },
+    "flightCommit": { "$ref": "common.schema.json#/$defs/gitCommit" },
+    "environmentId": { "type": "string", "pattern": "^sha256-[0-9a-f]{64}$" },
+    "provenance": { "$ref": "common.schema.json#/$defs/provenance" },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "pixelFormat": { "const": "rgba8" },
+    "colorSpace": { "const": "srgb" },
+    "artifactSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "pixelSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "pack": { "$ref": "common.schema.json#/$defs/identifier" },
+    "comparisonPolicyId": { "$ref": "common.schema.json#/$defs/identifier" }
+  }
+}

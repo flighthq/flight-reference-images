@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flighthq/flight-oracles/schemas/candidate-locator.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "requestId", "releaseTag", "manifestSha256", "sourceArtifact", "preparedArtifact"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "requestId": { "$ref": "common.schema.json#/$defs/identifier" },
+    "releaseTag": { "type": "string", "pattern": "^oracle-[a-z0-9][a-z0-9-]*-[0-9a-f]{12}$" },
+    "manifestSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "sourceArtifact": {
+      "$ref": "#/$defs/artifact"
+    },
+    "preparedArtifact": {
+      "$ref": "#/$defs/artifact"
+    }
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "workflowRunId", "artifactId", "digest"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+        "workflowRunId": { "type": "integer", "minimum": 1 },
+        "artifactId": { "type": "integer", "minimum": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "flight-oracles",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Blessed full-resolution render references for Flight",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run repository:check",
+    "fix": "npm run lint:fix && npm run format",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "intake:apply": "tsx ./src/cli.ts intake-apply",
+    "intake:prepare": "tsx ./src/cli.ts intake-prepare",
+    "lint": "oxlint --max-warnings=0",
+    "lint:fix": "oxlint --fix --max-warnings=0",
+    "packs:download": "tsx ./src/cli.ts packs-download",
+    "release:verify": "tsx ./src/cli.ts release-verify",
+    "repository:check": "tsx ./src/cli.ts check",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "pngjs": "^7.0.0",
+    "tar": "^7.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@types/pngjs": "^6.0.5",
+    "@vitest/coverage-v8": "^4.0.0",
+    "oxfmt": "^0.57.0",
+    "oxlint": "^1.72.0",
+    "tsx": "^4.22.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

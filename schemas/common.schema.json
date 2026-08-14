@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flighthq/flight-oracles/schemas/common.schema.json",
+  "$defs": {
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 120
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "entry", "renderer"],
+      "properties": {
+        "subject": { "$ref": "#/$defs/identifier" },
+        "entry": { "$ref": "#/$defs/identifier" },
+        "renderer": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frames", "sourceHash", "targetKind", "verifyPublished", "warmupFrames"],
+      "properties": {
+        "frames": { "type": "integer", "minimum": 0 },
+        "sourceHash": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "targetKind": {
+          "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }]
+        },
+        "verifyPublished": { "type": "boolean" },
+        "warmupFrames": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

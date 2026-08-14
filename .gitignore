@@ -1,1 +1,8 @@
 .quimby
+node_modules/
+coverage/
+dist/
+.cache/
+.artifacts/
+*.tgz
+*.tsbuildinfo

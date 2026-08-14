@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flighthq/flight-oracles/schemas/comparison-policy.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "environmentId",
+    "channelTolerance",
+    "maximumMismatchFraction",
+    "maximumChannelDelta",
+    "calibration"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "id": { "$ref": "common.schema.json#/$defs/identifier" },
+    "environmentId": { "type": "string", "pattern": "^sha256-[0-9a-f]{64}$" },
+    "channelTolerance": { "type": "integer", "minimum": 0, "maximum": 255 },
+    "maximumMismatchFraction": { "type": "number", "minimum": 0, "maximum": 1 },
+    "maximumChannelDelta": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": { "mode": { "const": "report" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "maximum"],
+          "properties": {
+            "mode": { "const": "gate" },
+            "maximum": { "type": "integer", "minimum": 0, "maximum": 255 }
+          }
+        }
+      ]
+    },
+    "calibration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["flightCommit", "corpusSha256", "independentHosts", "runsPerHost", "notes"],
+      "properties": {
+        "flightCommit": { "$ref": "common.schema.json#/$defs/gitCommit" },
+        "corpusSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+        "independentHosts": { "type": "integer", "minimum": 2 },
+        "runsPerHost": { "type": "integer", "minimum": 2 },
+        "notes": { "type": "string", "minLength": 1, "maxLength": 4000 }
+      }
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flighthq/flight-oracles/schemas/manifest.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "releaseTag", "parentReleaseTag", "sourceRequests", "packs"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "releaseTag": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^oracle-[a-z0-9][a-z0-9-]*-[0-9a-f]{12}$", "maxLength": 160 }
+      ]
+    },
+    "parentReleaseTag": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^oracle-[a-z0-9][a-z0-9-]*-[0-9a-f]{12}$", "maxLength": 160 }
+      ]
+    },
+    "sourceRequests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "flightCommit", "requestSha256"],
+        "properties": {
+          "id": { "$ref": "common.schema.json#/$defs/identifier" },
+          "flightCommit": { "$ref": "common.schema.json#/$defs/gitCommit" },
+          "requestSha256": { "$ref": "common.schema.json#/$defs/sha256" }
+        }
+      }
+    },
+    "packs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "file", "sha256", "size", "imageCount"],
+        "properties": {
+          "id": { "$ref": "common.schema.json#/$defs/identifier" },
+          "file": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*-oracle-[a-z0-9][a-z0-9-]*-[0-9a-f]{12}\\.tgz$"
+          },
+          "sha256": { "$ref": "common.schema.json#/$defs/sha256" },
+          "size": { "type": "integer", "minimum": 1 },
+          "imageCount": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "releaseTag": { "type": "null" } } },
+      "then": {
+        "properties": {
+          "parentReleaseTag": { "type": "null" },
+          "sourceRequests": { "type": "array", "maxItems": 0 },
+          "packs": { "type": "array", "maxItems": 0 }
+        }
+      },
+      "else": {
+        "properties": {
+          "sourceRequests": { "type": "array", "minItems": 1 },
+          "packs": { "type": "array", "minItems": 1 }
+        }
+      }
+    }
+  ]
+}

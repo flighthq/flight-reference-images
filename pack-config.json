@@ -1,0 +1,30 @@
+{
+  "$schema": "./schemas/pack-config.schema.json",
+  "schemaVersion": 1,
+  "subjects": {
+    "examples": {
+      "defaultPack": "examples"
+    },
+    "functional": {
+      "defaultPack": "functional-other",
+      "rules": [
+        {
+          "pack": "functional-scene3d",
+          "entryPattern": "^(animation|camera3d|environment|lighting|material|md5|mesh|morph|picking|scene3d|shadow|skeleton3d)-"
+        },
+        {
+          "pack": "functional-text",
+          "entryPattern": "^(bitmapfont|bitmaptext|font|glyph|text|textlabel)-"
+        },
+        {
+          "pack": "functional-shapes",
+          "entryPattern": "^(graphics|path|shape)-"
+        },
+        {
+          "pack": "functional-images",
+          "entryPattern": "^(adjustment|bitmap|effect|filter|image|texture)-"
+        }
+      ]
+    }
+  }
+}
