@@ -5,7 +5,15 @@ import { dirname, join, resolve } from 'node:path';
 
 import { canonicalJson, errorMessage, hashBytes, hashFile, readJson, writeCanonicalJson } from './json.js';
 import { buildReleasePacks, extractVerifiedReleasePacks, verifyReleasePacks } from './pack.js';
-import { findFiles, identityKey, imagePath, oracleRecordPath, resolveInside, resolvePack } from './paths.js';
+import {
+  findFiles,
+  findNonRegularEntries,
+  identityKey,
+  imagePath,
+  oracleRecordPath,
+  resolveInside,
+  resolvePack,
+} from './paths.js';
 import { comparePngs, createDeltaPng, DimensionMismatchError, evaluateMismatch, readPng } from './png.js';
 import { readRepository } from './repository.js';
 import { writeReviewReport, type ReviewRow } from './report.js';
@@ -168,10 +176,9 @@ export async function replayPreparedIntake(options: Readonly<ReplayIntakeOptions
     throw new Error('replayed manifest differs from the committed manifest');
   }
   for (const record of replayed.records) {
-    if (
-      (await readFile(resolveInside(replayExpected, record.path), 'utf8')) !==
-      canonicalJson(committed.records.get(record.path))
-    ) {
+    const committedRecord = committed.records.get(record.path);
+    if (committedRecord === undefined) throw new Error(`committed repository is missing ${record.path}`);
+    if ((await readFile(resolveInside(replayExpected, record.path), 'utf8')) !== canonicalJson(committedRecord)) {
       throw new Error(`replayed ${record.path} differs from the committed record`);
     }
   }
@@ -193,6 +200,10 @@ async function produceIntake(
 
   const workspace = await mkdtemp(join(tmpdir(), 'flight-oracles-intake-'));
   try {
+    const nonRegularEntries = await findNonRegularEntries(candidateDirectory);
+    if (nonRegularEntries.length > 0) {
+      throw new Error(`candidate bundle contains non-regular entry ${nonRegularEntries[0]}`);
+    }
     const candidate = await readTyped<CandidateManifest>(join(candidateDirectory, 'candidate.json'), 'candidate');
     const envelope = await readTyped<DispatchEnvelope>(resolve(options.envelopePath), 'dispatch-envelope');
     const request = await readTyped<FlightOracleRequest>(resolve(options.requestPath), 'request');

@@ -1,4 +1,4 @@
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -116,6 +116,24 @@ describe('prepareIntake', () => {
         requestPath: fixture.requestPath,
       }),
     ).rejects.toThrow('undeclared file');
+  });
+
+  it('rejects symbolic links before reading candidate-controlled paths', async () => {
+    const fixture = await makeFixture('captured');
+    const target = join(workspace, 'outside.txt');
+    await writeFile(target, 'outside');
+    await symlink(target, join(fixture.candidateDirectory, 'outside-link'));
+
+    await expect(
+      prepareIntake({
+        candidateDirectory: fixture.candidateDirectory,
+        envelopePath: fixture.envelopePath,
+        outputDirectory: join(workspace, 'linked'),
+        previousPackDirectory: join(workspace, 'previous-packs'),
+        repositoryRoot: fixture.repositoryRoot,
+        requestPath: fixture.requestPath,
+      }),
+    ).rejects.toThrow('non-regular entry outside-link');
   });
 });
 

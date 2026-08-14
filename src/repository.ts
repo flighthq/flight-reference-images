@@ -108,11 +108,24 @@ function validateRepositoryRelationships(
   const environmentsById = indexUnique(environments, (value) => value.id, 'environment id', problems);
   const policiesById = indexUnique(policies, (value) => value.id, 'comparison policy id', problems);
   const packEntries = indexUnique(
-    new Map(manifest.packs.map((entry) => [entry.id, entry])),
+    new Map(manifest.packs.map((entry, index) => [`manifest.packs[${index}]`, entry])),
     (value) => value.id,
     'pack id',
     problems,
   );
+
+  for (const [subject, configuration] of Object.entries(packConfiguration.subjects)) {
+    if (!IDENTIFIER_PATTERN.test(subject)) problems.push(`pack-config subject ${subject} is not a valid identifier`);
+    for (const rule of configuration.rules ?? []) {
+      try {
+        new RegExp(rule.entryPattern, 'u');
+      } catch (error) {
+        problems.push(
+          `pack-config subject ${subject} has invalid rule ${rule.entryPattern}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+  }
 
   for (const [path, environment] of environments) {
     const expectedPath = `environments/${environment.id}.json`;
@@ -181,6 +194,8 @@ function validateRepositoryRelationships(
 
   void root;
 }
+
+const IDENTIFIER_PATTERN = /^[a-z0-9][a-z0-9-]*$/u;
 
 function indexUnique<T>(
   source: ReadonlyMap<string, T>,

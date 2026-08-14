@@ -75,6 +75,21 @@ export async function findFiles(root: string, suffix?: string): Promise<string[]
   }
 }
 
+export async function findNonRegularEntries(root: string): Promise<string[]> {
+  const entries: string[] = [];
+  await visit(root, '');
+  return entries.sort();
+
+  async function visit(directory: string, relativeDirectory: string): Promise<void> {
+    const children = await readdir(directory, { withFileTypes: true });
+    for (const child of children) {
+      const relativePath = relativeDirectory === '' ? child.name : `${relativeDirectory}/${child.name}`;
+      if (child.isDirectory()) await visit(join(directory, child.name), relativePath);
+      else if (!child.isFile()) entries.push(relativePath);
+    }
+  }
+}
+
 export function relativePosix(root: string, path: string): string {
   return relative(root, path).split(sep).join('/');
 }
