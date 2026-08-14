@@ -1,0 +1,233 @@
+name: Release blessed oracles
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - candidates/*.json
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: oracle-release
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    name: Rebuild release without contents write credentials
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    outputs:
+      artifact-digest: ${{ steps.upload.outputs.artifact-digest }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      manifest-sha256: ${{ steps.bundle.outputs.manifest_sha256 }}
+      release-tag: ${{ steps.locator.outputs.release_tag }}
+      request-id: ${{ steps.locator.outputs.request_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Read candidate locator
+        id: locator
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync, readdirSync } from 'node:fs';
+          const files = readdirSync('candidates').filter((file) => file.endsWith('.json'));
+          if (files.length !== 1) throw new Error(`release requires one candidate locator, found ${files.length}`);
+          const locator = JSON.parse(readFileSync(`candidates/${files[0]}`, 'utf8'));
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            [
+              `artifact_id=${locator.preparedArtifact.artifactId}`,
+              `artifact_digest=${locator.preparedArtifact.digest}`,
+              `run_id=${locator.preparedArtifact.workflowRunId}`,
+              `request_id=${locator.requestId}`,
+              `release_tag=${locator.releaseTag}`,
+            ].join('\n') + '\n',
+          );
+          NODE
+      - name: Verify prepared artifact identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.locator.outputs.artifact_id }}
+          EXPECTED_DIGEST: ${{ steps.locator.outputs.artifact_digest }}
+        run: |
+          actual_digest=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" --jq .digest)
+          test "${actual_digest}" = "${EXPECTED_DIGEST}" || {
+            echo "::error::prepared artifact digest differs"
+            exit 1
+          }
+      - name: Download reviewed candidate
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.locator.outputs.artifact_id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.locator.outputs.run_id }}
+          path: .artifacts/prepared
+      - name: Download prior complete packs
+        run: npm run packs:download -- --manifest .artifacts/prepared/base/manifest.json --output .artifacts/previous-packs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Replay construction from reviewed candidate bytes
+        run: >-
+          npm run intake:replay -- --prepared .artifacts/prepared --previous-packs .artifacts/previous-packs --output .artifacts/release
+
+
+      - name: Assemble verified release bundle
+        id: bundle
+        run: |
+          mkdir .artifacts/release-bundle
+          cp manifest.json .artifacts/release-bundle/manifest.json
+          cp .artifacts/release/prospective-packs/*.tgz .artifacts/release-bundle/
+          manifest_sha256=$(sha256sum manifest.json | cut -d ' ' -f 1)
+          echo "manifest_sha256=${manifest_sha256}" >> "${GITHUB_OUTPUT}"
+      - name: Store verified release bundle
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-release-${{ steps.locator.outputs.release_tag }}-${{ github.run_id }}
+          path: .artifacts/release-bundle
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish verified bytes without processing candidate images
+    needs: rebuild
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify release artifact identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ needs.rebuild.outputs.artifact-id }}
+          EXPECTED_DIGEST: ${{ needs.rebuild.outputs.artifact-digest }}
+        run: |
+          actual_digest=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" --jq .digest)
+          test "${actual_digest}" = "${EXPECTED_DIGEST}" || {
+            echo "::error::verified release artifact digest differs"
+            exit 1
+          }
+      - name: Download verified release bundle
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.rebuild.outputs.artifact-id }}
+          path: .artifacts/release-bundle
+      - name: Verify fixed manifest and pack checksums
+        env:
+          EXPECTED_MANIFEST_SHA256: ${{ needs.rebuild.outputs.manifest-sha256 }}
+        run: |
+          actual_manifest_sha256=$(sha256sum .artifacts/release-bundle/manifest.json | cut -d ' ' -f 1)
+          test "${actual_manifest_sha256}" = "${EXPECTED_MANIFEST_SHA256}" || {
+            echo "::error::release manifest digest differs"
+            exit 1
+          }
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto';
+          import { readFileSync, readdirSync } from 'node:fs';
+
+          const directory = '.artifacts/release-bundle';
+          const manifest = JSON.parse(readFileSync(`${directory}/manifest.json`, 'utf8'));
+          const expected = new Set(['manifest.json', ...manifest.packs.map((pack) => pack.file)]);
+          const actual = new Set(readdirSync(directory));
+          if (expected.size !== actual.size || [...expected].some((file) => !actual.has(file))) {
+            throw new Error('release bundle file set differs from manifest');
+          }
+          for (const pack of manifest.packs) {
+            const bytes = readFileSync(`${directory}/${pack.file}`);
+            const sha256 = createHash('sha256').update(bytes).digest('hex');
+            if (sha256 !== pack.sha256 || bytes.length !== pack.size) throw new Error(`${pack.file} differs from manifest`);
+          }
+          NODE
+      - name: Create immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.rebuild.outputs.release-tag }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "::error::tag ${RELEASE_TAG} already exists; release assets are immutable"
+            exit 1
+          fi
+          gh release create "${RELEASE_TAG}" \
+            --target "${GITHUB_SHA}" \
+            --title "${RELEASE_TAG}" \
+            --notes "Blessed Flight reference images reconstructed from the reviewed candidate artifact." \
+            .artifacts/release-bundle/manifest.json \
+            .artifacts/release-bundle/*.tgz
+
+  complete-flight:
+    name: Open Flight lock update PR
+    needs: [rebuild, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Mint Flight completion token
+        id: flight-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.ORACLE_APP_ID }}
+          private-key: ${{ secrets.ORACLE_APP_PRIVATE_KEY }}
+          owner: flighthq
+          repositories: flight
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Check out Oracle release commit
+        uses: actions/checkout@v4
+        with:
+          path: oracle
+          ref: ${{ github.sha }}
+      - name: Check out Flight completion base
+        uses: actions/checkout@v4
+        with:
+          repository: flighthq/flight
+          ref: ${{ vars.FLIGHT_BASE_BRANCH || 'develop' }}
+          path: flight
+          token: ${{ steps.flight-token.outputs.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: oracle/package-lock.json
+      - run: npm ci
+        working-directory: oracle
+      - name: Update the immutable lock and fulfill the request
+        working-directory: oracle
+        run: >-
+          npm run flight:complete -- --root . --flight-root ../flight --oracle-commit ${{ github.sha }} --request-id ${{ needs.rebuild.outputs.request-id }}
+
+
+      - name: Commit and open Flight PR
+        working-directory: flight
+        env:
+          BASE_BRANCH: ${{ vars.FLIGHT_BASE_BRANCH || 'develop' }}
+          GH_TOKEN: ${{ steps.flight-token.outputs.token }}
+          RELEASE_TAG: ${{ needs.rebuild.outputs.release-tag }}
+          REQUEST_ID: ${{ needs.rebuild.outputs.request-id }}
+        run: |
+          branch="oracle-lock/${REQUEST_ID}-${GITHUB_RUN_ID}"
+          git switch -c "${branch}"
+          git config user.name 'flight-oracles[bot]'
+          git config user.email 'flight-oracles[bot]@users.noreply.github.com'
+          git add scripts/oracle-lock.json "oracle-requests/${REQUEST_ID}.json"
+          git -c core.hooksPath=/dev/null commit -m "chore(oracles): lock ${RELEASE_TAG}"
+          git push origin "${branch}"
+          gh pr create \
+            --repo flighthq/flight \
+            --base "${BASE_BRANCH}" \
+            --head "${branch}" \
+            --title "chore(oracles): lock ${RELEASE_TAG}" \
+            --body "Pins the immutable blessed release and fulfills \`${REQUEST_ID}\`. Flight CI must prove the cell is locked and gating before merge."

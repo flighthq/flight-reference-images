@@ -1,0 +1,242 @@
+name: Oracle candidate intake
+
+on:
+  repository_dispatch:
+    types: [flight-oracle-candidate]
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Source repository
+        required: true
+        default: flighthq/flight
+      flight_commit:
+        description: Landed Flight commit
+        required: true
+      request_path:
+        description: Request path at the landed commit
+        required: true
+      request_sha256:
+        description: SHA-256 of the request file
+        required: true
+      artifact_id:
+        description: Flight candidate artifact id
+        required: true
+      workflow_run_id:
+        description: Flight workflow run id
+        required: true
+      artifact_digest:
+        description: Flight candidate artifact digest
+        required: true
+
+concurrency:
+  group: oracle-intake-${{ github.event.client_payload.request_sha256 || inputs.request_sha256 }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Validate and stage candidate without repository write credentials
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    outputs:
+      artifact-digest: ${{ steps.upload.outputs.artifact-digest }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      report-id: ${{ steps.report.outputs.artifact-id }}
+      request-id: ${{ steps.prepared.outputs.request_id }}
+      release-tag: ${{ steps.prepared.outputs.release_tag }}
+    env:
+      SOURCE_REPOSITORY: ${{ github.event.client_payload.repository || inputs.repository }}
+      FLIGHT_COMMIT: ${{ github.event.client_payload.flightCommit || inputs.flight_commit }}
+      REQUEST_PATH: ${{ github.event.client_payload.requestPath || inputs.request_path }}
+      REQUEST_SHA256: ${{ github.event.client_payload.requestSha256 || inputs.request_sha256 }}
+      SOURCE_ARTIFACT_ID: ${{ github.event.client_payload.artifactId || inputs.artifact_id }}
+      SOURCE_RUN_ID: ${{ github.event.client_payload.workflowRunId || inputs.workflow_run_id }}
+      SOURCE_ARTIFACT_DIGEST: ${{ github.event.client_payload.artifactDigest || inputs.artifact_digest }}
+    steps:
+      - name: Mint read-only Flight token
+        id: flight-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.ORACLE_APP_ID }}
+          private-key: ${{ secrets.ORACLE_APP_PRIVATE_KEY }}
+          owner: flighthq
+          repositories: flight
+          permission-actions: read
+          permission-contents: read
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Construct and validate fixed dispatch envelope
+        run: |
+          mkdir -p .artifacts
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+
+          const envelope = {
+            schemaVersion: 1,
+            repository: process.env.SOURCE_REPOSITORY,
+            flightCommit: process.env.FLIGHT_COMMIT,
+            requestPath: process.env.REQUEST_PATH,
+            requestSha256: process.env.REQUEST_SHA256,
+            artifactId: Number(process.env.SOURCE_ARTIFACT_ID),
+            workflowRunId: Number(process.env.SOURCE_RUN_ID),
+            artifactDigest: process.env.SOURCE_ARTIFACT_DIGEST,
+          };
+          writeFileSync('.artifacts/envelope.json', `${JSON.stringify(envelope, null, 2)}\n`);
+          NODE
+          npm run schema:check -- --schema dispatch-envelope --file .artifacts/envelope.json
+      - name: Verify source artifact belongs to the dispatched Flight run
+        env:
+          GH_TOKEN: ${{ steps.flight-token.outputs.token }}
+        run: |
+          mapfile -t artifact_fields < <(
+            gh api "repos/${SOURCE_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}" \
+              --jq '[.workflow_run.id, .digest] | .[]'
+          )
+          test "${artifact_fields[0]}" = "${SOURCE_RUN_ID}" || {
+            echo "::error::artifact belongs to run ${artifact_fields[0]}, expected ${SOURCE_RUN_ID}"
+            exit 1
+          }
+          test "${artifact_fields[1]}" = "${SOURCE_ARTIFACT_DIGEST}" || {
+            echo "::error::source artifact digest differs"
+            exit 1
+          }
+      - name: Bind the authoritative Flight commit time
+        env:
+          GH_TOKEN: ${{ steps.flight-token.outputs.token }}
+        run: |
+          committed_at=$(gh api "repos/${SOURCE_REPOSITORY}/commits/${FLIGHT_COMMIT}" --jq .commit.committer.date)
+          COMMITTED_AT="${committed_at}" node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const path = '.artifacts/envelope.json';
+          const envelope = JSON.parse(readFileSync(path, 'utf8'));
+          envelope.flightCommittedAt = process.env.COMMITTED_AT;
+          writeFileSync(path, `${JSON.stringify(envelope, null, 2)}\n`);
+          NODE
+          npm run schema:check -- --schema dispatch-envelope --file .artifacts/envelope.json
+      - name: Fetch the request from the exact landed Flight commit
+        env:
+          GH_TOKEN: ${{ steps.flight-token.outputs.token }}
+        run: |
+          gh api \
+            -H 'Accept: application/vnd.github.raw+json' \
+            "repos/${SOURCE_REPOSITORY}/contents/${REQUEST_PATH}?ref=${FLIGHT_COMMIT}" \
+            > .artifacts/request.json
+          actual=$(sha256sum .artifacts/request.json | cut -d ' ' -f 1)
+          test "${actual}" = "${REQUEST_SHA256}" || {
+            echo "::error::landed request hash is ${actual}, expected ${REQUEST_SHA256}"
+            exit 1
+          }
+          npm run schema:check -- --schema request --file .artifacts/request.json
+      - name: Download Flight candidate artifact
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ env.SOURCE_ARTIFACT_ID }}
+          github-token: ${{ steps.flight-token.outputs.token }}
+          repository: ${{ env.SOURCE_REPOSITORY }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          path: .artifacts/source
+      - name: Download current blessed packs
+        run: npm run packs:download -- --output .artifacts/previous-packs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Prepare records, report, and prospective complete packs
+        run: >-
+          npm run intake:prepare -- --candidate .artifacts/source --request .artifacts/request.json --envelope .artifacts/envelope.json --previous-packs .artifacts/previous-packs --output .artifacts/prepared
+
+
+      - name: Read prepared identity
+        id: prepared
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+          const prepared = JSON.parse(readFileSync('.artifacts/prepared/prepared-intake.json', 'utf8'));
+          const request = JSON.parse(readFileSync('.artifacts/prepared/request.json', 'utf8'));
+          appendFileSync(process.env.GITHUB_OUTPUT, `request_id=${request.id}\nrelease_tag=${prepared.releaseTag}\n`);
+          NODE
+      - name: Store Oracle-owned candidate
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-candidate-${{ steps.prepared.outputs.request_id }}-${{ github.run_id }}
+          path: .artifacts/prepared
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+      - name: Store review-only report
+        id: report
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-review-${{ steps.prepared.outputs.request_id }}-${{ github.run_id }}
+          path: .artifacts/prepared/report
+          if-no-files-found: error
+          retention-days: 30
+
+  open-pr:
+    name: Write allowlisted metadata and open approval PR
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Mint Oracle PR token
+        id: oracle-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.ORACLE_APP_ID }}
+          private-key: ${{ secrets.ORACLE_APP_PRIVATE_KEY }}
+          owner: flighthq
+          repositories: flight-oracles
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.oracle-token.outputs.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Download prepared candidate
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact-id }}
+          path: .artifacts/prepared
+      - name: Apply schema-validated allowlisted metadata
+        run: >-
+          npm run intake:apply -- --prepared .artifacts/prepared --artifact-id ${{ needs.prepare.outputs.artifact-id }} --artifact-digest ${{ needs.prepare.outputs.artifact-digest }} --workflow-run-id ${{ github.run_id }}
+
+
+      - name: Commit and open approval PR
+        env:
+          GH_TOKEN: ${{ steps.oracle-token.outputs.token }}
+          REQUEST_ID: ${{ needs.prepare.outputs.request-id }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release-tag }}
+          REPORT_ID: ${{ needs.prepare.outputs.report-id }}
+        run: |
+          branch="oracle/${REQUEST_ID}-${GITHUB_RUN_ID}"
+          git switch -c "${branch}"
+          git config user.name 'flight-oracles[bot]'
+          git config user.email 'flight-oracles[bot]@users.noreply.github.com'
+          git add manifest.json oracles candidates
+          git -c core.hooksPath=/dev/null commit -m "feat(oracles): bless ${REQUEST_ID}"
+          git push origin "${branch}"
+
+          report_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${REPORT_ID}"
+          printf '%s\n' \
+            "Blesses request \`${REQUEST_ID}\` into immutable release \`${RELEASE_TAG}\`." \
+            '' \
+            "Review artifact: ${report_url}" \
+            '' \
+            'Merging this PR is the approval. Release automation promotes the exact staged bytes; it never recaptures.' \
+            > .artifacts/pr-body.md
+          gh pr create \
+            --base main \
+            --head "${branch}" \
+            --title "feat(oracles): bless ${REQUEST_ID}" \
+            --body-file .artifacts/pr-body.md

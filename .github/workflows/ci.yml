@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  quality:
+    name: Quality and repository integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  candidate-replay:
+    name: Replay reviewed candidate
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Read current candidate locator
+        id: locator
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync, readdirSync } from 'node:fs';
+
+          const files = readdirSync('candidates').filter((file) => file.endsWith('.json'));
+          if (files.length === 0) {
+            appendFileSync(process.env.GITHUB_OUTPUT, 'present=false\n');
+            process.exit(0);
+          }
+          if (files.length !== 1) throw new Error(`expected one candidate locator, found ${files.length}`);
+          const locator = JSON.parse(readFileSync(`candidates/${files[0]}`, 'utf8'));
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            [
+              'present=true',
+              `artifact_id=${locator.preparedArtifact.artifactId}`,
+              `artifact_digest=${locator.preparedArtifact.digest}`,
+              `run_id=${locator.preparedArtifact.workflowRunId}`,
+              `request_id=${locator.requestId}`,
+            ].join('\n') + '\n',
+          );
+          NODE
+      - name: Verify prepared artifact identity
+        if: steps.locator.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.locator.outputs.artifact_id }}
+          EXPECTED_DIGEST: ${{ steps.locator.outputs.artifact_digest }}
+        run: |
+          actual_digest=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" --jq .digest)
+          test "${actual_digest}" = "${EXPECTED_DIGEST}" || {
+            echo "::error::prepared artifact digest is ${actual_digest}, expected ${EXPECTED_DIGEST}"
+            exit 1
+          }
+      - name: Download prepared candidate
+        if: steps.locator.outputs.present == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.locator.outputs.artifact_id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.locator.outputs.run_id }}
+          path: .artifacts/prepared
+      - name: Download prior complete packs
+        if: steps.locator.outputs.present == 'true'
+        run: npm run packs:download -- --manifest .artifacts/prepared/base/manifest.json --output .artifacts/previous-packs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Reconstruct and verify prospective release
+        if: steps.locator.outputs.present == 'true'
+        run: >-
+          npm run intake:replay -- --prepared .artifacts/prepared --previous-packs .artifacts/previous-packs --output .artifacts/replayed
+
+
+      - name: Publish review report
+        if: always() && steps.locator.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-review-${{ steps.locator.outputs.request_id }}-${{ github.run_id }}
+          path: .artifacts/replayed/report
+          if-no-files-found: error
+          retention-days: 30

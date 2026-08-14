@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flighthq/flight-oracles/schemas/intake-policy.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "maximumRequestAgeHours", "maximumFutureSkewMinutes", "candidateArtifactRetentionDays"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "maximumRequestAgeHours": { "type": "integer", "minimum": 1, "maximum": 720 },
+    "maximumFutureSkewMinutes": { "type": "integer", "minimum": 0, "maximum": 60 },
+    "candidateArtifactRetentionDays": { "type": "integer", "minimum": 1, "maximum": 90 }
+  }
+}

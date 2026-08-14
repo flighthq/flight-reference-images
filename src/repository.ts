@@ -9,6 +9,7 @@ import type {
   CandidateLocator,
   ComparisonPolicy,
   EnvironmentDescriptor,
+  IntakePolicy,
   OracleManifest,
   OracleRecord,
   PackConfiguration,
@@ -16,6 +17,7 @@ import type {
 
 export interface RepositoryState {
   environments: ReadonlyMap<string, EnvironmentDescriptor>;
+  intakePolicy: IntakePolicy;
   locators: readonly CandidateLocator[];
   manifest: OracleManifest;
   packConfiguration: PackConfiguration;
@@ -27,6 +29,7 @@ export async function readRepository(root: string): Promise<RepositoryState> {
   const problems: string[] = [];
   const manifest = await readTyped<OracleManifest>(root, 'manifest.json', 'manifest', problems);
   const packConfiguration = await readTyped<PackConfiguration>(root, 'pack-config.json', 'pack-config', problems);
+  const intakePolicy = await readTyped<IntakePolicy>(root, 'intake-policy.json', 'intake-policy', problems);
   const environments = await readDirectory<EnvironmentDescriptor>(root, 'environments', 'environment', problems);
   const policies = await readDirectory<ComparisonPolicy>(root, 'comparison-policies', 'comparison-policy', problems);
   const records = await readDirectory<OracleRecord>(root, 'oracles', 'oracle-record', problems);
@@ -52,11 +55,12 @@ export async function readRepository(root: string): Promise<RepositoryState> {
         .map((item) => `  - ${item}`)
         .join('\n')}`,
     );
-  if (manifest === null || packConfiguration === null)
+  if (manifest === null || packConfiguration === null || intakePolicy === null)
     throw new Error('repository validation failed without a diagnostic');
 
   return {
     environments,
+    intakePolicy,
     locators: [...locatorMap.values()],
     manifest,
     packConfiguration,

@@ -18,6 +18,7 @@ import type {
   DispatchEnvelope,
   EnvironmentDescriptor,
   FlightOracleRequest,
+  IntakePolicy,
   OracleManifest,
   OracleRecord,
   PackConfiguration,
@@ -50,10 +51,15 @@ export interface ReplayIntakeOptions {
 
 interface IntakeBase {
   environments: ReadonlyMap<string, EnvironmentDescriptor>;
+  intakePolicy: IntakePolicy;
   manifest: OracleManifest;
   packConfiguration: PackConfiguration;
   policies: ReadonlyMap<string, ComparisonPolicy>;
   records: ReadonlyMap<string, OracleRecord>;
+}
+
+interface ProduceIntakeOptions extends PrepareIntakeOptions {
+  enforceRequestAge: boolean;
 }
 
 export async function applyPreparedIntake(options: Readonly<ApplyIntakeOptions>): Promise<CandidateLocator> {
@@ -118,12 +124,13 @@ export async function prepareIntake(options: Readonly<PrepareIntakeOptions>): Pr
   return produceIntake(
     {
       environments: repository.environments,
+      intakePolicy: repository.intakePolicy,
       manifest: repository.manifest,
       packConfiguration: repository.packConfiguration,
       policies: repository.policies,
       records: repository.records,
     },
-    options,
+    { ...options, enforceRequestAge: true },
   );
 }
 
@@ -136,6 +143,7 @@ export async function replayPreparedIntake(options: Readonly<ReplayIntakeOptions
   const replayed = await produceIntake(
     {
       environments: committed.environments,
+      intakePolicy: committed.intakePolicy,
       manifest: baseManifest,
       packConfiguration: committed.packConfiguration,
       policies: committed.policies,
@@ -148,6 +156,7 @@ export async function replayPreparedIntake(options: Readonly<ReplayIntakeOptions
       previousPackDirectory: options.previousPackDirectory,
       repositoryRoot,
       requestPath: join(preparedDirectory, 'request.json'),
+      enforceRequestAge: false,
     },
   );
 
@@ -176,7 +185,7 @@ export async function replayPreparedIntake(options: Readonly<ReplayIntakeOptions
 
 async function produceIntake(
   base: Readonly<IntakeBase>,
-  options: Readonly<PrepareIntakeOptions>,
+  options: Readonly<ProduceIntakeOptions>,
 ): Promise<PreparedIntake> {
   const candidateDirectory = resolve(options.candidateDirectory);
   const outputDirectory = resolve(options.outputDirectory);
@@ -187,7 +196,15 @@ async function produceIntake(
     const candidate = await readTyped<CandidateManifest>(join(candidateDirectory, 'candidate.json'), 'candidate');
     const envelope = await readTyped<DispatchEnvelope>(resolve(options.envelopePath), 'dispatch-envelope');
     const request = await readTyped<FlightOracleRequest>(resolve(options.requestPath), 'request');
-    await validateBindings(base, candidateDirectory, candidate, envelope, request, options.requestPath);
+    await validateBindings(
+      base,
+      candidateDirectory,
+      candidate,
+      envelope,
+      request,
+      options.requestPath,
+      options.enforceRequestAge,
+    );
     await stageInputs(outputDirectory, candidateDirectory, candidate, envelope, options.requestPath, base);
 
     const previousImages = join(workspace, 'previous');
@@ -384,6 +401,7 @@ async function validateBindings(
   envelope: Readonly<DispatchEnvelope>,
   request: Readonly<FlightOracleRequest>,
   requestPath: string,
+  enforceRequestAge: boolean,
 ): Promise<void> {
   if ((await hashFile(resolve(requestPath))) !== envelope.requestSha256) {
     throw new Error(`request checksum does not match dispatch envelope`);
@@ -396,6 +414,7 @@ async function validateBindings(
   if (base.manifest.sourceRequests.some((entry) => entry.id === request.id)) {
     throw new Error(`request id ${request.id} was already used by a release`);
   }
+  if (enforceRequestAge) assertRequestFreshness(envelope, base.intakePolicy);
 
   const environment = [...base.environments.values()].find((entry) => entry.id === candidate.environmentId);
   if (environment === undefined) throw new Error(`candidate names unknown environment ${candidate.environmentId}`);
@@ -432,6 +451,28 @@ async function validateBindings(
   for (const key of expected) if (!represented.has(key)) throw new Error(`candidate omits requested target ${key}`);
   for (const file of await findFiles(candidateDirectory)) {
     if (!allowedFiles.has(file)) throw new Error(`candidate bundle contains undeclared file ${file}`);
+  }
+}
+
+export function assertRequestFreshness(
+  envelope: Readonly<DispatchEnvelope>,
+  policy: Readonly<IntakePolicy>,
+  now = new Date(),
+): void {
+  if (envelope.flightCommittedAt === undefined)
+    throw new Error('dispatch envelope lacks authoritative Flight commit time');
+  const committedAt = Date.parse(envelope.flightCommittedAt);
+  if (!Number.isFinite(committedAt)) throw new Error(`invalid Flight commit time ${envelope.flightCommittedAt}`);
+  const ageMilliseconds = now.getTime() - committedAt;
+  const maximumAge = policy.maximumRequestAgeHours * 60 * 60 * 1000;
+  const maximumFutureSkew = policy.maximumFutureSkewMinutes * 60 * 1000;
+  if (ageMilliseconds > maximumAge) {
+    throw new Error(
+      `Flight request is ${Math.floor(ageMilliseconds / 3_600_000)} hours old; maximum is ${policy.maximumRequestAgeHours}`,
+    );
+  }
+  if (ageMilliseconds < -maximumFutureSkew) {
+    throw new Error(`Flight commit time is more than ${policy.maximumFutureSkewMinutes} minutes in the future`);
   }
 }
 

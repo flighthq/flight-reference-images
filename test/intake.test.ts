@@ -1,11 +1,12 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { PNG } from 'pngjs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { applyPreparedIntake, prepareIntake, replayPreparedIntake } from '../src/intake.js';
+import { completeFlight } from '../src/completion.js';
+import { applyPreparedIntake, assertRequestFreshness, prepareIntake, replayPreparedIntake } from '../src/intake.js';
 import { canonicalJson, hashBytes, hashFile, writeCanonicalJson } from '../src/json.js';
 import { readRepository } from '../src/repository.js';
 import type {
@@ -64,6 +65,20 @@ describe('prepareIntake', () => {
       repositoryRoot: fixture.repositoryRoot,
     });
     expect(replay).toEqual(prepared);
+
+    const flightRoot = join(workspace, 'flight');
+    await mkdir(join(flightRoot, 'oracle-requests'), { recursive: true });
+    await mkdir(join(flightRoot, 'scripts'), { recursive: true });
+    await copyFile(fixture.requestPath, join(flightRoot, 'oracle-requests', 'shape-basic-webgl-2026-08-14.json'));
+    const lock = await completeFlight({
+      flightRoot,
+      oracleCommit: '8'.repeat(40),
+      oracleRoot: fixture.repositoryRoot,
+      requestId: 'shape-basic-webgl-2026-08-14',
+    });
+    expect(lock.releaseTag).toBe(prepared.releaseTag);
+    expect(lock.packs['functional-shapes']?.sha256).toBe(prepared.packs[0]?.sha256);
+    await expect(readFile(join(flightRoot, 'oracle-requests', 'shape-basic-webgl-2026-08-14.json'))).rejects.toThrow();
   });
 
   it('lists a failed requested capture and refuses to construct a release', async () => {
@@ -101,6 +116,34 @@ describe('prepareIntake', () => {
         requestPath: fixture.requestPath,
       }),
     ).rejects.toThrow('undeclared file');
+  });
+});
+
+describe('assertRequestFreshness', () => {
+  it('fires when an outstanding request exceeds the bounded pending window', () => {
+    const envelope = {
+      artifactDigest: `sha256:${'1'.repeat(64)}`,
+      artifactId: 1,
+      flightCommit: '2'.repeat(40),
+      flightCommittedAt: '2026-07-01T00:00:00Z',
+      repository: 'flighthq/flight' as const,
+      requestPath: 'oracle-requests/expired.json',
+      requestSha256: '3'.repeat(64),
+      schemaVersion: 1 as const,
+      workflowRunId: 1,
+    };
+    expect(() =>
+      assertRequestFreshness(
+        envelope,
+        {
+          candidateArtifactRetentionDays: 30,
+          maximumFutureSkewMinutes: 10,
+          maximumRequestAgeHours: 336,
+          schemaVersion: 1,
+        },
+        new Date('2026-08-14T00:00:00Z'),
+      ),
+    ).toThrow('maximum is 336');
   });
 });
 
@@ -159,6 +202,12 @@ async function makeFixture(status: 'captured' | 'missing'): Promise<{
     schemaVersion: 1,
   };
   await writeCanonicalJson(join(repositoryRoot, 'manifest.json'), manifest);
+  await writeCanonicalJson(join(repositoryRoot, 'intake-policy.json'), {
+    candidateArtifactRetentionDays: 30,
+    maximumFutureSkewMinutes: 10,
+    maximumRequestAgeHours: 336,
+    schemaVersion: 1,
+  });
   await writeCanonicalJson(join(repositoryRoot, 'pack-config.json'), packConfiguration);
   await writeCanonicalJson(join(repositoryRoot, 'environments', `${environmentId}.json`), environment);
   await writeCanonicalJson(join(repositoryRoot, 'comparison-policies', 'pixel-v1.json'), policy);
@@ -177,6 +226,7 @@ async function makeFixture(status: 'captured' | 'missing'): Promise<{
     artifactDigest: `sha256:${'5'.repeat(64)}`,
     artifactId: 100,
     flightCommit: '6'.repeat(40),
+    flightCommittedAt: new Date().toISOString(),
     repository: 'flighthq/flight',
     requestPath: `oracle-requests/${request.id}.json`,
     requestSha256: await hashFile(requestPath),

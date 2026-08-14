@@ -8,7 +8,9 @@ export type SchemaName =
   | 'comparison-policy'
   | 'dispatch-envelope'
   | 'environment'
+  | 'intake-policy'
   | 'manifest'
+  | 'oracle-lock'
   | 'oracle-record'
   | 'pack-manifest'
   | 'pack-config'
@@ -21,7 +23,9 @@ const schemaNames: readonly SchemaName[] = [
   'comparison-policy',
   'dispatch-envelope',
   'environment',
+  'intake-policy',
   'manifest',
+  'oracle-lock',
   'oracle-record',
   'pack-manifest',
   'pack-config',

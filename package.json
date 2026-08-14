@@ -8,9 +8,11 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run repository:check",
+    "environment:id": "tsx ./src/cli.ts environment-id",
     "fix": "npm run lint:fix && npm run format",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
+    "flight:complete": "tsx ./src/cli.ts flight-complete",
     "intake:apply": "tsx ./src/cli.ts intake-apply",
     "intake:prepare": "tsx ./src/cli.ts intake-prepare",
     "intake:replay": "tsx ./src/cli.ts intake-replay",
@@ -19,6 +21,7 @@
     "packs:download": "tsx ./src/cli.ts packs-download",
     "release:verify": "tsx ./src/cli.ts release-verify",
     "repository:check": "tsx ./src/cli.ts check",
+    "schema:check": "tsx ./src/cli.ts schema-check",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.json"
@@ -36,7 +39,8 @@
     "oxlint": "^1.72.0",
     "tsx": "^4.22.0",
     "typescript": "^5.9.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "yaml": "^2.8.1"
   },
   "engines": {
     "node": ">=20"

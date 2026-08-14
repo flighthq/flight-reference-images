@@ -2,10 +2,14 @@
 
 import { resolve } from 'node:path';
 
+import { completeFlight } from './completion.js';
 import { applyPreparedIntake, prepareIntake, replayPreparedIntake } from './intake.js';
-import { errorMessage } from './json.js';
+import { canonicalJson, errorMessage, hashBytes, isRecord, readJson } from './json.js';
 import { downloadReleasePacks, verifyReleasePacks } from './pack.js';
 import { readRepository } from './repository.js';
+import { assertSchema } from './schemas.js';
+import type { SchemaName } from './schemas.js';
+import type { OracleManifest } from './types.js';
 
 async function main(): Promise<void> {
   const [command, ...arguments_] = process.argv.slice(2);
@@ -22,9 +26,16 @@ async function main(): Promise<void> {
     const root = resolve(option(arguments_, '--root') ?? '.');
     const output = resolve(requiredOption(arguments_, '--output'));
     const repository = option(arguments_, '--repository') ?? 'flighthq/flight-oracles';
-    const state = await readRepository(root);
-    await downloadReleasePacks(state.manifest, repository, output);
-    console.log(`downloaded and verified ${state.manifest.packs.length} packs in ${output}`);
+    const manifestPath = option(arguments_, '--manifest');
+    let manifest: OracleManifest;
+    if (manifestPath === undefined) manifest = (await readRepository(root)).manifest;
+    else {
+      const value = await readJson(resolve(manifestPath));
+      assertSchema<OracleManifest>('manifest', value, manifestPath);
+      manifest = value;
+    }
+    await downloadReleasePacks(manifest, repository, output);
+    console.log(`downloaded and verified ${manifest.packs.length} packs in ${output}`);
     return;
   }
 
@@ -70,6 +81,38 @@ async function main(): Promise<void> {
     const state = await readRepository(root);
     await verifyReleasePacks(state.manifest, state.records, packs);
     console.log(`release valid: ${state.records.size} images in ${state.manifest.packs.length} packs`);
+    return;
+  }
+
+  if (command === 'schema-check') {
+    const schema = requiredOption(arguments_, '--schema') as SchemaName;
+    const file = resolve(requiredOption(arguments_, '--file'));
+    assertSchema(schema, await readJson(file), file);
+    console.log(`${file} matches ${schema}`);
+    return;
+  }
+
+  if (command === 'flight-complete') {
+    const lock = await completeFlight({
+      flightRoot: requiredOption(arguments_, '--flight-root'),
+      oracleCommit: requiredOption(arguments_, '--oracle-commit'),
+      oracleRoot: option(arguments_, '--root') ?? '.',
+      requestId: requiredOption(arguments_, '--request-id'),
+    });
+    console.log(JSON.stringify(lock));
+    return;
+  }
+
+  if (command === 'environment-id') {
+    const file = resolve(requiredOption(arguments_, '--file'));
+    const value = await readJson(file);
+    if (!isRecord(value)) throw new Error(`${file} must contain a JSON object`);
+    const { $schema, id: ignoredId, ...descriptor } = value;
+    void ignoredId;
+    const id = `sha256-${hashBytes(canonicalJson(descriptor))}`;
+    const complete = $schema === undefined ? { ...descriptor, id } : { $schema, ...descriptor, id };
+    assertSchema('environment', complete, file);
+    console.log(id);
     return;
   }
 

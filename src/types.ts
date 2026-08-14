@@ -61,11 +61,20 @@ export interface DispatchEnvelope {
   artifactDigest: string;
   artifactId: number;
   flightCommit: string;
+  flightCommittedAt?: string;
   repository: 'flighthq/flight';
   requestPath: string;
   requestSha256: string;
   schemaVersion: 1;
   workflowRunId: number;
+}
+
+export interface IntakePolicy {
+  $schema?: string;
+  candidateArtifactRetentionDays: number;
+  maximumFutureSkewMinutes: number;
+  maximumRequestAgeHours: number;
+  schemaVersion: 1;
 }
 
 export interface EnvironmentDescriptor {
@@ -125,6 +134,16 @@ export interface OracleManifest {
     id: string;
     requestSha256: string;
   }>;
+}
+
+export interface OracleLock {
+  $schema?: string;
+  manifestSha256: string;
+  oracleCommit: string;
+  packs: Record<string, { file: string; sha256: string }>;
+  releaseTag: string;
+  repository: 'flighthq/flight-oracles';
+  schemaVersion: 1;
 }
 
 export interface PackImage {

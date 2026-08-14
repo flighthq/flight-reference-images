@@ -1,0 +1,7 @@
+{
+  "$schema": "./schemas/intake-policy.schema.json",
+  "schemaVersion": 1,
+  "maximumRequestAgeHours": 336,
+  "maximumFutureSkewMinutes": 10,
+  "candidateArtifactRetentionDays": 30
+}
