@@ -74,6 +74,7 @@ jobs:
           repository: ${{ github.repository }}
           run-id: ${{ steps.locator.outputs.run_id }}
           path: .artifacts/prepared
+          merge-multiple: true
       - name: Download prior complete packs
         run: npm run packs:download -- --manifest .artifacts/prepared/base/manifest.json --output .artifacts/previous-packs
         env:
@@ -126,6 +127,7 @@ jobs:
         with:
           artifact-ids: ${{ needs.rebuild.outputs.artifact-id }}
           path: .artifacts/release-bundle
+          merge-multiple: true
       - name: Verify fixed manifest and pack checksums
         env:
           EXPECTED_MANIFEST_SHA256: ${{ needs.rebuild.outputs.manifest-sha256 }}

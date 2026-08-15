@@ -24,10 +24,28 @@ describe('GitHub Actions workflows', () => {
     expect(JSON.stringify(job(intake, 'open-pr'))).not.toMatch(/intake:(prepare|replay)/u);
     expect(JSON.stringify(job(release, 'publish'))).not.toContain('intake:replay');
   });
+
+  it('extracts id-selected artifacts directly into their consumer directories', async () => {
+    for (const file of ['ci.yml', 'intake.yml', 'release.yml']) {
+      const workflow = parse(await readFile(join('.github', 'workflows', file), 'utf8'));
+      for (const definition of Object.values(workflow.jobs)) {
+        for (const step of definition.steps ?? []) {
+          if (step.uses !== 'actions/download-artifact@v4' || step.with?.['artifact-ids'] === undefined) continue;
+          expect(step.with['merge-multiple'], `${file}: ${step.name ?? step.uses}`).toBe(true);
+        }
+      }
+    }
+  });
 });
 
 interface Workflow {
-  jobs: Record<string, { permissions: Record<string, string> }>;
+  jobs: Record<
+    string,
+    {
+      permissions: Record<string, string>;
+      steps?: { name?: string; uses?: string; with?: Record<string, unknown> }[];
+    }
+  >;
 }
 
 function parse(text: string): Workflow {

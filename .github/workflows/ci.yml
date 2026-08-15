@@ -93,6 +93,7 @@ jobs:
           repository: ${{ github.repository }}
           run-id: ${{ steps.locator.outputs.run_id }}
           path: .artifacts/prepared
+          merge-multiple: true
       - name: Download prior complete packs
         if: steps.locator.outputs.present == 'true'
         run: npm run packs:download -- --manifest .artifacts/prepared/base/manifest.json --output .artifacts/previous-packs

@@ -218,6 +218,9 @@ jobs:
         with:
           artifact-ids: ${{ needs.prepare.outputs.artifact-id }}
           path: .artifacts/prepared
+          # An id is still handled as a multi-artifact selection. Flatten its contents so the fixed
+          # prepared-intake.json contract is rooted at the directory passed to intake:apply.
+          merge-multiple: true
       - name: Apply schema-validated allowlisted metadata
         run: >-
           npm run intake:apply -- --prepared .artifacts/prepared --artifact-id ${{ needs.prepare.outputs.artifact-id }} --artifact-digest ${{ needs.prepare.outputs.artifact-digest }} --workflow-run-id ${{ github.run_id }}
