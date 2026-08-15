@@ -4,9 +4,9 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { writeCanonicalJson } from '../src/json.js';
+import { canonicalJson, hashBytes, writeCanonicalJson } from '../src/json.js';
 import { readRepository } from '../src/repository.js';
-import type { OracleManifest, PackConfiguration } from '../src/types.js';
+import type { EnvironmentDescriptor, OracleManifest, PackConfiguration } from '../src/types.js';
 
 let root = '';
 
@@ -32,6 +32,41 @@ afterEach(async () => {
 });
 
 describe('readRepository', () => {
+  it('accepts a calibrated native environment without invented container or font claims', async () => {
+    await writeCanonicalJson(join(root, 'manifest.json'), bootstrapManifest());
+    await writeCanonicalJson(join(root, 'pack-config.json'), {
+      schemaVersion: 1,
+      subjects: { functional: { defaultPack: 'functional' } },
+    } satisfies PackConfiguration);
+    const payload = {
+      browser: {
+        name: 'chromium',
+        playwrightVersion: '1.61.0',
+        revision: 'chromium-1228',
+        version: '149.0.7827.55',
+      },
+      colorProfile: 'unforced',
+      devicePixelRatio: 1,
+      execution: { architecture: 'x86_64', kind: 'native' as const, maximumVectorIsa: 'avx2' },
+      fonts: [],
+      locale: 'C/POSIX',
+      renderer: {
+        arguments: ['--enable-unsafe-webgpu', '--use-webgpu-adapter=swiftshader'],
+        implementation: 'SwiftShader',
+      },
+      schemaVersion: 1 as const,
+      timezone: 'Etc/UTC',
+      viewport: { height: 600, width: 800 },
+    };
+    const id = `sha256-${hashBytes(canonicalJson(payload))}`;
+    const environment: EnvironmentDescriptor = { ...payload, id };
+    await writeCanonicalJson(join(root, 'environments', `${id}.json`), environment);
+
+    await expect(readRepository(root)).resolves.toMatchObject({
+      environments: new Map([[`environments/${id}.json`, environment]]),
+    });
+  });
+
   it('rejects an invalid pack regex even before the first record uses it', async () => {
     await writeCanonicalJson(join(root, 'manifest.json'), bootstrapManifest());
     await writeCanonicalJson(join(root, 'pack-config.json'), {

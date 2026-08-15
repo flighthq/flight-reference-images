@@ -60,7 +60,7 @@ Generated output directories must not already exist. This makes accidental reuse
 
 Before dispatching the first candidate:
 
-1. Measure a canonical environment across at least two independent clean hosts and commit its descriptor under `environments/`.
+1. Measure a canonical environment across at least two independent clean hosts and commit its descriptor under `environments/`. Use a digest-pinned container profile when available; a native profile is valid only when the calibration demonstrates portability and records its CPU boundary.
 2. Compute the descriptor id with `npm run environment:id -- --file <descriptor.json>`; use that id both in the record and filename.
 3. Calibrate full-resolution pixel thresholds from repeated captures and commit a matching policy under `comparison-policies/`.
 4. Add the `referenceImage` identity and request to Flight. The request remains in Flight until the release completion PR removes it.

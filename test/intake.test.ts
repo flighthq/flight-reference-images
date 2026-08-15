@@ -334,10 +334,10 @@ async function makeFixture(status: 'captured' | 'missing'): Promise<Fixture> {
     subjects: { functional: { defaultPack: 'functional-shapes' } },
   };
   const environmentPayload = {
-    browser: { name: 'chromium', playwrightVersion: '1.50.0', version: '131.0.0' },
+    browser: { name: 'chromium', playwrightVersion: '1.50.0', revision: 'chromium-1155', version: '131.0.0' },
     colorProfile: 'srgb',
-    containerImage: `ghcr.io/flighthq/capture@sha256:${'1'.repeat(64)}`,
     devicePixelRatio: 1,
+    execution: { image: `ghcr.io/flighthq/capture@sha256:${'1'.repeat(64)}`, kind: 'container' as const },
     fonts: [{ family: 'Flight Test Sans', sha256: '2'.repeat(64) }],
     locale: 'en-US',
     renderer: { arguments: ['--use-angle=swiftshader'], implementation: 'SwiftShader' },

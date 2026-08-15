@@ -86,11 +86,12 @@ export interface EnvironmentDescriptor {
   browser: {
     name: string;
     playwrightVersion: string;
+    revision: string;
     version: string;
   };
   colorProfile: string;
-  containerImage: string;
   devicePixelRatio: number;
+  execution: { image: string; kind: 'container' } | { architecture: string; kind: 'native'; maximumVectorIsa: string };
   fonts: Array<{ family: string; sha256: string }>;
   id: string;
   locale: string;

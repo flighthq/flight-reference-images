@@ -1,0 +1,18 @@
+{
+  "$schema": "../schemas/comparison-policy.schema.json",
+  "calibration": {
+    "corpusSha256": "b828197890e03dea013092fe754f1cbecc8c70f9b1e83ce18025c41bff9deb82",
+    "flightCommit": "7f7eda85f7378d9bdd1c5363f672cc928abff235",
+    "independentHosts": 2,
+    "notes": "2026-08-15: six GPU-shaded cells (material-standard-pbr, effect-radial-blur, and mesh-normal-position-groups on webgl and webgpu) were measured on two independent x86_64 hosts with two runs per host, for 24 observations. All encoded PNG bytes were identical within and across hosts, establishing a zero observed noise floor. Ubuntu release, kernel, Node major, and machine varied; Chromium 149.0.7827.55 / Playwright 1.61.0 / chromium-1228, SwiftShader flags, 800x600 viewport, DPR 1, Etc/UTC timezone, and C/POSIX locale were held constant. per-node-effect-glow-shadow was withheld pending investigation. A different Chromium build and an AVX-512 dispatch path were not tested. The corpus digest covers canonical JSON of the Flight commit and sorted identities as documented in comparison-policies/README.md.",
+    "runsPerHost": 2
+  },
+  "channelTolerance": 0,
+  "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
+  "id": "pixel-exact-swiftshader-pw-1-61-v1",
+  "maximumChannelDelta": {
+    "mode": "report"
+  },
+  "maximumMismatchFraction": 0,
+  "schemaVersion": 1
+}

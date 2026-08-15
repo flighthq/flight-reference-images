@@ -47,6 +47,12 @@ A missing row is written to `report.json` and the intake fails. Absence is never
 
 The path is derived from identity, and pack assignment is derived from `pack-config.json`; neither can be chosen by candidate input.
 
+## Capture environment and comparison policy
+
+An environment descriptor binds the browser build and Playwright revision, renderer implementation and complete argument list, dependent fonts, locale, timezone, viewport, device-pixel ratio, and color profile. Execution is either a digest-pinned container or a native architecture/vector-ISA class demonstrated portable by repeated captures. The descriptor's canonical content derives `environmentId`; a candidate cannot introduce an environment.
+
+A comparison policy belongs to exactly one environment. Its calibration binds a landed Flight commit and the lexical set of measured identities through `corpusSha256`, and records independent-host and per-host run counts. Zero observed noise produces an exact policy; a non-zero tolerance is never inferred from hypothetical future variance.
+
 ## Prepared candidate
 
 Read-only intake creates one Oracle-owned artifact containing:

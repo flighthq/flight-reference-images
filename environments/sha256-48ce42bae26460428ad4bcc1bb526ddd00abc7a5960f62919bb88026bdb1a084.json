@@ -1,0 +1,29 @@
+{
+  "$schema": "../schemas/environment.schema.json",
+  "browser": {
+    "name": "chromium",
+    "playwrightVersion": "1.61.0",
+    "revision": "chromium-1228",
+    "version": "149.0.7827.55"
+  },
+  "colorProfile": "unforced",
+  "devicePixelRatio": 1,
+  "execution": {
+    "architecture": "x86_64",
+    "kind": "native",
+    "maximumVectorIsa": "avx2"
+  },
+  "fonts": [],
+  "id": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
+  "locale": "C/POSIX",
+  "renderer": {
+    "arguments": ["--enable-unsafe-webgpu", "--use-webgpu-adapter=swiftshader"],
+    "implementation": "SwiftShader"
+  },
+  "schemaVersion": 1,
+  "timezone": "Etc/UTC",
+  "viewport": {
+    "height": 600,
+    "width": 800
+  }
+}
