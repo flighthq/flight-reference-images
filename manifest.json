@@ -1,8 +1,22 @@
 {
   "$schema": "./schemas/manifest.schema.json",
-  "schemaVersion": 1,
-  "releaseTag": null,
+  "packs": [
+    {
+      "file": "functional-shapes-oracle-shape-fill-solid-webgl-2026-08-14-09943d495bc9.tgz",
+      "id": "functional-shapes",
+      "imageCount": 1,
+      "sha256": "afc4373f5d106822b34b74fc1b6ae663a8dc3f5490b6edf656a2730e2464a75e",
+      "size": 7371
+    }
+  ],
   "parentReleaseTag": null,
-  "sourceRequests": [],
-  "packs": []
+  "releaseTag": "oracle-shape-fill-solid-webgl-2026-08-14-09943d495bc9",
+  "schemaVersion": 1,
+  "sourceRequests": [
+    {
+      "flightCommit": "9cffbdf4bb0c58199f3c1e6ec40c1211d35c6bc6",
+      "id": "shape-fill-solid-webgl-2026-08-14",
+      "requestSha256": "846b94c46ba4a4655d01732a618288450f26da058ab03d6cd0fc672b2f80b53b"
+    }
+  ]
 }

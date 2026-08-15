@@ -1,0 +1,19 @@
+{
+  "$schema": "../schemas/candidate-locator.schema.json",
+  "manifestSha256": "62d8cacba61569287988c7feedb3e2aa4bf280e39abb8b063b1728eafdd68ec9",
+  "preparedArtifact": {
+    "artifactId": 9240543070,
+    "digest": "sha256:8df815925b59b6c3a532d46e3113cde813df82951064f154146d6405e3af48e1",
+    "repository": "flighthq/flight-oracles",
+    "workflowRunId": 31860954195
+  },
+  "releaseTag": "oracle-shape-fill-solid-webgl-2026-08-14-09943d495bc9",
+  "requestId": "shape-fill-solid-webgl-2026-08-14",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9239900068,
+    "digest": "sha256:53d3cf445fdecfe2a801035c7a10203034a9495ad92193b5175fd9438e5fb1b8",
+    "repository": "flighthq/flight",
+    "workflowRunId": 31858859119
+  }
+}
