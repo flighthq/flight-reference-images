@@ -23,7 +23,8 @@ jobs:
       actions: write
       contents: read
     outputs:
-      artifact-digest: ${{ steps.upload.outputs.artifact-digest }}
+      # Match the algorithm-qualified digest returned by the Actions artifact API.
+      artifact-digest: sha256:${{ steps.upload.outputs.artifact-digest }}
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
       manifest-sha256: ${{ steps.bundle.outputs.manifest_sha256 }}
       release-tag: ${{ steps.locator.outputs.release_tag }}

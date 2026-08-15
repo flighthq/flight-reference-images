@@ -36,12 +36,22 @@ describe('GitHub Actions workflows', () => {
       }
     }
   });
+
+  it('qualifies upload-action digests before durable use or API comparison', async () => {
+    const intake = parse(await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8'));
+    const release = parse(await readFile(join('.github', 'workflows', 'release.yml'), 'utf8'));
+    const qualifiedDigest = 'sha256:${{ steps.upload.outputs.artifact-digest }}';
+
+    expect(job(intake, 'prepare').outputs?.['artifact-digest']).toBe(qualifiedDigest);
+    expect(job(release, 'rebuild').outputs?.['artifact-digest']).toBe(qualifiedDigest);
+  });
 });
 
 interface Workflow {
   jobs: Record<
     string,
     {
+      outputs?: Record<string, unknown>;
       permissions: Record<string, string>;
       steps?: { name?: string; uses?: string; with?: Record<string, unknown> }[];
     }

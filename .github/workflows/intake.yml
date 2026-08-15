@@ -40,7 +40,8 @@ jobs:
       actions: write
       contents: read
     outputs:
-      artifact-digest: ${{ steps.upload.outputs.artifact-digest }}
+      # upload-artifact emits bare hex, while the API and durable locator identify the algorithm.
+      artifact-digest: sha256:${{ steps.upload.outputs.artifact-digest }}
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
       report-id: ${{ steps.report.outputs.artifact-id }}
       request-id: ${{ steps.prepared.outputs.request_id }}
