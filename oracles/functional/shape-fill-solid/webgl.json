@@ -1,0 +1,30 @@
+{
+  "$schema": "../../../schemas/oracle-record.schema.json",
+  "artifactSha256": "a15e05665b950ebafa00ad2a68ddfc4f5b162abb266fdcd5c9d762714a2b5830",
+  "colorSpace": "srgb",
+  "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
+  "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
+  "flightCommit": "9cffbdf4bb0c58199f3c1e6ec40c1211d35c6bc6",
+  "height": 600,
+  "identity": {
+    "entry": "shape-fill-solid",
+    "renderer": "webgl",
+    "subject": "functional"
+  },
+  "pack": "functional-shapes",
+  "pixelFormat": "rgba8",
+  "pixelSha256": "9bc1f4942c55075e2ec292a567d87b4f9569674ec0d7dbad09acdebc6e46d22d",
+  "provenance": {
+    "frames": 1,
+    "sourceHash": "e63d6e0cf489b0d279dcd7523f1adc0e6407730fe469749a2caa4a85d31a0195",
+    "targetKind": "webgl",
+    "verifyPublished": true,
+    "warmupFrames": 0
+  },
+  "request": {
+    "id": "shape-fill-solid-webgl-2026-08-14",
+    "sha256": "846b94c46ba4a4655d01732a618288450f26da058ab03d6cd0fc672b2f80b53b"
+  },
+  "schemaVersion": 1,
+  "width": 800
+}
