@@ -1,6 +1,6 @@
-# flight-oracles
+# flight-reference-images
 
-`flight-oracles` is the durable store for Flight's blessed full-resolution render references. Git contains compact, reviewable JSON records; immutable GitHub releases contain the encoded PNG bytes in deterministic packs.
+`flight-reference-images` is the durable store for Flight's blessed full-resolution render references. Git contains compact, reviewable JSON records; immutable GitHub releases contain the encoded PNG bytes in deterministic packs.
 
 This repository implements the cross-repository contract proposed in Flight's [`agents/render-oracle-repository.md`](https://github.com/flighthq/flight/blob/develop/agents/render-oracle-repository.md): exact request binding, separate transport and pixel hashes, old/new/delta review, exact-byte promotion, and an immutable consumer lock.
 
