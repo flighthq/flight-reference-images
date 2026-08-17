@@ -13,7 +13,7 @@ import type { OracleManifest, OracleRecord } from '../src/types.js';
 let workspace = '';
 
 beforeEach(async () => {
-  workspace = await mkdtemp(join(tmpdir(), 'flight-oracles-pack-test-'));
+  workspace = await mkdtemp(join(tmpdir(), 'flight-reference-images-pack-test-'));
 });
 
 afterEach(async () => {

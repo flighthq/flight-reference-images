@@ -106,7 +106,7 @@ export async function applyPreparedIntake(options: Readonly<ApplyIntakeOptions>)
     preparedArtifact: {
       artifactId: options.artifactId,
       digest: options.artifactDigest,
-      repository: 'flighthq/flight-oracles',
+      repository: 'flighthq/flight-reference-images',
       workflowRunId: options.workflowRunId,
     },
     releaseTag: prepared.releaseTag,
@@ -198,7 +198,7 @@ async function produceIntake(
   const outputDirectory = resolve(options.outputDirectory);
   await createNewDirectory(outputDirectory);
 
-  const workspace = await mkdtemp(join(tmpdir(), 'flight-oracles-intake-'));
+  const workspace = await mkdtemp(join(tmpdir(), 'flight-reference-images-intake-'));
   try {
     const nonRegularEntries = await findNonRegularEntries(candidateDirectory);
     if (nonRegularEntries.length > 0) {

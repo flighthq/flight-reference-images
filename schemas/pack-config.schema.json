@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/flighthq/flight-oracles/schemas/pack-config.schema.json",
+  "$id": "https://github.com/flighthq/flight-reference-images/schemas/pack-config.schema.json",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "subjects"],

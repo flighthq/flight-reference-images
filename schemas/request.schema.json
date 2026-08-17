@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/flighthq/flight-oracles/schemas/request.schema.json",
+  "$id": "https://github.com/flighthq/flight-reference-images/schemas/request.schema.json",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "id", "subject", "targets", "frames", "reason"],

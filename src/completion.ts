@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import { hashFile, writeCanonicalJson } from './json.js';
 import { readRepository } from './repository.js';
 import { assertSchema } from './schemas.js';
-import type { OracleLock } from './types.js';
+import type { ReferenceImageLock } from './types.js';
 
 export interface CompleteFlightOptions {
   flightRoot: string;
@@ -13,7 +13,7 @@ export interface CompleteFlightOptions {
   requestId: string;
 }
 
-export async function completeFlight(options: Readonly<CompleteFlightOptions>): Promise<OracleLock> {
+export async function completeFlight(options: Readonly<CompleteFlightOptions>): Promise<ReferenceImageLock> {
   if (!/^[0-9a-f]{40}$/u.test(options.oracleCommit)) throw new Error('oracle commit must be a full 40-character SHA');
   const oracleRoot = resolve(options.oracleRoot);
   const flightRoot = resolve(options.flightRoot);
@@ -32,17 +32,18 @@ export async function completeFlight(options: Readonly<CompleteFlightOptions>): 
     throw new Error(`Flight request checksum is ${actualRequestSha256}, expected ${sourceRequest.requestSha256}`);
   }
 
-  const lock: OracleLock = {
-    $schema: 'https://raw.githubusercontent.com/flighthq/flight-oracles/main/schemas/oracle-lock.schema.json',
+  const lock: ReferenceImageLock = {
+    $schema:
+      'https://raw.githubusercontent.com/flighthq/flight-reference-images/main/schemas/reference-image-lock.schema.json',
     manifestSha256: await hashFile(join(oracleRoot, 'manifest.json')),
     oracleCommit: options.oracleCommit,
     packs: Object.fromEntries(state.manifest.packs.map((pack) => [pack.id, { file: pack.file, sha256: pack.sha256 }])),
     releaseTag: state.manifest.releaseTag,
-    repository: 'flighthq/flight-oracles',
+    repository: 'flighthq/flight-reference-images',
     schemaVersion: 1,
   };
-  assertSchema<OracleLock>('oracle-lock', lock);
-  await writeCanonicalJson(join(flightRoot, 'scripts', 'oracle-lock.json'), lock);
+  assertSchema<ReferenceImageLock>('reference-image-lock', lock);
+  await writeCanonicalJson(join(flightRoot, 'scripts', 'reference-image-lock.json'), lock);
   await unlink(requestPath);
   return lock;
 }

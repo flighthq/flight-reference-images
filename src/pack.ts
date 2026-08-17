@@ -101,7 +101,7 @@ export async function verifyReleasePacks(
   records: ReadonlyMap<string, OracleRecord>,
   packDirectory: string,
 ): Promise<void> {
-  const workspace = await mkdtemp(join(tmpdir(), 'flight-oracles-verify-'));
+  const workspace = await mkdtemp(join(tmpdir(), 'flight-reference-images-verify-'));
   try {
     await extractVerifiedReleasePacks(manifest, packDirectory, workspace);
     let comparisons = 0;
@@ -120,7 +120,7 @@ export async function verifyReleasePacks(
 }
 
 async function buildPack(pack: string, entries: readonly PackImageSource[], outputPath: string): Promise<void> {
-  const workspace = await mkdtemp(join(tmpdir(), `flight-oracles-${pack}-`));
+  const workspace = await mkdtemp(join(tmpdir(), `flight-reference-images-${pack}-`));
   try {
     const images: PackImage[] = [];
     const seen = new Set<string>();

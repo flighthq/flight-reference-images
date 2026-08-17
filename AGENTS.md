@@ -1,4 +1,4 @@
-# Flight Oracles agent map
+# Flight reference-images agent map
 
 Read [README.md](README.md) and [docs/contract.md](docs/contract.md) before changing schemas, intake, pack construction, or workflows.
 

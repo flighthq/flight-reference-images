@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/flighthq/flight-oracles/schemas/candidate-locator.schema.json",
+  "$id": "https://github.com/flighthq/flight-reference-images/schemas/candidate-locator.schema.json",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "requestId", "releaseTag", "manifestSha256", "sourceArtifact", "preparedArtifact"],

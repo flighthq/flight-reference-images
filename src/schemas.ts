@@ -10,7 +10,7 @@ export type SchemaName =
   | 'environment'
   | 'intake-policy'
   | 'manifest'
-  | 'oracle-lock'
+  | 'reference-image-lock'
   | 'oracle-record'
   | 'pack-manifest'
   | 'pack-config'
@@ -25,7 +25,7 @@ const schemaNames: readonly SchemaName[] = [
   'environment',
   'intake-policy',
   'manifest',
-  'oracle-lock',
+  'reference-image-lock',
   'oracle-record',
   'pack-manifest',
   'pack-config',

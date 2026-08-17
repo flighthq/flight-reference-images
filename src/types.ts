@@ -141,13 +141,13 @@ export interface OracleManifest {
   }>;
 }
 
-export interface OracleLock {
+export interface ReferenceImageLock {
   $schema?: string;
   manifestSha256: string;
   oracleCommit: string;
   packs: Record<string, { file: string; sha256: string }>;
   releaseTag: string;
-  repository: 'flighthq/flight-oracles';
+  repository: 'flighthq/flight-reference-images';
   schemaVersion: 1;
 }
 

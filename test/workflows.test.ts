@@ -45,6 +45,16 @@ describe('GitHub Actions workflows', () => {
     expect(job(intake, 'prepare').outputs?.['artifact-digest']).toBe(qualifiedDigest);
     expect(job(release, 'rebuild').outputs?.['artifact-digest']).toBe(qualifiedDigest);
   });
+
+  it('targets the renamed repository and Flight lock path', async () => {
+    const intakeText = await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8');
+    const releaseText = await readFile(join('.github', 'workflows', 'release.yml'), 'utf8');
+
+    expect(intakeText).toContain('repositories: flight-reference-images');
+    expect(releaseText).toContain('scripts/reference-image-lock.json');
+    expect(`${intakeText}\n${releaseText}`).not.toContain('flight-oracles');
+    expect(releaseText).not.toContain('scripts/oracle-lock.json');
+  });
 });
 
 interface Workflow {

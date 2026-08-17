@@ -23,7 +23,7 @@ import type {
 let workspace = '';
 
 beforeEach(async () => {
-  workspace = await mkdtemp(join(tmpdir(), 'flight-oracles-intake-test-'));
+  workspace = await mkdtemp(join(tmpdir(), 'flight-reference-images-intake-test-'));
 });
 
 afterEach(async () => {
@@ -79,6 +79,10 @@ describe('prepareIntake', () => {
     });
     expect(lock.releaseTag).toBe(prepared.releaseTag);
     expect(lock.packs['functional-shapes']?.sha256).toBe(prepared.packs[0]?.sha256);
+    await expect(readFile(join(flightRoot, 'scripts', 'reference-image-lock.json'), 'utf8')).resolves.toBe(
+      canonicalJson(lock),
+    );
+    await expect(readFile(join(flightRoot, 'scripts', 'oracle-lock.json'), 'utf8')).rejects.toThrow();
     await expect(readFile(join(flightRoot, 'oracle-requests', 'shape-basic-webgl-2026-08-14.json'))).rejects.toThrow();
   });
 

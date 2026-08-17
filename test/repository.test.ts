@@ -11,7 +11,7 @@ import type { EnvironmentDescriptor, OracleManifest, PackConfiguration } from '.
 let root = '';
 
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), 'flight-oracles-repository-test-'));
+  root = await mkdtemp(join(tmpdir(), 'flight-reference-images-repository-test-'));
   for (const directory of ['candidates', 'comparison-policies', 'environments', 'oracles']) {
     await mkdir(join(root, directory));
   }

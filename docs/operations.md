@@ -2,14 +2,14 @@
 
 ## Repository settings
 
-Create a GitHub App installed on `flighthq/flight` and `flighthq/flight-oracles`, then configure these Actions secrets:
+Create a GitHub App installed on `flighthq/flight` and `flighthq/flight-reference-images`, then configure these Actions secrets:
 
 - `ORACLE_APP_ID`
 - `ORACLE_APP_PRIVATE_KEY`
 
-The app needs Actions read and Contents read on Flight for intake. The PR writer requests Contents write and Pull requests write only for `flight-oracles`; the completion job requests those write permissions only for Flight. Keep approval for elevated installation permissions enabled at the organization level.
+The app needs Actions read and Contents read on Flight for intake. The PR writer requests Contents write and Pull requests write only for `flight-reference-images`; the completion job requests those write permissions only for Flight. Keep approval for elevated installation permissions enabled at the organization level.
 
-`FLIGHT_BASE_BRANCH` is an optional repository variable used by completion. It defaults to `develop`, matching the branch that currently carries Flight's oracle contract.
+`FLIGHT_BASE_BRANCH` is an optional repository variable used by completion. It defaults to `develop`, matching the branch that currently carries Flight's reference-image contract.
 
 Protect `main` with the `Quality and repository integrity` and `Replay reviewed candidate` checks and require human review for oracle approval PRs. Do not grant Actions permission to bypass that protection.
 

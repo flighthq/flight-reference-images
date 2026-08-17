@@ -1,4 +1,4 @@
-# Flight ↔ flight-oracles contract
+# Flight ↔ flight-reference-images contract
 
 ## Flight request
 
@@ -72,11 +72,11 @@ report/                    report.json, index.html, old/new/delta images
 
 PR CI downloads the locator's immutable artifact, verifies its GitHub digest, downloads the prior release, reconstructs every complete pack from the staged candidate, and requires the result to equal both the PR metadata and committed manifest.
 
-## Release and Flight lock
+## Release and Flight reference-image lock
 
 After approval, release automation repeats reconstruction from candidate bytes and the prior complete release. A separate contents-write job verifies the resulting fixed manifest and pack SHA-256 values, refuses an existing tag, and publishes the files without decoding images.
 
-The completion job writes Flight's [`oracle-lock.schema.json`](../schemas/oracle-lock.schema.json) shape and removes the fulfilled request in the same PR. Required `referenceImage` coverage stays in Flight throughout.
+The completion job writes Flight's [`reference-image-lock.schema.json`](../schemas/reference-image-lock.schema.json) shape to `scripts/reference-image-lock.json` and removes the fulfilled request in the same PR. Required `referenceImage` coverage stays in Flight throughout.
 
 Flight resolves each required identity with these states:
 

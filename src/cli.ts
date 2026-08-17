@@ -25,7 +25,7 @@ async function main(): Promise<void> {
   if (command === 'packs-download') {
     const root = resolve(option(arguments_, '--root') ?? '.');
     const output = resolve(requiredOption(arguments_, '--output'));
-    const repository = option(arguments_, '--repository') ?? 'flighthq/flight-oracles';
+    const repository = option(arguments_, '--repository') ?? 'flighthq/flight-reference-images';
     const manifestPath = option(arguments_, '--manifest');
     let manifest: OracleManifest;
     if (manifestPath === undefined) manifest = (await readRepository(root)).manifest;
@@ -141,6 +141,6 @@ function option(arguments_: readonly string[], name: string): string | undefined
 }
 
 main().catch((error: unknown) => {
-  console.error(`flight-oracles: ${errorMessage(error)}`);
+  console.error(`flight-reference-images: ${errorMessage(error)}`);
   process.exitCode = 1;
 });
