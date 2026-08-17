@@ -4,7 +4,7 @@
   "preparedArtifact": {
     "artifactId": 9240543070,
     "digest": "sha256:8df815925b59b6c3a532d46e3113cde813df82951064f154146d6405e3af48e1",
-    "repository": "flighthq/flight-oracles",
+    "repository": "flighthq/flight-reference-images",
     "workflowRunId": 31860954195
   },
   "releaseTag": "oracle-shape-fill-solid-webgl-2026-08-14-09943d495bc9",

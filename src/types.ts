@@ -145,10 +145,17 @@ export interface ReferenceImageLock {
   $schema?: string;
   manifestSha256: string;
   oracleCommit: string;
-  packs: Record<string, { file: string; sha256: string }>;
+  packs: Record<
+    string,
+    {
+      file: string;
+      images: Record<string, { pixelSha256: string }>;
+      sha256: string;
+    }
+  >;
   releaseTag: string;
   repository: 'flighthq/flight-reference-images';
-  schemaVersion: 1;
+  schemaVersion: 2;
 }
 
 export interface PackImage {

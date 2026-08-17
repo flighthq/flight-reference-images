@@ -2,6 +2,7 @@ import { unlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
 import { hashFile, writeCanonicalJson } from './json.js';
+import { identityKey } from './paths.js';
 import { readRepository } from './repository.js';
 import { assertSchema } from './schemas.js';
 import type { ReferenceImageLock } from './types.js';
@@ -37,10 +38,23 @@ export async function completeFlight(options: Readonly<CompleteFlightOptions>): 
       'https://raw.githubusercontent.com/flighthq/flight-reference-images/main/schemas/reference-image-lock.schema.json',
     manifestSha256: await hashFile(join(oracleRoot, 'manifest.json')),
     oracleCommit: options.oracleCommit,
-    packs: Object.fromEntries(state.manifest.packs.map((pack) => [pack.id, { file: pack.file, sha256: pack.sha256 }])),
+    packs: Object.fromEntries(
+      state.manifest.packs.map((pack) => [
+        pack.id,
+        {
+          file: pack.file,
+          images: Object.fromEntries(
+            [...state.records.values()]
+              .filter((record) => record.pack === pack.id)
+              .map((record) => [identityKey(record.identity), { pixelSha256: record.pixelSha256 }]),
+          ),
+          sha256: pack.sha256,
+        },
+      ]),
+    ),
     releaseTag: state.manifest.releaseTag,
     repository: 'flighthq/flight-reference-images',
-    schemaVersion: 1,
+    schemaVersion: 2,
   };
   assertSchema<ReferenceImageLock>('reference-image-lock', lock);
   await writeCanonicalJson(join(flightRoot, 'scripts', 'reference-image-lock.json'), lock);

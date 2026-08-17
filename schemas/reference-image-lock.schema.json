@@ -6,7 +6,7 @@
   "required": ["schemaVersion", "repository", "oracleCommit", "releaseTag", "manifestSha256", "packs"],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": { "const": 2 },
     "repository": { "const": "flighthq/flight-reference-images" },
     "oracleCommit": { "$ref": "common.schema.json#/$defs/gitCommit" },
     "releaseTag": { "type": "string", "pattern": "^oracle-[a-z0-9][a-z0-9-]*-[0-9a-f]{12}$" },
@@ -17,9 +17,24 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["file", "sha256"],
+        "required": ["file", "images", "sha256"],
         "properties": {
           "file": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*-oracle-.+\\.tgz$" },
+          "images": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {
+              "pattern": "^[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["pixelSha256"],
+              "properties": {
+                "pixelSha256": { "$ref": "common.schema.json#/$defs/sha256" }
+              }
+            }
+          },
           "sha256": { "$ref": "common.schema.json#/$defs/sha256" }
         }
       }

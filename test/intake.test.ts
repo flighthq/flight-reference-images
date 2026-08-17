@@ -58,6 +58,8 @@ describe('prepareIntake', () => {
     const repository = await readRepository(fixture.repositoryRoot);
     expect(repository.records.size).toBe(1);
     expect(repository.manifest.packs[0]?.imageCount).toBe(1);
+    const record = repository.records.get('oracles/functional/shape-basic/webgl.json');
+    expect(record).toBeDefined();
 
     const replay = await replayPreparedIntake({
       outputDirectory: join(workspace, 'replay'),
@@ -77,8 +79,12 @@ describe('prepareIntake', () => {
       oracleRoot: fixture.repositoryRoot,
       requestId: 'shape-basic-webgl-2026-08-14',
     });
+    expect(lock.schemaVersion).toBe(2);
     expect(lock.releaseTag).toBe(prepared.releaseTag);
     expect(lock.packs['functional-shapes']?.sha256).toBe(prepared.packs[0]?.sha256);
+    expect(lock.packs['functional-shapes']?.images).toEqual({
+      'functional/shape-basic/webgl': { pixelSha256: record?.pixelSha256 },
+    });
     await expect(readFile(join(flightRoot, 'scripts', 'reference-image-lock.json'), 'utf8')).resolves.toBe(
       canonicalJson(lock),
     );
