@@ -2,29 +2,29 @@
   "$schema": "./schemas/manifest.schema.json",
   "packs": [
     {
-      "file": "functional-images-oracle-64a1b44f-8b0b-48bd-b47a-cf5caea2635e-1501798a54e7.tgz",
+      "file": "functional-images-oracle-38b2f8d9-0f18-49d9-8da0-f58cb7bf3855-c0756162049b.tgz",
       "id": "functional-images",
       "imageCount": 7,
       "sha256": "eb1591ad481f0359886c2af37b94a8b318439d9ab150fb0ea74bcc83c059e86e",
       "size": 21054
     },
     {
-      "file": "functional-other-oracle-64a1b44f-8b0b-48bd-b47a-cf5caea2635e-1501798a54e7.tgz",
+      "file": "functional-other-oracle-38b2f8d9-0f18-49d9-8da0-f58cb7bf3855-c0756162049b.tgz",
       "id": "functional-other",
-      "imageCount": 1,
-      "sha256": "cfa4a964006c580c59e6fc924df687459f24ff234cb3882783a9468a8e8c397d",
-      "size": 11426
+      "imageCount": 3,
+      "sha256": "750e09815a93c6335093a1a522b495dac68a75f50cef09241550ea1a80e6e9e4",
+      "size": 24185
     },
     {
-      "file": "functional-shapes-oracle-64a1b44f-8b0b-48bd-b47a-cf5caea2635e-1501798a54e7.tgz",
+      "file": "functional-shapes-oracle-38b2f8d9-0f18-49d9-8da0-f58cb7bf3855-c0756162049b.tgz",
       "id": "functional-shapes",
       "imageCount": 1,
       "sha256": "afc4373f5d106822b34b74fc1b6ae663a8dc3f5490b6edf656a2730e2464a75e",
       "size": 7371
     }
   ],
-  "parentReleaseTag": "oracle-e187349c-c08e-49dc-b4fe-ac24e9f97237-3e09c93f6cf8",
-  "releaseTag": "oracle-64a1b44f-8b0b-48bd-b47a-cf5caea2635e-1501798a54e7",
+  "parentReleaseTag": "oracle-64a1b44f-8b0b-48bd-b47a-cf5caea2635e-1501798a54e7",
+  "releaseTag": "oracle-38b2f8d9-0f18-49d9-8da0-f58cb7bf3855-c0756162049b",
   "schemaVersion": 1,
   "sourceRequests": [
     {
@@ -46,6 +46,11 @@
       "flightCommit": "ef8547e4f1d53ec2c0a70c3df10b9406d13096f9",
       "id": "64a1b44f-8b0b-48bd-b47a-cf5caea2635e",
       "requestSha256": "db067cee19629303676c34fc8f61b92ba01f70d5fc8dd8a1cd6b1f07c0bded9d"
+    },
+    {
+      "flightCommit": "ef8547e4f1d53ec2c0a70c3df10b9406d13096f9",
+      "id": "38b2f8d9-0f18-49d9-8da0-f58cb7bf3855",
+      "requestSha256": "e2dcbb6c21ea221aeb44aac0e55eca3f74abae21ec8f21aba3c58cb5f933bb0d"
     }
   ]
 }
