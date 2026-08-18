@@ -21,7 +21,7 @@ Flight sends a `repository_dispatch` event of type `flight-reference-image-candi
 {
   "repository": "flighthq/flight",
   "flightCommit": "<40-hex landed commit>",
-  "requestPath": "oracle-requests/<id>.json",
+  "requestPath": "reference-image-requests/<id>.json",
   "requestSha256": "<64-hex>",
   "artifactId": 123,
   "workflowRunId": 456,

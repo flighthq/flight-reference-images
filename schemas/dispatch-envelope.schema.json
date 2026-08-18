@@ -19,7 +19,7 @@
     "flightCommit": { "$ref": "common.schema.json#/$defs/gitCommit" },
     "requestPath": {
       "type": "string",
-      "pattern": "^oracle-requests/[a-z0-9][a-z0-9-]*\\.json$"
+      "pattern": "^reference-image-requests/[a-z0-9][a-z0-9-]*\\.json$"
     },
     "requestSha256": { "$ref": "common.schema.json#/$defs/sha256" },
     "artifactId": { "type": "integer", "minimum": 1 },

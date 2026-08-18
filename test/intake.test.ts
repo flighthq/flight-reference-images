@@ -70,9 +70,12 @@ describe('prepareIntake', () => {
     expect(replay).toEqual(prepared);
 
     const flightRoot = join(workspace, 'flight');
-    await mkdir(join(flightRoot, 'oracle-requests'), { recursive: true });
+    await mkdir(join(flightRoot, 'reference-image-requests'), { recursive: true });
     await mkdir(join(flightRoot, 'scripts'), { recursive: true });
-    await copyFile(fixture.requestPath, join(flightRoot, 'oracle-requests', 'shape-basic-webgl-2026-08-14.json'));
+    await copyFile(
+      fixture.requestPath,
+      join(flightRoot, 'reference-image-requests', 'shape-basic-webgl-2026-08-14.json'),
+    );
     const lock = await completeFlight({
       flightRoot,
       oracleCommit: '8'.repeat(40),
@@ -89,7 +92,9 @@ describe('prepareIntake', () => {
       canonicalJson(lock),
     );
     await expect(readFile(join(flightRoot, 'scripts', 'oracle-lock.json'), 'utf8')).rejects.toThrow();
-    await expect(readFile(join(flightRoot, 'oracle-requests', 'shape-basic-webgl-2026-08-14.json'))).rejects.toThrow();
+    await expect(
+      readFile(join(flightRoot, 'reference-image-requests', 'shape-basic-webgl-2026-08-14.json')),
+    ).rejects.toThrow();
   });
 
   it('lists a failed requested capture and refuses to construct a release', async () => {
@@ -222,15 +227,15 @@ describe('prepareIntake', () => {
 
 describe('assertRequestFreshness', () => {
   it('fires when an outstanding request exceeds the bounded pending window', () => {
-    const envelope = {
+    const envelope: DispatchEnvelope = {
       artifactDigest: `sha256:${'1'.repeat(64)}`,
       artifactId: 1,
       flightCommit: '2'.repeat(40),
       flightCommittedAt: '2026-07-01T00:00:00Z',
-      repository: 'flighthq/flight' as const,
-      requestPath: 'oracle-requests/expired.json',
+      repository: 'flighthq/flight',
+      requestPath: 'reference-image-requests/expired.json',
       requestSha256: '3'.repeat(64),
-      schemaVersion: 1 as const,
+      schemaVersion: 1,
       workflowRunId: 1,
     };
     expect(() => assertRequestFreshness(envelope, intakePolicy(), new Date('2026-08-14T00:00:00Z'))).toThrow(
@@ -245,7 +250,7 @@ describe('assertRequestFreshness', () => {
       flightCommit: '2'.repeat(40),
       flightCommittedAt: '2026-08-14T00:10:01Z',
       repository: 'flighthq/flight',
-      requestPath: 'oracle-requests/future.json',
+      requestPath: 'reference-image-requests/future.json',
       requestSha256: '3'.repeat(64),
       schemaVersion: 1,
       workflowRunId: 1,
@@ -294,9 +299,9 @@ describe('completeFlight', () => {
     const fixture = await makeFixture('captured');
     await installFirstRelease(fixture, join(workspace, 'moved-request-prepared'));
     const flightRoot = join(workspace, 'moved-request-flight');
-    await mkdir(join(flightRoot, 'oracle-requests'), { recursive: true });
+    await mkdir(join(flightRoot, 'reference-image-requests'), { recursive: true });
     await mkdir(join(flightRoot, 'scripts'), { recursive: true });
-    await writeCanonicalJson(join(flightRoot, 'oracle-requests', `${fixture.request.id}.json`), {
+    await writeCanonicalJson(join(flightRoot, 'reference-image-requests', `${fixture.request.id}.json`), {
       ...fixture.request,
       reason: 'changed after capture',
     });
@@ -309,7 +314,9 @@ describe('completeFlight', () => {
         requestId: fixture.request.id,
       }),
     ).rejects.toThrow('Flight request checksum is');
-    await expect(readFile(join(flightRoot, 'oracle-requests', `${fixture.request.id}.json`))).resolves.toBeDefined();
+    await expect(
+      readFile(join(flightRoot, 'reference-image-requests', `${fixture.request.id}.json`)),
+    ).resolves.toBeDefined();
   });
 });
 
@@ -394,7 +401,7 @@ async function makeFixture(status: 'captured' | 'missing'): Promise<Fixture> {
     flightCommit: '6'.repeat(40),
     flightCommittedAt: new Date().toISOString(),
     repository: 'flighthq/flight',
-    requestPath: `oracle-requests/${request.id}.json`,
+    requestPath: `reference-image-requests/${request.id}.json`,
     requestSha256: await hashFile(requestPath),
     schemaVersion: 1,
     workflowRunId: 200,
@@ -465,7 +472,7 @@ async function installFirstRelease(fixture: Readonly<Fixture>, preparedDirectory
 
 async function writeRequestAndEnvelope(fixture: Fixture): Promise<void> {
   await writeCanonicalJson(fixture.requestPath, fixture.request);
-  fixture.envelope.requestPath = `oracle-requests/${fixture.request.id}.json`;
+  fixture.envelope.requestPath = `reference-image-requests/${fixture.request.id}.json`;
   fixture.envelope.requestSha256 = await hashFile(fixture.requestPath);
   await writeCanonicalJson(fixture.envelopePath, fixture.envelope);
 }

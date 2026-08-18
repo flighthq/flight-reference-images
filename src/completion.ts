@@ -27,7 +27,7 @@ export async function completeFlight(options: Readonly<CompleteFlightOptions>): 
     throw new Error(`current release has no matching reviewed candidate locator for ${options.requestId}`);
   }
 
-  const requestPath = join(flightRoot, 'oracle-requests', `${options.requestId}.json`);
+  const requestPath = join(flightRoot, 'reference-image-requests', `${options.requestId}.json`);
   const actualRequestSha256 = await hashFile(requestPath);
   if (actualRequestSha256 !== sourceRequest.requestSha256) {
     throw new Error(`Flight request checksum is ${actualRequestSha256}, expected ${sourceRequest.requestSha256}`);

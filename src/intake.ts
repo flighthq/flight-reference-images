@@ -422,7 +422,7 @@ async function validateBindings(
   if ((await hashFile(resolve(requestPath))) !== envelope.requestSha256) {
     throw new Error(`request checksum does not match dispatch envelope`);
   }
-  if (envelope.requestPath !== `oracle-requests/${request.id}.json`) {
+  if (envelope.requestPath !== `reference-image-requests/${request.id}.json`) {
     throw new Error(`dispatch request path ${envelope.requestPath} does not match request id ${request.id}`);
   }
   if (candidate.requestId !== request.id)

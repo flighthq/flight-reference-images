@@ -227,7 +227,7 @@ jobs:
           git switch -c "${branch}"
           git config user.name 'flight-reference-images[bot]'
           git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
-          git add scripts/reference-image-lock.json "oracle-requests/${REQUEST_ID}.json"
+          git add scripts/reference-image-lock.json "reference-image-requests/${REQUEST_ID}.json"
           git -c core.hooksPath=/dev/null commit -m "chore(reference-images): lock ${RELEASE_TAG}"
           git push origin "${branch}"
           gh pr create \

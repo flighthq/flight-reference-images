@@ -2,7 +2,7 @@
 
 ## Flight request
 
-Flight commits `oracle-requests/<id>.json`, validated by [`request.schema.json`](../schemas/request.schema.json). The Cartesian product of `targets[].entry` and `targets[].renderers` is exact: duplicate cells fail, every cell must appear in the candidate, and no extra cell is accepted.
+Flight commits `reference-image-requests/<id>.json`, validated by [`request.schema.json`](../schemas/request.schema.json). The Cartesian product of `targets[].entry` and `targets[].renderers` is exact: duplicate cells fail, every cell must appear in the candidate, and no extra cell is accepted.
 
 ```json
 {

@@ -63,7 +63,7 @@ export interface DispatchEnvelope {
   flightCommit: string;
   flightCommittedAt?: string;
   repository: 'flighthq/flight';
-  requestPath: string;
+  requestPath: `reference-image-requests/${string}.json`;
   requestSha256: string;
   schemaVersion: 1;
   workflowRunId: number;
