@@ -2,29 +2,29 @@
   "$schema": "./schemas/manifest.schema.json",
   "packs": [
     {
-      "file": "functional-images-oracle-38b2f8d9-0f18-49d9-8da0-f58cb7bf3855-c0756162049b.tgz",
+      "file": "functional-images-oracle-8f48d909-c7e1-4fee-9004-fe4cc2fbc5c8-8f6b7456add0.tgz",
       "id": "functional-images",
-      "imageCount": 7,
-      "sha256": "eb1591ad481f0359886c2af37b94a8b318439d9ab150fb0ea74bcc83c059e86e",
-      "size": 21054
+      "imageCount": 11,
+      "sha256": "81ccd8a96e9077b216fe73711e9837b55caf92115a7d3286e09cb41dd512fd11",
+      "size": 27408
     },
     {
-      "file": "functional-other-oracle-38b2f8d9-0f18-49d9-8da0-f58cb7bf3855-c0756162049b.tgz",
+      "file": "functional-other-oracle-8f48d909-c7e1-4fee-9004-fe4cc2fbc5c8-8f6b7456add0.tgz",
       "id": "functional-other",
       "imageCount": 3,
       "sha256": "750e09815a93c6335093a1a522b495dac68a75f50cef09241550ea1a80e6e9e4",
       "size": 24185
     },
     {
-      "file": "functional-shapes-oracle-38b2f8d9-0f18-49d9-8da0-f58cb7bf3855-c0756162049b.tgz",
+      "file": "functional-shapes-oracle-8f48d909-c7e1-4fee-9004-fe4cc2fbc5c8-8f6b7456add0.tgz",
       "id": "functional-shapes",
       "imageCount": 1,
       "sha256": "afc4373f5d106822b34b74fc1b6ae663a8dc3f5490b6edf656a2730e2464a75e",
       "size": 7371
     }
   ],
-  "parentReleaseTag": "oracle-64a1b44f-8b0b-48bd-b47a-cf5caea2635e-1501798a54e7",
-  "releaseTag": "oracle-38b2f8d9-0f18-49d9-8da0-f58cb7bf3855-c0756162049b",
+  "parentReleaseTag": "oracle-38b2f8d9-0f18-49d9-8da0-f58cb7bf3855-c0756162049b",
+  "releaseTag": "oracle-8f48d909-c7e1-4fee-9004-fe4cc2fbc5c8-8f6b7456add0",
   "schemaVersion": 1,
   "sourceRequests": [
     {
@@ -51,6 +51,11 @@
       "flightCommit": "ef8547e4f1d53ec2c0a70c3df10b9406d13096f9",
       "id": "38b2f8d9-0f18-49d9-8da0-f58cb7bf3855",
       "requestSha256": "e2dcbb6c21ea221aeb44aac0e55eca3f74abae21ec8f21aba3c58cb5f933bb0d"
+    },
+    {
+      "flightCommit": "66c9814f2387abf7cef7a334a4edf573110aadb8",
+      "id": "8f48d909-c7e1-4fee-9004-fe4cc2fbc5c8",
+      "requestSha256": "078c79cc33d85ce38ac5d4763bb0483042ab435e4e16c9b59aa481f44aefd7a8"
     }
   ]
 }

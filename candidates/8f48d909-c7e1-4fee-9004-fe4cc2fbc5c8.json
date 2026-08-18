@@ -1,0 +1,19 @@
+{
+  "$schema": "../schemas/candidate-locator.schema.json",
+  "manifestSha256": "14220816c0098397c9a6a5ee643baa1d727c71094aaf411718d69b25f03842a5",
+  "preparedArtifact": {
+    "artifactId": 9346214001,
+    "digest": "sha256:fe082ea6236ac645418caf2e8132adfca3a5af468448605e20a22811a0093aa4",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32196997733
+  },
+  "releaseTag": "oracle-8f48d909-c7e1-4fee-9004-fe4cc2fbc5c8-8f6b7456add0",
+  "requestId": "8f48d909-c7e1-4fee-9004-fe4cc2fbc5c8",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9346165052,
+    "digest": "sha256:64b123e7bcb971a2a3281e8efecabf2d28a38456be14f8f8bea39c55b6d9fcb0",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32196779424
+  }
+}
