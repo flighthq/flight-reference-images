@@ -2,21 +2,33 @@
   "$schema": "./schemas/manifest.schema.json",
   "packs": [
     {
-      "file": "functional-shapes-oracle-shape-fill-solid-webgl-2026-08-14-09943d495bc9.tgz",
+      "file": "functional-other-oracle-f7499a91-7498-469c-9e40-50abb8969433-a60edf574118.tgz",
+      "id": "functional-other",
+      "imageCount": 1,
+      "sha256": "cfa4a964006c580c59e6fc924df687459f24ff234cb3882783a9468a8e8c397d",
+      "size": 11426
+    },
+    {
+      "file": "functional-shapes-oracle-f7499a91-7498-469c-9e40-50abb8969433-a60edf574118.tgz",
       "id": "functional-shapes",
       "imageCount": 1,
       "sha256": "afc4373f5d106822b34b74fc1b6ae663a8dc3f5490b6edf656a2730e2464a75e",
       "size": 7371
     }
   ],
-  "parentReleaseTag": null,
-  "releaseTag": "oracle-shape-fill-solid-webgl-2026-08-14-09943d495bc9",
+  "parentReleaseTag": "oracle-shape-fill-solid-webgl-2026-08-14-09943d495bc9",
+  "releaseTag": "oracle-f7499a91-7498-469c-9e40-50abb8969433-a60edf574118",
   "schemaVersion": 1,
   "sourceRequests": [
     {
       "flightCommit": "9cffbdf4bb0c58199f3c1e6ec40c1211d35c6bc6",
       "id": "shape-fill-solid-webgl-2026-08-14",
       "requestSha256": "846b94c46ba4a4655d01732a618288450f26da058ab03d6cd0fc672b2f80b53b"
+    },
+    {
+      "flightCommit": "ef8547e4f1d53ec2c0a70c3df10b9406d13096f9",
+      "id": "f7499a91-7498-469c-9e40-50abb8969433",
+      "requestSha256": "6d8db9f438734907ab4f812292bf7918208334f4fd50e897d151a0693969e3e8"
     }
   ]
 }
