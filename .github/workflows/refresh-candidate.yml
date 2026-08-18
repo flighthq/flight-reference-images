@@ -33,6 +33,7 @@ jobs:
       release-tag: ${{ steps.prepared.outputs.release_tag }}
       report-id: ${{ steps.report.outputs.artifact-id }}
       request-id: ${{ steps.prepared.outputs.request_id }}
+      request-label: ${{ steps.prepared.outputs.request_label }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -159,6 +160,8 @@ jobs:
           EXPECTED_RELEASE_TAG: ${{ steps.locator.outputs.release_tag }}
           EXPECTED_REQUEST_ID: ${{ steps.locator.outputs.request_id }}
         run: |
+          request_label=$(npm run --silent approval:label -- --request .artifacts/prepared/request.json)
+          echo "request_label=${request_label}" >> "${GITHUB_OUTPUT}"
           node --input-type=module <<'NODE'
           import { appendFileSync, readFileSync } from 'node:fs';
 
@@ -190,6 +193,19 @@ jobs:
           path: .artifacts/prepared/report
           if-no-files-found: error
           retention-days: 30
+      - name: Summarize refreshed candidate for approval
+        env:
+          RELEASE_TAG: ${{ steps.prepared.outputs.release_tag }}
+          REPORT_ID: ${{ steps.report.outputs.artifact-id }}
+        run: |
+          report_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${REPORT_ID}"
+          npm run --silent approval:summary -- \
+            --request .artifacts/prepared/request.json \
+            --release-tag "${RELEASE_TAG}" \
+            --report-url "${report_url}" \
+            --output .artifacts/approval-summary.md \
+            > /dev/null
+          cat .artifacts/approval-summary.md >> "${GITHUB_STEP_SUMMARY}"
 
   update-pr:
     name: Replace stale PR metadata without processing candidate images
@@ -230,15 +246,27 @@ jobs:
           npm run intake:apply -- --prepared .artifacts/prepared --artifact-id ${{ needs.prepare.outputs.artifact-id }} --artifact-digest ${{ needs.prepare.outputs.artifact-digest }} --workflow-run-id ${{ github.run_id }}
 
 
+      - name: Build refreshed approval PR summary
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release-tag }}
+          REPORT_ID: ${{ needs.prepare.outputs.report-id }}
+        run: |
+          report_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${REPORT_ID}"
+          npm run --silent approval:summary -- \
+            --request .artifacts/prepared/request.json \
+            --release-tag "${RELEASE_TAG}" \
+            --report-url "${report_url}" \
+            --output .artifacts/pr-body.md \
+            > /dev/null
+
       - name: Replace the existing approval PR branch
         env:
           EXPECTED_HEAD_SHA: ${{ needs.prepare.outputs.head-sha }}
           GH_TOKEN: ${{ steps.oracle-token.outputs.token }}
           HEAD_REF: ${{ needs.prepare.outputs.head-ref }}
           PR_NUMBER: ${{ inputs.pull_request }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.release-tag }}
-          REPORT_ID: ${{ needs.prepare.outputs.report-id }}
           REQUEST_ID: ${{ needs.prepare.outputs.request-id }}
+          REQUEST_LABEL: ${{ needs.prepare.outputs.request-label }}
         run: |
           mapfile -t pull_fields < <(
             gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '[.state, .base.ref, .head.ref, .head.sha, .draft] | .[]'
@@ -259,16 +287,10 @@ jobs:
           git push \
             --force-with-lease="refs/heads/${HEAD_REF}:${EXPECTED_HEAD_SHA}" \
             origin "HEAD:refs/heads/${HEAD_REF}"
-
-          report_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${REPORT_ID}"
-          printf '%s\n' \
-            "Blesses request \`${REQUEST_ID}\` into immutable release \`${RELEASE_TAG}\`." \
-            '' \
-            "Refreshed against current \`main\`. Review artifact: ${report_url}" \
-            '' \
-            'Merging this PR is the approval. Release automation promotes the exact staged bytes; it never recaptures.' \
-            > .artifacts/pr-body.md
-          gh pr edit "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body-file .artifacts/pr-body.md
+          gh pr edit "${PR_NUMBER}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "feat(oracles): bless ${REQUEST_LABEL}" \
+            --body-file .artifacts/pr-body.md
           if [ "${pull_fields[4]}" = 'true' ]; then
             gh pr ready "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}"
           fi

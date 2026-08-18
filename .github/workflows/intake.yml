@@ -46,6 +46,7 @@ jobs:
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
       report-id: ${{ steps.report.outputs.artifact-id }}
       request-id: ${{ steps.prepared.outputs.request_id }}
+      request-label: ${{ steps.prepared.outputs.request_label }}
       release-tag: ${{ steps.prepared.outputs.release_tag }}
     env:
       SOURCE_REPOSITORY: ${{ github.event.client_payload.repository || inputs.repository }}
@@ -166,6 +167,8 @@ jobs:
       - name: Read prepared identity
         id: prepared
         run: |
+          request_label=$(npm run --silent approval:label -- --request .artifacts/prepared/request.json)
+          echo "request_label=${request_label}" >> "${GITHUB_OUTPUT}"
           node --input-type=module <<'NODE'
           import { appendFileSync, readFileSync } from 'node:fs';
           const prepared = JSON.parse(readFileSync('.artifacts/prepared/prepared-intake.json', 'utf8'));
@@ -189,6 +192,19 @@ jobs:
           path: .artifacts/prepared/report
           if-no-files-found: error
           retention-days: 30
+      - name: Summarize candidate for approval
+        env:
+          RELEASE_TAG: ${{ steps.prepared.outputs.release_tag }}
+          REPORT_ID: ${{ steps.report.outputs.artifact-id }}
+        run: |
+          report_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${REPORT_ID}"
+          npm run --silent approval:summary -- \
+            --request .artifacts/prepared/request.json \
+            --release-tag "${RELEASE_TAG}" \
+            --report-url "${report_url}" \
+            --output .artifacts/approval-summary.md \
+            > /dev/null
+          cat .artifacts/approval-summary.md >> "${GITHUB_STEP_SUMMARY}"
 
   open-pr:
     name: Write allowlisted metadata and open approval PR
@@ -231,12 +247,24 @@ jobs:
           npm run intake:apply -- --prepared .artifacts/prepared --artifact-id ${{ needs.prepare.outputs.artifact-id }} --artifact-digest ${{ needs.prepare.outputs.artifact-digest }} --workflow-run-id ${{ github.run_id }}
 
 
+      - name: Build approval PR summary
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release-tag }}
+          REPORT_ID: ${{ needs.prepare.outputs.report-id }}
+        run: |
+          report_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${REPORT_ID}"
+          npm run --silent approval:summary -- \
+            --request .artifacts/prepared/request.json \
+            --release-tag "${RELEASE_TAG}" \
+            --report-url "${report_url}" \
+            --output .artifacts/pr-body.md \
+            > /dev/null
+
       - name: Commit and open approval PR
         env:
           GH_TOKEN: ${{ steps.oracle-token.outputs.token }}
           REQUEST_ID: ${{ needs.prepare.outputs.request-id }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.release-tag }}
-          REPORT_ID: ${{ needs.prepare.outputs.report-id }}
+          REQUEST_LABEL: ${{ needs.prepare.outputs.request-label }}
         run: |
           branch="oracle/${REQUEST_ID}-${GITHUB_RUN_ID}"
           git switch -c "${branch}"
@@ -246,15 +274,6 @@ jobs:
           git -c core.hooksPath=/dev/null commit -m "feat(oracles): bless ${REQUEST_ID}"
           git push origin "${branch}"
 
-          report_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${REPORT_ID}"
-          printf '%s\n' \
-            "Blesses request \`${REQUEST_ID}\` into immutable release \`${RELEASE_TAG}\`." \
-            '' \
-            "Review artifact: ${report_url}" \
-            '' \
-            'Merging this PR is the approval. Release automation promotes the exact staged bytes; it never recaptures.' \
-            > .artifacts/pr-body.md
-
           create_options=()
           if gh pr list --base main --state open --limit 1000 --json headRefName --jq \
             '.[] | select(.headRefName | startswith("oracle/")) | .number' | grep -q .; then
@@ -263,6 +282,6 @@ jobs:
           gh pr create \
             --base main \
             --head "${branch}" \
-            --title "feat(oracles): bless ${REQUEST_ID}" \
+            --title "feat(oracles): bless ${REQUEST_LABEL}" \
             --body-file .artifacts/pr-body.md \
             "${create_options[@]}"

@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
+import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
+import { renderApprovalSummary, requestDisplayLabel } from './approval.js';
 import { completeFlight } from './completion.js';
 import { applyPreparedIntake, prepareIntake, replayPreparedIntake } from './intake.js';
 import { canonicalJson, errorMessage, hashBytes, isRecord, readJson } from './json.js';
@@ -9,7 +11,7 @@ import { downloadReleasePacks, verifyReleasePacks } from './pack.js';
 import { readRepository } from './repository.js';
 import { assertSchema } from './schemas.js';
 import type { SchemaName } from './schemas.js';
-import type { OracleManifest } from './types.js';
+import type { FlightOracleRequest, OracleManifest } from './types.js';
 
 async function main(): Promise<void> {
   const [command, ...arguments_] = process.argv.slice(2);
@@ -19,6 +21,28 @@ async function main(): Promise<void> {
     console.log(
       `repository valid: ${state.records.size} oracle records, ${state.manifest.packs.length} packs, ${state.policies.size} policies`,
     );
+    return;
+  }
+
+  if (command === 'approval-label' || command === 'approval-summary') {
+    const requestPath = resolve(requiredOption(arguments_, '--request'));
+    const value = await readJson(requestPath);
+    assertSchema<FlightOracleRequest>('request', value, requestPath);
+    if (command === 'approval-label') {
+      console.log(requestDisplayLabel(value));
+      return;
+    }
+    const output = resolve(requiredOption(arguments_, '--output'));
+    await writeFile(
+      output,
+      renderApprovalSummary({
+        releaseTag: requiredOption(arguments_, '--release-tag'),
+        reportUrl: requiredOption(arguments_, '--report-url'),
+        request: value,
+      }),
+      'utf8',
+    );
+    console.log(requestDisplayLabel(value));
     return;
   }
 

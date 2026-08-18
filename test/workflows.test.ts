@@ -90,6 +90,22 @@ describe('GitHub Actions workflows', () => {
       expect(job(intake, name).steps?.find((step) => step.uses === 'actions/checkout@v4')?.with?.ref).toBe('main');
     }
   });
+
+  it('derives readable approval labels without changing request identity', async () => {
+    const intakeText = await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8');
+    const refreshText = await readFile(join('.github', 'workflows', 'refresh-candidate.yml'), 'utf8');
+    const requestSchema = JSON.parse(await readFile(join('schemas', 'request.schema.json'), 'utf8')) as {
+      properties: Record<string, unknown>;
+    };
+
+    for (const workflow of [intakeText, refreshText]) {
+      expect(workflow).toContain('approval:label');
+      expect(workflow).toContain('approval:summary');
+      expect(workflow).toContain('REQUEST_LABEL');
+      expect(workflow).toContain('GITHUB_STEP_SUMMARY');
+    }
+    expect(requestSchema.properties).not.toHaveProperty('label');
+  });
 });
 
 interface Workflow {

@@ -6,6 +6,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "approval:label": "tsx ./src/cli.ts approval-label",
+    "approval:summary": "tsx ./src/cli.ts approval-summary",
     "build": "tsc -p tsconfig.build.json",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run repository:check",
     "environment:id": "tsx ./src/cli.ts environment-id",

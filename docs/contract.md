@@ -4,6 +4,8 @@
 
 Flight commits `reference-image-requests/<id>.json`, validated by [`request.schema.json`](../schemas/request.schema.json). Each version-3 target binds one exact cell to the decoded pixels, reproducible build, host, and registered capture environment that a reviewer selected. Duplicate cells fail, every cell must appear in the candidate, and no extra cell is accepted.
 
+The UUID `id` is the request's sole identity. Approval workflows derive a display label from the unique `targets[].entry` values and show every cell in the Actions summary and PR body. The label is never accepted as a request field or used in a path, branch, locator, or release tag. Two requests for the same entry may therefore display the same label without colliding.
+
 ```json
 {
   "schemaVersion": 3,
