@@ -15,7 +15,7 @@ Protect `main` with the `Quality and repository integrity` and `Replay reviewed 
 
 ## Dispatch
 
-Flight sends a `repository_dispatch` event of type `flight-oracle-candidate` with this camel-case payload:
+Flight sends a `repository_dispatch` event of type `flight-reference-image-candidate` with this camel-case payload:
 
 ```json
 {

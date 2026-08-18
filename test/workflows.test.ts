@@ -48,8 +48,10 @@ describe('GitHub Actions workflows', () => {
 
   it('targets the renamed repository and Flight lock path', async () => {
     const intakeText = await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8');
+    const intake = parse(intakeText);
     const releaseText = await readFile(join('.github', 'workflows', 'release.yml'), 'utf8');
 
+    expect(intake.on?.repository_dispatch?.types).toEqual(['flight-reference-image-candidate']);
     expect(intakeText).toContain('repositories: flight-reference-images');
     expect(releaseText).toContain('scripts/reference-image-lock.json');
     expect(`${intakeText}\n${releaseText}`).not.toContain('flight-oracles');
@@ -64,7 +66,10 @@ describe('GitHub Actions workflows', () => {
 });
 
 interface Workflow {
-  on?: { push?: { paths?: string[] } };
+  on?: {
+    push?: { paths?: string[] };
+    repository_dispatch?: { types?: string[] };
+  };
   jobs: Record<
     string,
     {

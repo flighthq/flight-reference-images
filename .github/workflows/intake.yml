@@ -1,8 +1,8 @@
-name: Oracle candidate intake
+name: Reference image candidate intake
 
 on:
   repository_dispatch:
-    types: [flight-oracle-candidate]
+    types: [flight-reference-image-candidate]
   workflow_dispatch:
     inputs:
       repository:
