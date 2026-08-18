@@ -2,29 +2,29 @@
   "$schema": "./schemas/manifest.schema.json",
   "packs": [
     {
-      "file": "functional-images-oracle-e4fce4c0-e5a7-45d0-b8e7-21df064a058d-b49091d591ec.tgz",
+      "file": "functional-images-oracle-97739c38-f97e-4736-beb9-badba1ffd62a-d41eb1f550b5.tgz",
       "id": "functional-images",
-      "imageCount": 11,
-      "sha256": "81ccd8a96e9077b216fe73711e9837b55caf92115a7d3286e09cb41dd512fd11",
-      "size": 27408
+      "imageCount": 15,
+      "sha256": "205c1f38f2a972fecc06a75f8d29d52e50e4acfc4eb1fcdf0d65fe9d19893994",
+      "size": 282289
     },
     {
-      "file": "functional-other-oracle-e4fce4c0-e5a7-45d0-b8e7-21df064a058d-b49091d591ec.tgz",
+      "file": "functional-other-oracle-97739c38-f97e-4736-beb9-badba1ffd62a-d41eb1f550b5.tgz",
       "id": "functional-other",
       "imageCount": 5,
       "sha256": "ff1de069b3cfcd9c084c9b40ae1ba68515401e2cdb3a7c2de04df2dd5e325d27",
       "size": 29295
     },
     {
-      "file": "functional-shapes-oracle-e4fce4c0-e5a7-45d0-b8e7-21df064a058d-b49091d591ec.tgz",
+      "file": "functional-shapes-oracle-97739c38-f97e-4736-beb9-badba1ffd62a-d41eb1f550b5.tgz",
       "id": "functional-shapes",
       "imageCount": 1,
       "sha256": "afc4373f5d106822b34b74fc1b6ae663a8dc3f5490b6edf656a2730e2464a75e",
       "size": 7371
     }
   ],
-  "parentReleaseTag": "oracle-8f48d909-c7e1-4fee-9004-fe4cc2fbc5c8-8f6b7456add0",
-  "releaseTag": "oracle-e4fce4c0-e5a7-45d0-b8e7-21df064a058d-b49091d591ec",
+  "parentReleaseTag": "oracle-e4fce4c0-e5a7-45d0-b8e7-21df064a058d-b49091d591ec",
+  "releaseTag": "oracle-97739c38-f97e-4736-beb9-badba1ffd62a-d41eb1f550b5",
   "schemaVersion": 1,
   "sourceRequests": [
     {
@@ -61,6 +61,11 @@
       "flightCommit": "66c9814f2387abf7cef7a334a4edf573110aadb8",
       "id": "e4fce4c0-e5a7-45d0-b8e7-21df064a058d",
       "requestSha256": "81dd5bf33714d23c0fa63a7ad549a598c7639028d4bdba1b357848f9096d9ec1"
+    },
+    {
+      "flightCommit": "9d20d2e0317023af656379bb16f54f02cf43c97a",
+      "id": "97739c38-f97e-4736-beb9-badba1ffd62a",
+      "requestSha256": "c39d847a34f072015882c7eef917cc153a794bea29b27283384412c2682e30ff"
     }
   ]
 }
