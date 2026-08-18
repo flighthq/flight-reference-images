@@ -1,10 +1,12 @@
-name: Release blessed oracles
+name: Release blessed reference images
 
 on:
   push:
     branches: [main]
     paths:
-      - candidates/*.json
+      # manifest.json is the release boundary: every blessing changes its immutable tag and pack set.
+      # Candidate-locator-only maintenance must not try to republish an already immutable release.
+      - manifest.json
   workflow_dispatch:
 
 permissions:

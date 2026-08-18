@@ -55,9 +55,16 @@ describe('GitHub Actions workflows', () => {
     expect(`${intakeText}\n${releaseText}`).not.toContain('flight-oracles');
     expect(releaseText).not.toContain('scripts/oracle-lock.json');
   });
+
+  it('publishes only when the immutable release manifest changes', async () => {
+    const release = parse(await readFile(join('.github', 'workflows', 'release.yml'), 'utf8'));
+
+    expect(release.on?.push?.paths).toEqual(['manifest.json']);
+  });
 });
 
 interface Workflow {
+  on?: { push?: { paths?: string[] } };
   jobs: Record<
     string,
     {

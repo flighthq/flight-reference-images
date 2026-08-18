@@ -74,7 +74,7 @@ PR CI downloads the locator's immutable artifact, verifies its GitHub digest, do
 
 ## Release and Flight reference-image lock
 
-After approval, release automation repeats reconstruction from candidate bytes and the prior complete release. A separate contents-write job verifies the resulting fixed manifest and pack SHA-256 values, refuses an existing tag, and publishes the files without decoding images.
+After approval, a changed `manifest.json` triggers release automation to repeat reconstruction from candidate bytes and the prior complete release. Candidate-locator-only maintenance does not republish an unchanged release. A separate contents-write job verifies the resulting fixed manifest and pack SHA-256 values, refuses an existing tag, and publishes the files without decoding images.
 
 The completion job writes Flight's version-2 [`reference-image-lock.schema.json`](../schemas/reference-image-lock.schema.json) shape to `scripts/reference-image-lock.json` and removes the fulfilled request in the same PR. Each pack entry pins both the encoded pack and an identity-keyed `images` map of decoded `pixelSha256` values, so Flight can decide whether a captured image is already represented without downloading the pack. Required `referenceImage` coverage stays in Flight throughout.
 
