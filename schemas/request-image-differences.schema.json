@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flighthq/flight-reference-images/schemas/request-image-differences.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "requestId", "differences"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "requestId": { "$ref": "common.schema.json#/$defs/identifier" },
+    "differences": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["identity", "requestedPixelSha256", "capturedPixelSha256"],
+        "properties": {
+          "identity": { "$ref": "common.schema.json#/$defs/identity" },
+          "requestedPixelSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+          "capturedPixelSha256": { "$ref": "common.schema.json#/$defs/sha256" }
+        }
+      }
+    }
+  }
+}

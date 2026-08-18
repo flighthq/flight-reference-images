@@ -2,14 +2,29 @@
 
 ## Flight request
 
-Flight commits `reference-image-requests/<id>.json`, validated by [`request.schema.json`](../schemas/request.schema.json). The Cartesian product of `targets[].entry` and `targets[].renderers` is exact: duplicate cells fail, every cell must appear in the candidate, and no extra cell is accepted.
+Flight commits `reference-image-requests/<id>.json`, validated by [`request.schema.json`](../schemas/request.schema.json). Each version-3 target binds one exact cell to the decoded pixels, reproducible build, host, and registered capture environment that a reviewer selected. Duplicate cells fail, every cell must appear in the candidate, and no extra cell is accepted.
 
 ```json
 {
-  "schemaVersion": 1,
-  "id": "shape-fill-solid-webgl-2026-08-14",
+  "schemaVersion": 3,
+  "id": "1850c447-117b-4fce-bc0b-804fb5210d0e",
   "subject": "functional",
-  "targets": [{ "entry": "shape-fill-solid", "renderers": ["webgl"] }],
+  "targets": [
+    {
+      "entry": "shape-fill-solid",
+      "renderer": "webgl",
+      "pixelSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "build": {
+        "commit": "2222222222222222222222222222222222222222",
+        "dirty": [],
+        "dirtyOmitted": 0
+      },
+      "capture": {
+        "hostInstanceId": "review-host",
+        "environmentId": "sha256-3333333333333333333333333333333333333333333333333333333333333333"
+      }
+    }
+  ],
   "frames": 1,
   "reason": "add the first full-resolution reference for the solid-fill scene"
 }
@@ -23,8 +38,11 @@ The Flight artifact contains `candidate.json` plus captured images. [`candidate.
 
 ```text
 candidate.json
+request-image-differences.json
 images/functional/shape-fill-solid/webgl.png
 ```
+
+Flight records every decoded-pixel difference between the reviewed request and the later commissioned capture in `request-image-differences.json`. Intake validates its request, identity, requested hash, and captured hash bindings, preserves it in the prepared artifact, and rejects an unrecorded or fabricated difference.
 
 Each capture is explicitly either:
 

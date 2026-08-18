@@ -15,7 +15,8 @@ export type SchemaName =
   | 'pack-manifest'
   | 'pack-config'
   | 'prepared-intake'
-  | 'request';
+  | 'request'
+  | 'request-image-differences';
 
 const schemaNames: readonly SchemaName[] = [
   'candidate',
@@ -31,6 +32,7 @@ const schemaNames: readonly SchemaName[] = [
   'pack-config',
   'prepared-intake',
   'request',
+  'request-image-differences',
 ];
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });

@@ -109,9 +109,32 @@ export interface FlightOracleRequest {
   frames: number;
   id: string;
   reason: string;
-  schemaVersion: 1;
+  schemaVersion: 3;
   subject: string;
-  targets: Array<{ entry: string; renderers: string[] }>;
+  targets: Array<{
+    build: {
+      commit: string;
+      dirty: string[];
+      dirtyOmitted: number;
+    };
+    capture: {
+      environmentId: string;
+      hostInstanceId: string;
+    };
+    entry: string;
+    pixelSha256: string;
+    renderer: string;
+  }>;
+}
+
+export interface RequestImageDifferences {
+  differences: Array<{
+    capturedPixelSha256: string;
+    identity: OracleIdentity;
+    requestedPixelSha256: string;
+  }>;
+  requestId: string;
+  schemaVersion: 1;
 }
 
 export interface ManifestPack {

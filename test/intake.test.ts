@@ -18,6 +18,7 @@ import type {
   IntakePolicy,
   OracleManifest,
   PackConfiguration,
+  RequestImageDifferences,
 } from '../src/types.js';
 
 let workspace = '';
@@ -125,10 +126,14 @@ describe('prepareIntake', () => {
     fixture.request.reason = 'replace the reference at a new size';
     fixture.candidate.requestId = fixture.request.id;
     await writeCanonicalJson(join(fixture.candidateDirectory, 'candidate.json'), fixture.candidate);
-    await writeFile(
-      join(fixture.candidateDirectory, 'images', 'functional', 'shape-basic', 'webgl.png'),
-      makePng(3, 2),
-    );
+    const resizedImage = makePng(3, 2);
+    await writeFile(join(fixture.candidateDirectory, 'images', 'functional', 'shape-basic', 'webgl.png'), resizedImage);
+    const target = fixture.request.targets[0]!;
+    fixture.requestImageDifferences.differences.push({
+      capturedPixelSha256: hashBytes(Buffer.from(PNG.sync.read(resizedImage).data)),
+      identity: { entry: target.entry, renderer: target.renderer, subject: fixture.request.subject },
+      requestedPixelSha256: target.pixelSha256,
+    });
     await writeRequestAndEnvelope(fixture);
 
     const preparedDirectory = join(workspace, 'resized-prepared');
@@ -158,11 +163,41 @@ describe('prepareIntake', () => {
 
   it('rejects overlapping request targets', async () => {
     const fixture = await makeFixture('captured');
-    fixture.request.targets[0]!.renderers = ['webgl', 'webgl'];
+    fixture.request.targets.push(fixture.request.targets[0]!);
     await writeRequestAndEnvelope(fixture);
 
     await expect(prepareFixture(fixture, join(workspace, 'overlapping'))).rejects.toThrow(
       'request overlaps target functional/shape-basic/webgl',
+    );
+  });
+
+  it('accepts exact evidence when commissioned pixels differ from the reviewed request', async () => {
+    const fixture = await makeFixture('captured');
+    const target = fixture.request.targets[0]!;
+    const capturedPixelSha256 = target.pixelSha256;
+    target.pixelSha256 = '8'.repeat(64);
+    fixture.requestImageDifferences.differences.push({
+      capturedPixelSha256,
+      identity: { entry: target.entry, renderer: target.renderer, subject: fixture.request.subject },
+      requestedPixelSha256: target.pixelSha256,
+    });
+    await writeRequestAndEnvelope(fixture);
+
+    const outputDirectory = join(workspace, 'pixel-difference');
+    await prepareFixture(fixture, outputDirectory);
+
+    await expect(readFile(join(outputDirectory, 'candidate', 'request-image-differences.json'), 'utf8')).resolves.toBe(
+      canonicalJson(fixture.requestImageDifferences),
+    );
+  });
+
+  it('rejects changed commissioned pixels without exact evidence', async () => {
+    const fixture = await makeFixture('captured');
+    fixture.request.targets[0]!.pixelSha256 = '8'.repeat(64);
+    await writeRequestAndEnvelope(fixture);
+
+    await expect(prepareFixture(fixture, join(workspace, 'missing-pixel-evidence'))).rejects.toThrow(
+      'differ from the request without evidence',
     );
   });
 
@@ -327,6 +362,7 @@ interface Fixture {
   envelopePath: string;
   repositoryRoot: string;
   request: FlightOracleRequest;
+  requestImageDifferences: RequestImageDifferences;
   requestPath: string;
 }
 
@@ -385,13 +421,23 @@ async function makeFixture(status: 'captured' | 'missing'): Promise<Fixture> {
   await writeCanonicalJson(join(repositoryRoot, 'environments', `${environmentId}.json`), environment);
   await writeCanonicalJson(join(repositoryRoot, 'comparison-policies', 'pixel-v1.json'), policy);
 
+  const imageBytes = makePng();
+  const reviewedPixelSha256 = hashBytes(Buffer.from(PNG.sync.read(imageBytes).data));
   const request: FlightOracleRequest = {
     frames: 1,
     id: 'shape-basic-webgl-2026-08-14',
     reason: 'add the first reference',
-    schemaVersion: 1,
+    schemaVersion: 3,
     subject: 'functional',
-    targets: [{ entry: 'shape-basic', renderers: ['webgl'] }],
+    targets: [
+      {
+        build: { commit: 'a'.repeat(40), dirty: [], dirtyOmitted: 0 },
+        capture: { environmentId, hostInstanceId: 'test-host' },
+        entry: 'shape-basic',
+        pixelSha256: reviewedPixelSha256,
+        renderer: 'webgl',
+      },
+    ],
   };
   const requestPath = join(workspace, `request-${status}.json`);
   await writeCanonicalJson(requestPath, request);
@@ -436,12 +482,27 @@ async function makeFixture(status: 'captured' | 'missing'): Promise<Fixture> {
     schemaVersion: 1,
   };
   await writeCanonicalJson(join(candidateDirectory, 'candidate.json'), candidate);
+  const requestImageDifferences: RequestImageDifferences = {
+    differences: [],
+    requestId: request.id,
+    schemaVersion: 1,
+  };
+  await writeCanonicalJson(join(candidateDirectory, 'request-image-differences.json'), requestImageDifferences);
   if (status === 'captured') {
     const image = join(candidateDirectory, 'images', 'functional', 'shape-basic', 'webgl.png');
     await mkdir(join(image, '..'), { recursive: true });
-    await writeFile(image, makePng());
+    await writeFile(image, imageBytes);
   }
-  return { candidate, candidateDirectory, envelope, envelopePath, repositoryRoot, request, requestPath };
+  return {
+    candidate,
+    candidateDirectory,
+    envelope,
+    envelopePath,
+    repositoryRoot,
+    request,
+    requestImageDifferences,
+    requestPath,
+  };
 }
 
 async function prepareFixture(
@@ -472,6 +533,11 @@ async function installFirstRelease(fixture: Readonly<Fixture>, preparedDirectory
 
 async function writeRequestAndEnvelope(fixture: Fixture): Promise<void> {
   await writeCanonicalJson(fixture.requestPath, fixture.request);
+  fixture.requestImageDifferences.requestId = fixture.request.id;
+  await writeCanonicalJson(
+    join(fixture.candidateDirectory, 'request-image-differences.json'),
+    fixture.requestImageDifferences,
+  );
   fixture.envelope.requestPath = `reference-image-requests/${fixture.request.id}.json`;
   fixture.envelope.requestSha256 = await hashFile(fixture.requestPath);
   await writeCanonicalJson(fixture.envelopePath, fixture.envelope);

@@ -31,7 +31,10 @@ import type {
   OracleRecord,
   PackConfiguration,
   PreparedIntake,
+  RequestImageDifferences,
 } from './types.js';
+
+const REQUEST_IMAGE_DIFFERENCES_FILE = 'request-image-differences.json';
 
 export interface ApplyIntakeOptions {
   artifactDigest: string;
@@ -205,14 +208,19 @@ async function produceIntake(
       throw new Error(`candidate bundle contains non-regular entry ${nonRegularEntries[0]}`);
     }
     const candidate = await readTyped<CandidateManifest>(join(candidateDirectory, 'candidate.json'), 'candidate');
+    const requestImageDifferences = await readTyped<RequestImageDifferences>(
+      join(candidateDirectory, REQUEST_IMAGE_DIFFERENCES_FILE),
+      'request-image-differences',
+    );
     const envelope = await readTyped<DispatchEnvelope>(resolve(options.envelopePath), 'dispatch-envelope');
     const request = await readTyped<FlightOracleRequest>(resolve(options.requestPath), 'request');
-    await validateBindings(
+    const requestBindings = await validateBindings(
       base,
       candidateDirectory,
       candidate,
       envelope,
       request,
+      requestImageDifferences,
       options.requestPath,
       options.enforceRequestAge,
     );
@@ -247,6 +255,7 @@ async function produceIntake(
         maximumPixels: base.intakePolicy.maximumImagePixels,
         maximumWidth: base.intakePolicy.maximumImageWidth,
       });
+      assertRequestedPixelEvidence(key, decoded.pixelSha256, requestBindings);
       const recordPath = oracleRecordPath(capture.identity);
       const previousRecord = base.records.get(recordPath);
       const pack = resolvePack(capture.identity, base.packConfiguration);
@@ -393,6 +402,10 @@ async function stageInputs(
   const stagedCandidate = join(outputDirectory, 'candidate');
   await mkdir(stagedCandidate, { recursive: true });
   await copyFile(join(candidateDirectory, 'candidate.json'), join(stagedCandidate, 'candidate.json'));
+  await copyFile(
+    join(candidateDirectory, REQUEST_IMAGE_DIFFERENCES_FILE),
+    join(stagedCandidate, REQUEST_IMAGE_DIFFERENCES_FILE),
+  );
   for (const capture of candidate.captures) {
     if (capture.status !== 'captured' || capture.file === undefined) continue;
     const destination = resolveInside(stagedCandidate, capture.file);
@@ -416,9 +429,10 @@ async function validateBindings(
   candidate: Readonly<CandidateManifest>,
   envelope: Readonly<DispatchEnvelope>,
   request: Readonly<FlightOracleRequest>,
+  requestImageDifferences: Readonly<RequestImageDifferences>,
   requestPath: string,
   enforceRequestAge: boolean,
-): Promise<void> {
+): Promise<RequestBindings> {
   if ((await hashFile(resolve(requestPath))) !== envelope.requestSha256) {
     throw new Error(`request checksum does not match dispatch envelope`);
   }
@@ -427,6 +441,11 @@ async function validateBindings(
   }
   if (candidate.requestId !== request.id)
     throw new Error(`candidate request ${candidate.requestId} does not match ${request.id}`);
+  if (requestImageDifferences.requestId !== request.id) {
+    throw new Error(
+      `request-image differences name request ${requestImageDifferences.requestId}, expected ${request.id}`,
+    );
+  }
   if (base.manifest.sourceRequests.some((entry) => entry.id === request.id)) {
     throw new Error(`request id ${request.id} was already used by a release`);
   }
@@ -438,21 +457,31 @@ async function validateBindings(
   if (policy.environmentId !== candidate.environmentId)
     throw new Error(`candidate policy and environment do not match`);
 
-  const expected = new Set<string>();
+  const targets = new Map<string, FlightOracleRequest['targets'][number]>();
   for (const target of request.targets) {
-    for (const renderer of target.renderers) {
-      const key = `${request.subject}/${target.entry}/${renderer}`;
-      if (expected.has(key)) throw new Error(`request overlaps target ${key}`);
-      expected.add(key);
+    const key = `${request.subject}/${target.entry}/${target.renderer}`;
+    if (targets.has(key)) throw new Error(`request overlaps target ${key}`);
+    targets.set(key, target);
+  }
+  const differences = new Map<string, RequestImageDifferences['differences'][number]>();
+  for (const difference of requestImageDifferences.differences) {
+    const key = identityKey(difference.identity);
+    const target = targets.get(key);
+    if (target === undefined) throw new Error(`request-image differences include out-of-scope target ${key}`);
+    if (differences.has(key)) throw new Error(`request-image differences repeat target ${key}`);
+    if (difference.requestedPixelSha256 !== target.pixelSha256) {
+      throw new Error(`request-image differences do not match requested pixels for ${key}`);
     }
+    differences.set(key, difference);
   }
   const represented = new Set<string>();
-  const allowedFiles = new Set(['candidate.json']);
+  const captured = new Set<string>();
+  const allowedFiles = new Set(['candidate.json', REQUEST_IMAGE_DIFFERENCES_FILE]);
   for (const capture of candidate.captures) {
     const key = identityKey(capture.identity);
     if (represented.has(key)) throw new Error(`candidate repeats target ${key}`);
     represented.add(key);
-    if (!expected.has(key)) throw new Error(`candidate includes out-of-scope target ${key}`);
+    if (!targets.has(key)) throw new Error(`candidate includes out-of-scope target ${key}`);
     if (capture.status === 'captured') {
       if (capture.file !== imagePath(capture.identity))
         throw new Error(`${key} image must be stored at ${imagePath(capture.identity)}`);
@@ -461,12 +490,41 @@ async function validateBindings(
           `${key} captured at frame ${capture.provenance?.frames ?? 'unknown'}, request requires ${request.frames}`,
         );
       }
+      captured.add(key);
       allowedFiles.add(capture.file);
     }
   }
-  for (const key of expected) if (!represented.has(key)) throw new Error(`candidate omits requested target ${key}`);
+  for (const key of targets.keys())
+    if (!represented.has(key)) throw new Error(`candidate omits requested target ${key}`);
+  for (const key of differences.keys()) {
+    if (!captured.has(key)) throw new Error(`request-image differences name uncaptured target ${key}`);
+  }
   for (const file of await findFiles(candidateDirectory)) {
     if (!allowedFiles.has(file)) throw new Error(`candidate bundle contains undeclared file ${file}`);
+  }
+  return { differences, targets };
+}
+
+interface RequestBindings {
+  differences: ReadonlyMap<string, RequestImageDifferences['differences'][number]>;
+  targets: ReadonlyMap<string, FlightOracleRequest['targets'][number]>;
+}
+
+function assertRequestedPixelEvidence(
+  key: string,
+  capturedPixelSha256: string,
+  bindings: Readonly<RequestBindings>,
+): void {
+  const target = bindings.targets.get(key);
+  if (target === undefined) throw new Error(`candidate includes unbound target ${key}`);
+  const difference = bindings.differences.get(key);
+  if (target.pixelSha256 === capturedPixelSha256) {
+    if (difference !== undefined) throw new Error(`request-image differences claim unchanged target ${key}`);
+    return;
+  }
+  if (difference === undefined) throw new Error(`candidate pixels for ${key} differ from the request without evidence`);
+  if (difference.capturedPixelSha256 !== capturedPixelSha256) {
+    throw new Error(`request-image differences do not match captured pixels for ${key}`);
   }
 }
 
@@ -544,7 +602,7 @@ async function readTyped<T>(path: string, schema: SchemaName): Promise<T> {
 }
 
 async function hashCandidate(directory: string, candidate: Readonly<CandidateManifest>): Promise<string> {
-  const paths = ['candidate.json'];
+  const paths = ['candidate.json', REQUEST_IMAGE_DIFFERENCES_FILE];
   for (const capture of candidate.captures)
     if (capture.status === 'captured' && capture.file !== undefined) paths.push(capture.file);
   return hashFileSet(directory, paths);
