@@ -96,7 +96,7 @@ PR CI downloads the locator's immutable artifact, verifies its GitHub digest, do
 
 Every prepared candidate is bound to the manifest and complete packs that were current when it was built. Merging one approval therefore makes every sibling approval stale; resolving its manifest conflict textually would not update that cryptographic base. Intake dispatches are serialized, the first approval opens ready for review, and later approvals open as drafts.
 
-After an approval is merged and its release is published, run **Refresh oldest reference image PR** with the oldest open approval PR number. The refresh workflow downloads the exact candidate artifact named by that PR, re-prepares it against current `main` without write credentials, and lease-replaces only that PR's allowlisted metadata. It refuses later PRs until the oldest is merged and promotes a refreshed draft to ready. GitHub's ordinary rebase, update-branch, and conflict editor are not valid for these PRs.
+After an approval is merged, the successful release workflow automatically advances the queue. It selects the oldest open approval, downloads the exact candidate artifact named by that PR, re-prepares it against current `main` without write credentials, lease-replaces only that PR's allowlisted metadata, and promotes the refreshed draft to ready. **Refresh oldest reference image PR** remains available as a recovery action; its PR-number input is optional, and a supplied number must name the oldest approval. GitHub's ordinary rebase, update-branch, and conflict editor are not valid for these PRs.
 
 ## Release and Flight reference-image lock
 

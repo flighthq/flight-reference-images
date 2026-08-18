@@ -91,6 +91,22 @@ describe('GitHub Actions workflows', () => {
     }
   });
 
+  it('automatically advances the oldest queued approval after a successful release', async () => {
+    const refreshText = await readFile(join('.github', 'workflows', 'refresh-candidate.yml'), 'utf8');
+    const refresh = parse(refreshText);
+
+    expect(refresh.on?.workflow_run).toEqual({
+      branches: ['main'],
+      types: ['completed'],
+      workflows: ['Release blessed reference images'],
+    });
+    expect(refresh.on?.workflow_dispatch?.inputs?.pull_request?.required).toBe(false);
+    expect(job(refresh, 'prepare').if).toContain("workflow_run.conclusion == 'success'");
+    expect(job(refresh, 'prepare').outputs?.found).toBe('${{ steps.pull.outputs.found }}');
+    expect(job(refresh, 'update-pr').if).toBe("needs.prepare.outputs.found == 'true'");
+    expect(refreshText).toContain('PR_NUMBER: ${{ needs.prepare.outputs.pull-request }}');
+  });
+
   it('derives readable approval labels without changing request identity', async () => {
     const intakeText = await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8');
     const refreshText = await readFile(join('.github', 'workflows', 'refresh-candidate.yml'), 'utf8');
@@ -112,11 +128,16 @@ interface Workflow {
   on?: {
     push?: { paths?: string[] };
     repository_dispatch?: { types?: string[] };
+    workflow_dispatch?: {
+      inputs?: Record<string, { required?: boolean }>;
+    };
+    workflow_run?: { branches?: string[]; types?: string[]; workflows?: string[] };
   };
   concurrency?: { 'cancel-in-progress'?: boolean; group?: string };
   jobs: Record<
     string,
     {
+      if?: string;
       outputs?: Record<string, unknown>;
       permissions: Record<string, string>;
       steps?: { name?: string; uses?: string; with?: Record<string, unknown> }[];

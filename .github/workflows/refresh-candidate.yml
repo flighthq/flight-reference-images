@@ -1,11 +1,15 @@
 name: Refresh oldest reference image PR
 
 on:
+  workflow_run:
+    workflows: [Release blessed reference images]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       pull_request:
-        description: Oldest open reference image approval PR number
-        required: true
+        description: Optional oldest open approval PR number; omitted selects it automatically
+        required: false
         type: number
 
 permissions:
@@ -20,6 +24,7 @@ concurrency:
 jobs:
   prepare:
     name: Rebuild candidate against current main without write credentials
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -30,6 +35,8 @@ jobs:
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
       head-ref: ${{ steps.pull.outputs.head_ref }}
       head-sha: ${{ steps.pull.outputs.head_sha }}
+      found: ${{ steps.pull.outputs.found }}
+      pull-request: ${{ steps.pull.outputs.pull_request }}
       release-tag: ${{ steps.prepared.outputs.release_tag }}
       report-id: ${{ steps.report.outputs.artifact-id }}
       request-id: ${{ steps.prepared.outputs.request_id }}
@@ -48,7 +55,7 @@ jobs:
         id: pull
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ inputs.pull_request }}
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pull_request || '' }}
         run: |
           mkdir -p .artifacts
           gh api \
@@ -57,7 +64,11 @@ jobs:
           node --input-type=module <<'NODE'
           import { appendFileSync, readFileSync } from 'node:fs';
 
-          const requested = Number(process.env.PR_NUMBER);
+          const requestedText = process.env.PR_NUMBER?.trim() ?? '';
+          const requested = requestedText === '' ? undefined : Number(requestedText);
+          if (requested !== undefined && (!Number.isSafeInteger(requested) || requested < 1)) {
+            throw new Error(`invalid requested PR number ${requestedText}`);
+          }
           const pulls = JSON.parse(readFileSync('.artifacts/pulls.json', 'utf8'));
           const queue = pulls
             .filter(
@@ -67,21 +78,31 @@ jobs:
                 pull.head.ref.startsWith('oracle/'),
             )
             .sort((left, right) => left.number - right.number);
-          if (queue.length === 0) throw new Error('there are no open reference image approval PRs');
+          if (queue.length === 0) {
+            appendFileSync(process.env.GITHUB_OUTPUT, 'found=false\n');
+            console.log('There are no queued reference image approval PRs.');
+            process.exit(0);
+          }
           const oldest = queue[0];
-          if (oldest.number !== requested) {
+          if (requested !== undefined && oldest.number !== requested) {
             throw new Error(`PR #${requested} is not next; refresh and merge #${oldest.number} first`);
           }
           appendFileSync(
             process.env.GITHUB_OUTPUT,
-            [`head_ref=${oldest.head.ref}`, `head_sha=${oldest.head.sha}`].join('\n') + '\n',
+            [
+              'found=true',
+              `pull_request=${oldest.number}`,
+              `head_ref=${oldest.head.ref}`,
+              `head_sha=${oldest.head.sha}`,
+            ].join('\n') + '\n',
           );
           NODE
       - name: Read immutable candidate locator from the PR head
+        if: steps.pull.outputs.found == 'true'
         id: locator
         env:
           EXPECTED_HEAD_SHA: ${{ steps.pull.outputs.head_sha }}
-          PR_NUMBER: ${{ inputs.pull_request }}
+          PR_NUMBER: ${{ steps.pull.outputs.pull_request }}
         run: |
           git fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
           test "$(git rev-parse FETCH_HEAD)" = "${EXPECTED_HEAD_SHA}" || {
@@ -114,6 +135,7 @@ jobs:
           );
           NODE
       - name: Verify prior prepared artifact identity
+        if: steps.pull.outputs.found == 'true'
         env:
           ARTIFACT_ID: ${{ steps.locator.outputs.artifact_id }}
           EXPECTED_DIGEST: ${{ steps.locator.outputs.artifact_digest }}
@@ -137,6 +159,7 @@ jobs:
             exit 1
           }
       - name: Download prior prepared candidate
+        if: steps.pull.outputs.found == 'true'
         uses: actions/download-artifact@v4
         with:
           artifact-ids: ${{ steps.locator.outputs.artifact_id }}
@@ -146,15 +169,18 @@ jobs:
           path: .artifacts/prior
           merge-multiple: true
       - name: Download current blessed packs
+        if: steps.pull.outputs.found == 'true'
         run: npm run packs:download -- --output .artifacts/previous-packs
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Prepare the same candidate against current main
+        if: steps.pull.outputs.found == 'true'
         run: >-
           npm run intake:prepare -- --candidate .artifacts/prior/candidate --request .artifacts/prior/request.json --envelope .artifacts/prior/envelope.json --previous-packs .artifacts/previous-packs --output .artifacts/prepared
 
 
       - name: Preserve candidate identity across refresh
+        if: steps.pull.outputs.found == 'true'
         id: prepared
         env:
           EXPECTED_RELEASE_TAG: ${{ steps.locator.outputs.release_tag }}
@@ -177,6 +203,7 @@ jobs:
           );
           NODE
       - name: Store refreshed candidate
+        if: steps.pull.outputs.found == 'true'
         id: upload
         uses: actions/upload-artifact@v4
         with:
@@ -186,6 +213,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Store refreshed review report
+        if: steps.pull.outputs.found == 'true'
         id: report
         uses: actions/upload-artifact@v4
         with:
@@ -194,6 +222,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Summarize refreshed candidate for approval
+        if: steps.pull.outputs.found == 'true'
         env:
           RELEASE_TAG: ${{ steps.prepared.outputs.release_tag }}
           REPORT_ID: ${{ steps.report.outputs.artifact-id }}
@@ -210,6 +239,7 @@ jobs:
   update-pr:
     name: Replace stale PR metadata without processing candidate images
     needs: prepare
+    if: needs.prepare.outputs.found == 'true'
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -264,7 +294,7 @@ jobs:
           EXPECTED_HEAD_SHA: ${{ needs.prepare.outputs.head-sha }}
           GH_TOKEN: ${{ steps.oracle-token.outputs.token }}
           HEAD_REF: ${{ needs.prepare.outputs.head-ref }}
-          PR_NUMBER: ${{ inputs.pull_request }}
+          PR_NUMBER: ${{ needs.prepare.outputs.pull-request }}
           REQUEST_ID: ${{ needs.prepare.outputs.request-id }}
           REQUEST_LABEL: ${{ needs.prepare.outputs.request-label }}
         run: |
