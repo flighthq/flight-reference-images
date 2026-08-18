@@ -36,6 +36,7 @@ jobs:
       head-ref: ${{ steps.pull.outputs.head_ref }}
       head-sha: ${{ steps.pull.outputs.head_sha }}
       found: ${{ steps.pull.outputs.found }}
+      obsolete-prs: ${{ steps.pull.outputs.obsolete_prs }}
       pull-request: ${{ steps.pull.outputs.pull_request }}
       release-tag: ${{ steps.prepared.outputs.release_tag }}
       report-id: ${{ steps.report.outputs.artifact-id }}
@@ -61,47 +62,40 @@ jobs:
           gh api \
             "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&sort=created&direction=asc&per_page=100" \
             > .artifacts/pulls.json
+          select_options=(
+            --pulls .artifacts/pulls.json
+            --manifest manifest.json
+            --repository "${GITHUB_REPOSITORY}"
+            --output .artifacts/queue-selection.json
+          )
+          if [ -n "${PR_NUMBER}" ]; then
+            select_options+=(--pull-request "${PR_NUMBER}")
+          fi
+          npm run --silent queue:select -- "${select_options[@]}"
           node --input-type=module <<'NODE'
           import { appendFileSync, readFileSync } from 'node:fs';
 
-          const requestedText = process.env.PR_NUMBER?.trim() ?? '';
-          const requested = requestedText === '' ? undefined : Number(requestedText);
-          if (requested !== undefined && (!Number.isSafeInteger(requested) || requested < 1)) {
-            throw new Error(`invalid requested PR number ${requestedText}`);
+          const selection = JSON.parse(readFileSync('.artifacts/queue-selection.json', 'utf8'));
+          const output = [
+            `found=${selection.selected !== null}`,
+            `obsolete_prs=${selection.obsolete.map((pull) => pull.number).join(',')}`,
+          ];
+          if (selection.selected !== null) {
+            output.push(
+              `pull_request=${selection.selected.number}`,
+              `head_ref=${selection.selected.headRef}`,
+              `head_sha=${selection.selected.headSha}`,
+              `request_id=${selection.selected.requestId}`,
+            );
           }
-          const pulls = JSON.parse(readFileSync('.artifacts/pulls.json', 'utf8'));
-          const queue = pulls
-            .filter(
-              (pull) =>
-                pull.base.ref === 'main' &&
-                pull.head.repo?.full_name === process.env.GITHUB_REPOSITORY &&
-                pull.head.ref.startsWith('oracle/'),
-            )
-            .sort((left, right) => left.number - right.number);
-          if (queue.length === 0) {
-            appendFileSync(process.env.GITHUB_OUTPUT, 'found=false\n');
-            console.log('There are no queued reference image approval PRs.');
-            process.exit(0);
-          }
-          const oldest = queue[0];
-          if (requested !== undefined && oldest.number !== requested) {
-            throw new Error(`PR #${requested} is not next; refresh and merge #${oldest.number} first`);
-          }
-          appendFileSync(
-            process.env.GITHUB_OUTPUT,
-            [
-              'found=true',
-              `pull_request=${oldest.number}`,
-              `head_ref=${oldest.head.ref}`,
-              `head_sha=${oldest.head.sha}`,
-            ].join('\n') + '\n',
-          );
+          appendFileSync(process.env.GITHUB_OUTPUT, output.join('\n') + '\n');
           NODE
       - name: Read immutable candidate locator from the PR head
         if: steps.pull.outputs.found == 'true'
         id: locator
         env:
           EXPECTED_HEAD_SHA: ${{ steps.pull.outputs.head_sha }}
+          EXPECTED_REQUEST_ID: ${{ steps.pull.outputs.request_id }}
           PR_NUMBER: ${{ steps.pull.outputs.pull_request }}
         run: |
           git fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
@@ -122,6 +116,9 @@ jobs:
           const locator = JSON.parse(readFileSync('.artifacts/locator.json', 'utf8'));
           if (locator.preparedArtifact.repository !== process.env.GITHUB_REPOSITORY) {
             throw new Error(`prepared artifact belongs to ${locator.preparedArtifact.repository}`);
+          }
+          if (locator.requestId !== process.env.EXPECTED_REQUEST_ID) {
+            throw new Error(`approval branch names request ${process.env.EXPECTED_REQUEST_ID}, locator names ${locator.requestId}`);
           }
           appendFileSync(
             process.env.GITHUB_OUTPUT,
@@ -237,9 +234,9 @@ jobs:
           cat .artifacts/approval-summary.md >> "${GITHUB_STEP_SUMMARY}"
 
   update-pr:
-    name: Replace stale PR metadata without processing candidate images
+    name: Close obsolete approvals and replace stale PR metadata
     needs: prepare
-    if: needs.prepare.outputs.found == 'true'
+    if: needs.prepare.outputs.found == 'true' || needs.prepare.outputs.obsolete-prs != ''
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -256,27 +253,47 @@ jobs:
           repositories: flight-reference-images
           permission-contents: write
           permission-pull-requests: write
+      - name: Close approvals already represented by a release
+        if: needs.prepare.outputs.obsolete-prs != ''
+        env:
+          GH_TOKEN: ${{ steps.oracle-token.outputs.token }}
+          OBSOLETE_PRS: ${{ needs.prepare.outputs.obsolete-prs }}
+        run: |
+          IFS=',' read -ra pull_requests <<< "${OBSOLETE_PRS}"
+          for pull_request in "${pull_requests[@]}"; do
+            if [ "$(gh pr view "${pull_request}" --repo "${GITHUB_REPOSITORY}" --json state --jq .state)" = 'OPEN' ]; then
+              gh pr close "${pull_request}" \
+                --repo "${GITHUB_REPOSITORY}" \
+                --comment 'Closing this obsolete approval because its request is already recorded in the released manifest.'
+            fi
+          done
       - uses: actions/checkout@v4
+        if: needs.prepare.outputs.found == 'true'
         with:
           ref: main
           token: ${{ steps.oracle-token.outputs.token }}
       - uses: actions/setup-node@v4
+        if: needs.prepare.outputs.found == 'true'
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - if: needs.prepare.outputs.found == 'true'
+        run: npm ci
       - name: Download refreshed prepared candidate
+        if: needs.prepare.outputs.found == 'true'
         uses: actions/download-artifact@v4
         with:
           artifact-ids: ${{ needs.prepare.outputs.artifact-id }}
           path: .artifacts/prepared
           merge-multiple: true
       - name: Apply schema-validated allowlisted metadata
+        if: needs.prepare.outputs.found == 'true'
         run: >-
           npm run intake:apply -- --prepared .artifacts/prepared --artifact-id ${{ needs.prepare.outputs.artifact-id }} --artifact-digest ${{ needs.prepare.outputs.artifact-digest }} --workflow-run-id ${{ github.run_id }}
 
 
       - name: Build refreshed approval PR summary
+        if: needs.prepare.outputs.found == 'true'
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release-tag }}
           REPORT_ID: ${{ needs.prepare.outputs.report-id }}
@@ -290,6 +307,7 @@ jobs:
             > /dev/null
 
       - name: Replace the existing approval PR branch
+        if: needs.prepare.outputs.found == 'true'
         env:
           EXPECTED_HEAD_SHA: ${{ needs.prepare.outputs.head-sha }}
           GH_TOKEN: ${{ steps.oracle-token.outputs.token }}

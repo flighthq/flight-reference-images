@@ -8,6 +8,8 @@ import { completeFlight } from './completion.js';
 import { applyPreparedIntake, prepareIntake, replayPreparedIntake } from './intake.js';
 import { canonicalJson, errorMessage, hashBytes, isRecord, readJson } from './json.js';
 import { downloadReleasePacks, verifyReleasePacks } from './pack.js';
+import { selectApprovalQueue } from './queue.js';
+import type { ApprovalPull } from './queue.js';
 import { readRepository } from './repository.js';
 import { assertSchema } from './schemas.js';
 import type { SchemaName } from './schemas.js';
@@ -43,6 +45,29 @@ async function main(): Promise<void> {
       'utf8',
     );
     console.log(requestDisplayLabel(value));
+    return;
+  }
+
+  if (command === 'queue-select') {
+    const manifestPath = resolve(requiredOption(arguments_, '--manifest'));
+    const manifestValue = await readJson(manifestPath);
+    assertSchema<OracleManifest>('manifest', manifestValue, manifestPath);
+    const pullsPath = resolve(requiredOption(arguments_, '--pulls'));
+    const pulls = await readJson(pullsPath);
+    if (!Array.isArray(pulls)) throw new Error(`${pullsPath} must contain a JSON array`);
+    const requestedPull = optionalPositiveIntegerOption(arguments_, '--pull-request');
+    const selection = selectApprovalQueue(
+      pulls as ApprovalPull[],
+      manifestValue,
+      requiredOption(arguments_, '--repository'),
+      requestedPull,
+    );
+    await writeFile(resolve(requiredOption(arguments_, '--output')), canonicalJson(selection), 'utf8');
+    console.log(
+      selection.selected === null
+        ? `queue has no pending approval; ${selection.obsolete.length} obsolete`
+        : `selected PR #${selection.selected.number}; ${selection.obsolete.length} obsolete`,
+    );
     return;
   }
 
@@ -145,6 +170,14 @@ async function main(): Promise<void> {
 
 function positiveIntegerOption(arguments_: readonly string[], name: string): number {
   const text = requiredOption(arguments_, name);
+  const value = Number(text);
+  if (!Number.isSafeInteger(value) || value < 1) throw new Error(`${name} must be a positive integer, got ${text}`);
+  return value;
+}
+
+function optionalPositiveIntegerOption(arguments_: readonly string[], name: string): number | undefined {
+  const text = option(arguments_, name);
+  if (text === undefined) return undefined;
   const value = Number(text);
   if (!Number.isSafeInteger(value) || value < 1) throw new Error(`${name} must be a positive integer, got ${text}`);
   return value;

@@ -21,6 +21,7 @@
     "lint": "oxlint --max-warnings=0",
     "lint:fix": "oxlint --fix --max-warnings=0",
     "packs:download": "tsx ./src/cli.ts packs-download",
+    "queue:select": "tsx ./src/cli.ts queue-select",
     "release:verify": "tsx ./src/cli.ts release-verify",
     "repository:check": "tsx ./src/cli.ts check",
     "schema:check": "tsx ./src/cli.ts schema-check",

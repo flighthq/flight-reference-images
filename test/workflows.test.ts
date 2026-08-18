@@ -103,7 +103,10 @@ describe('GitHub Actions workflows', () => {
     expect(refresh.on?.workflow_dispatch?.inputs?.pull_request?.required).toBe(false);
     expect(job(refresh, 'prepare').if).toContain("workflow_run.conclusion == 'success'");
     expect(job(refresh, 'prepare').outputs?.found).toBe('${{ steps.pull.outputs.found }}');
-    expect(job(refresh, 'update-pr').if).toBe("needs.prepare.outputs.found == 'true'");
+    expect(job(refresh, 'prepare').outputs?.['obsolete-prs']).toBe('${{ steps.pull.outputs.obsolete_prs }}');
+    expect(job(refresh, 'update-pr').if).toContain("needs.prepare.outputs.obsolete-prs != ''");
+    expect(refreshText).toContain('queue:select');
+    expect(refreshText).toContain('gh pr close "${pull_request}"');
     expect(refreshText).toContain('PR_NUMBER: ${{ needs.prepare.outputs.pull-request }}');
   });
 
