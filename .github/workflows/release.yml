@@ -174,7 +174,7 @@ jobs:
             .artifacts/release-bundle/*.tgz
 
   complete-flight:
-    name: Open Flight lock update PR
+    name: Open or advance Flight lock update PR
     needs: [rebuild, publish]
     runs-on: ubuntu-latest
     permissions:
@@ -190,6 +190,38 @@ jobs:
           repositories: flight
           permission-contents: write
           permission-pull-requests: write
+      - name: Find the current Flight lock update PR
+        id: completion
+        env:
+          BASE_BRANCH: ${{ vars.FLIGHT_BASE_BRANCH || 'develop' }}
+          GH_TOKEN: ${{ steps.flight-token.outputs.token }}
+        run: |
+          mkdir -p .artifacts
+          gh api \
+            "repos/flighthq/flight/pulls?state=open&base=${BASE_BRANCH}&sort=created&direction=asc&per_page=100" \
+            > .artifacts/flight-pulls.json
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+
+          const pulls = JSON.parse(readFileSync('.artifacts/flight-pulls.json', 'utf8')).filter(
+            (pull) =>
+              pull.head.repo?.full_name === 'flighthq/flight' && pull.head.ref.startsWith('reference-image-lock/'),
+          );
+          if (pulls.length > 1) throw new Error(`found ${pulls.length} open Flight lock update PRs; expected at most one`);
+          const existing = pulls[0];
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            existing === undefined
+              ? `existing=false\ncheckout_ref=${process.env.BASE_BRANCH}\n`
+              : [
+                  'existing=true',
+                  `checkout_ref=${existing.head.ref}`,
+                  `head_ref=${existing.head.ref}`,
+                  `head_sha=${existing.head.sha}`,
+                  `pull_request=${existing.number}`,
+                ].join('\n') + '\n',
+          );
+          NODE
       - name: Check out Oracle release commit
         uses: actions/checkout@v4
         with:
@@ -199,7 +231,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: flighthq/flight
-          ref: ${{ vars.FLIGHT_BASE_BRANCH || 'develop' }}
+          ref: ${{ steps.completion.outputs.checkout_ref }}
           path: flight
           token: ${{ steps.flight-token.outputs.token }}
       - uses: actions/setup-node@v4
@@ -215,24 +247,45 @@ jobs:
           npm run flight:complete -- --root . --flight-root ../flight --oracle-commit ${{ github.sha }} --request-id ${{ needs.rebuild.outputs.request-id }}
 
 
-      - name: Commit and open Flight PR
+      - name: Commit and update Flight PR
         working-directory: flight
         env:
           BASE_BRANCH: ${{ vars.FLIGHT_BASE_BRANCH || 'develop' }}
+          EXISTING: ${{ steps.completion.outputs.existing }}
+          EXPECTED_HEAD_SHA: ${{ steps.completion.outputs.head_sha }}
           GH_TOKEN: ${{ steps.flight-token.outputs.token }}
+          HEAD_REF: ${{ steps.completion.outputs.head_ref }}
+          PR_NUMBER: ${{ steps.completion.outputs.pull_request }}
           RELEASE_TAG: ${{ needs.rebuild.outputs.release-tag }}
           REQUEST_ID: ${{ needs.rebuild.outputs.request-id }}
         run: |
-          branch="reference-image-lock/${REQUEST_ID}-${GITHUB_RUN_ID}"
-          git switch -c "${branch}"
+          if [ "${EXISTING}" = 'true' ]; then
+            test "$(git rev-parse HEAD)" = "${EXPECTED_HEAD_SHA}" || {
+              echo '::error::Flight lock PR moved while it was being read'
+              exit 1
+            }
+            branch="${HEAD_REF}"
+          else
+            branch="reference-image-lock/${REQUEST_ID}-${GITHUB_RUN_ID}"
+            git switch -c "${branch}"
+          fi
           git config user.name 'flight-reference-images[bot]'
           git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
           git add scripts/reference-image-lock.json "reference-image-requests/${REQUEST_ID}.json"
           git -c core.hooksPath=/dev/null commit -m "chore(reference-images): lock ${RELEASE_TAG}"
-          git push origin "${branch}"
-          gh pr create \
-            --repo flighthq/flight \
-            --base "${BASE_BRANCH}" \
-            --head "${branch}" \
-            --title "chore(reference-images): lock ${RELEASE_TAG}" \
-            --body "Pins the immutable blessed release and fulfills \`${REQUEST_ID}\`. Flight CI must prove the cell is locked and gating before merge."
+          git push origin "HEAD:refs/heads/${branch}"
+
+          body="Pins the immutable blessed release through \`${RELEASE_TAG}\` and fulfills \`${REQUEST_ID}\`. It may retain earlier fulfilled-request removals while this lock update is open. Flight CI must prove every cell is locked and gating before merge."
+          if [ "${EXISTING}" = 'true' ]; then
+            gh pr edit "${PR_NUMBER}" \
+              --repo flighthq/flight \
+              --title "chore(reference-images): lock ${RELEASE_TAG}" \
+              --body "${body}"
+          else
+            gh pr create \
+              --repo flighthq/flight \
+              --base "${BASE_BRANCH}" \
+              --head "${branch}" \
+              --title "chore(reference-images): lock ${RELEASE_TAG}" \
+              --body "${body}"
+          fi

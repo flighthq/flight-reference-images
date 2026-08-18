@@ -1,0 +1,274 @@
+name: Refresh oldest reference image PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Oldest open reference image approval PR number
+        required: true
+        type: number
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: oracle-candidate-refresh
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Rebuild candidate against current main without write credentials
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    outputs:
+      artifact-digest: sha256:${{ steps.upload.outputs.artifact-digest }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      head-ref: ${{ steps.pull.outputs.head_ref }}
+      head-sha: ${{ steps.pull.outputs.head_sha }}
+      release-tag: ${{ steps.prepared.outputs.release_tag }}
+      report-id: ${{ steps.report.outputs.artifact-id }}
+      request-id: ${{ steps.prepared.outputs.request_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Require the oldest open reference image PR
+        id: pull
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pull_request }}
+        run: |
+          mkdir -p .artifacts
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&sort=created&direction=asc&per_page=100" \
+            > .artifacts/pulls.json
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+
+          const requested = Number(process.env.PR_NUMBER);
+          const pulls = JSON.parse(readFileSync('.artifacts/pulls.json', 'utf8'));
+          const queue = pulls
+            .filter(
+              (pull) =>
+                pull.base.ref === 'main' &&
+                pull.head.repo?.full_name === process.env.GITHUB_REPOSITORY &&
+                pull.head.ref.startsWith('oracle/'),
+            )
+            .sort((left, right) => left.number - right.number);
+          if (queue.length === 0) throw new Error('there are no open reference image approval PRs');
+          const oldest = queue[0];
+          if (oldest.number !== requested) {
+            throw new Error(`PR #${requested} is not next; refresh and merge #${oldest.number} first`);
+          }
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            [`head_ref=${oldest.head.ref}`, `head_sha=${oldest.head.sha}`].join('\n') + '\n',
+          );
+          NODE
+      - name: Read immutable candidate locator from the PR head
+        id: locator
+        env:
+          EXPECTED_HEAD_SHA: ${{ steps.pull.outputs.head_sha }}
+          PR_NUMBER: ${{ inputs.pull_request }}
+        run: |
+          git fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
+          test "$(git rev-parse FETCH_HEAD)" = "${EXPECTED_HEAD_SHA}" || {
+            echo '::error::PR head moved while it was being read'
+            exit 1
+          }
+          mapfile -t locators < <(git ls-tree -r --name-only FETCH_HEAD -- candidates | grep -E '^candidates/.+\.json$')
+          test "${#locators[@]}" -eq 1 || {
+            echo "::error::expected one candidate locator on PR #${PR_NUMBER}, found ${#locators[@]}"
+            exit 1
+          }
+          git show "FETCH_HEAD:${locators[0]}" > .artifacts/locator.json
+          npm run schema:check -- --schema candidate-locator --file .artifacts/locator.json
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+
+          const locator = JSON.parse(readFileSync('.artifacts/locator.json', 'utf8'));
+          if (locator.preparedArtifact.repository !== process.env.GITHUB_REPOSITORY) {
+            throw new Error(`prepared artifact belongs to ${locator.preparedArtifact.repository}`);
+          }
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            [
+              `artifact_id=${locator.preparedArtifact.artifactId}`,
+              `artifact_digest=${locator.preparedArtifact.digest}`,
+              `run_id=${locator.preparedArtifact.workflowRunId}`,
+              `request_id=${locator.requestId}`,
+              `release_tag=${locator.releaseTag}`,
+            ].join('\n') + '\n',
+          );
+          NODE
+      - name: Verify prior prepared artifact identity
+        env:
+          ARTIFACT_ID: ${{ steps.locator.outputs.artifact_id }}
+          EXPECTED_DIGEST: ${{ steps.locator.outputs.artifact_digest }}
+          EXPECTED_RUN_ID: ${{ steps.locator.outputs.run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mapfile -t artifact_fields < <(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" \
+              --jq '[.workflow_run.id, .digest, .expired] | .[]'
+          )
+          test "${artifact_fields[0]}" = "${EXPECTED_RUN_ID}" || {
+            echo '::error::prepared artifact belongs to another workflow run'
+            exit 1
+          }
+          test "${artifact_fields[1]}" = "${EXPECTED_DIGEST}" || {
+            echo '::error::prepared artifact digest differs from the PR locator'
+            exit 1
+          }
+          test "${artifact_fields[2]}" = 'false' || {
+            echo '::error::prepared artifact has expired'
+            exit 1
+          }
+      - name: Download prior prepared candidate
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.locator.outputs.artifact_id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.locator.outputs.run_id }}
+          path: .artifacts/prior
+          merge-multiple: true
+      - name: Download current blessed packs
+        run: npm run packs:download -- --output .artifacts/previous-packs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Prepare the same candidate against current main
+        run: >-
+          npm run intake:prepare -- --candidate .artifacts/prior/candidate --request .artifacts/prior/request.json --envelope .artifacts/prior/envelope.json --previous-packs .artifacts/previous-packs --output .artifacts/prepared
+
+
+      - name: Preserve candidate identity across refresh
+        id: prepared
+        env:
+          EXPECTED_RELEASE_TAG: ${{ steps.locator.outputs.release_tag }}
+          EXPECTED_REQUEST_ID: ${{ steps.locator.outputs.request_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+
+          const prepared = JSON.parse(readFileSync('.artifacts/prepared/prepared-intake.json', 'utf8'));
+          const request = JSON.parse(readFileSync('.artifacts/prepared/request.json', 'utf8'));
+          if (request.id !== process.env.EXPECTED_REQUEST_ID) throw new Error('request identity changed during refresh');
+          if (prepared.releaseTag !== process.env.EXPECTED_RELEASE_TAG) {
+            throw new Error('candidate release identity changed during refresh');
+          }
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            [`request_id=${request.id}`, `release_tag=${prepared.releaseTag}`].join('\n') + '\n',
+          );
+          NODE
+      - name: Store refreshed candidate
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-candidate-${{ steps.prepared.outputs.request_id }}-${{ github.run_id }}
+          path: .artifacts/prepared
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+      - name: Store refreshed review report
+        id: report
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-review-${{ steps.prepared.outputs.request_id }}-${{ github.run_id }}
+          path: .artifacts/prepared/report
+          if-no-files-found: error
+          retention-days: 30
+
+  update-pr:
+    name: Replace stale PR metadata without processing candidate images
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Mint Oracle PR token
+        id: oracle-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.ORACLE_APP_ID }}
+          private-key: ${{ secrets.ORACLE_APP_PRIVATE_KEY }}
+          owner: flighthq
+          repositories: flight-reference-images
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ steps.oracle-token.outputs.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Download refreshed prepared candidate
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact-id }}
+          path: .artifacts/prepared
+          merge-multiple: true
+      - name: Apply schema-validated allowlisted metadata
+        run: >-
+          npm run intake:apply -- --prepared .artifacts/prepared --artifact-id ${{ needs.prepare.outputs.artifact-id }} --artifact-digest ${{ needs.prepare.outputs.artifact-digest }} --workflow-run-id ${{ github.run_id }}
+
+
+      - name: Replace the existing approval PR branch
+        env:
+          EXPECTED_HEAD_SHA: ${{ needs.prepare.outputs.head-sha }}
+          GH_TOKEN: ${{ steps.oracle-token.outputs.token }}
+          HEAD_REF: ${{ needs.prepare.outputs.head-ref }}
+          PR_NUMBER: ${{ inputs.pull_request }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release-tag }}
+          REPORT_ID: ${{ needs.prepare.outputs.report-id }}
+          REQUEST_ID: ${{ needs.prepare.outputs.request-id }}
+        run: |
+          mapfile -t pull_fields < <(
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '[.state, .base.ref, .head.ref, .head.sha, .draft] | .[]'
+          )
+          test "${pull_fields[0]}" = 'open'
+          test "${pull_fields[1]}" = 'main'
+          test "${pull_fields[2]}" = "${HEAD_REF}"
+          test "${pull_fields[3]}" = "${EXPECTED_HEAD_SHA}" || {
+            echo '::error::PR head moved during refresh; refusing to overwrite it'
+            exit 1
+          }
+
+          git switch -c "${HEAD_REF}"
+          git config user.name 'flight-reference-images[bot]'
+          git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
+          git add manifest.json oracles candidates
+          git -c core.hooksPath=/dev/null commit -m "feat(oracles): bless ${REQUEST_ID}"
+          git push \
+            --force-with-lease="refs/heads/${HEAD_REF}:${EXPECTED_HEAD_SHA}" \
+            origin "HEAD:refs/heads/${HEAD_REF}"
+
+          report_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${REPORT_ID}"
+          printf '%s\n' \
+            "Blesses request \`${REQUEST_ID}\` into immutable release \`${RELEASE_TAG}\`." \
+            '' \
+            "Refreshed against current \`main\`. Review artifact: ${report_url}" \
+            '' \
+            'Merging this PR is the approval. Release automation promotes the exact staged bytes; it never recaptures.' \
+            > .artifacts/pr-body.md
+          gh pr edit "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body-file .artifacts/pr-body.md
+          if [ "${pull_fields[4]}" = 'true' ]; then
+            gh pr ready "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}"
+          fi

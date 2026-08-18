@@ -29,7 +29,8 @@ on:
         required: true
 
 concurrency:
-  group: oracle-intake-${{ github.event.client_payload.request_sha256 || inputs.request_sha256 }}
+  # Serialize dispatches so exactly one newly opened approval is ready; later candidates form a draft queue.
+  group: oracle-intake
   cancel-in-progress: false
 
 jobs:
@@ -66,6 +67,8 @@ jobs:
           permission-actions: read
           permission-contents: read
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -208,6 +211,7 @@ jobs:
           permission-pull-requests: write
       - uses: actions/checkout@v4
         with:
+          ref: main
           token: ${{ steps.oracle-token.outputs.token }}
       - uses: actions/setup-node@v4
         with:
@@ -250,8 +254,15 @@ jobs:
             '' \
             'Merging this PR is the approval. Release automation promotes the exact staged bytes; it never recaptures.' \
             > .artifacts/pr-body.md
+
+          create_options=()
+          if gh pr list --base main --state open --limit 1000 --json headRefName --jq \
+            '.[] | select(.headRefName | startswith("oracle/")) | .number' | grep -q .; then
+            create_options+=(--draft)
+          fi
           gh pr create \
             --base main \
             --head "${branch}" \
             --title "feat(oracles): bless ${REQUEST_ID}" \
-            --body-file .artifacts/pr-body.md
+            --body-file .artifacts/pr-body.md \
+            "${create_options[@]}"

@@ -90,11 +90,17 @@ report/                    report.json, index.html, old/new/delta images
 
 PR CI downloads the locator's immutable artifact, verifies its GitHub digest, downloads the prior release, reconstructs every complete pack from the staged candidate, and requires the result to equal both the PR metadata and committed manifest.
 
+### Concurrent approval queue
+
+Every prepared candidate is bound to the manifest and complete packs that were current when it was built. Merging one approval therefore makes every sibling approval stale; resolving its manifest conflict textually would not update that cryptographic base. Intake dispatches are serialized, the first approval opens ready for review, and later approvals open as drafts.
+
+After an approval is merged and its release is published, run **Refresh oldest reference image PR** with the oldest open approval PR number. The refresh workflow downloads the exact candidate artifact named by that PR, re-prepares it against current `main` without write credentials, and lease-replaces only that PR's allowlisted metadata. It refuses later PRs until the oldest is merged and promotes a refreshed draft to ready. GitHub's ordinary rebase, update-branch, and conflict editor are not valid for these PRs.
+
 ## Release and Flight reference-image lock
 
 After approval, a changed `manifest.json` triggers release automation to repeat reconstruction from candidate bytes and the prior complete release. Candidate-locator-only maintenance does not republish an unchanged release. A separate contents-write job verifies the resulting fixed manifest and pack SHA-256 values, refuses an existing tag, and publishes the files without decoding images.
 
-The completion job writes Flight's version-2 [`reference-image-lock.schema.json`](../schemas/reference-image-lock.schema.json) shape to `scripts/reference-image-lock.json` and removes the fulfilled request in the same PR. Each pack entry pins both the encoded pack and an identity-keyed `images` map of decoded `pixelSha256` values, so Flight can decide whether a captured image is already represented without downloading the pack. Required `referenceImage` coverage stays in Flight throughout.
+The completion job writes Flight's version-2 [`reference-image-lock.schema.json`](../schemas/reference-image-lock.schema.json) shape to `scripts/reference-image-lock.json` and removes the fulfilled request in the same PR. If a Flight lock-update PR is already open, later releases advance that branch and accumulate their fulfilled-request removals instead of opening conflicting siblings. Each pack entry pins both the encoded pack and an identity-keyed `images` map of decoded `pixelSha256` values, so Flight can decide whether a captured image is already represented without downloading the pack. Required `referenceImage` coverage stays in Flight throughout.
 
 Flight resolves each required identity with these states:
 

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { parseDocument } from 'yaml';
 
 describe('GitHub Actions workflows', () => {
-  for (const file of ['ci.yml', 'intake.yml', 'release.yml']) {
+  for (const file of ['ci.yml', 'intake.yml', 'refresh-candidate.yml', 'release.yml']) {
     it(`${file} is valid YAML`, async () => {
       const document = parseDocument(await readFile(join('.github', 'workflows', file), 'utf8'));
       expect(document.errors).toEqual([]);
@@ -15,18 +15,23 @@ describe('GitHub Actions workflows', () => {
 
   it('keeps image processing out of both privileged writers', async () => {
     const intake = parse(await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8'));
+    const refresh = parse(await readFile(join('.github', 'workflows', 'refresh-candidate.yml'), 'utf8'));
     const release = parse(await readFile(join('.github', 'workflows', 'release.yml'), 'utf8'));
 
     expect(job(intake, 'prepare').permissions.contents).toBe('read');
     expect(job(intake, 'open-pr').permissions.contents).toBe('read');
+    expect(job(refresh, 'prepare').permissions.contents).toBe('read');
+    expect(job(refresh, 'update-pr').permissions.contents).toBe('read');
     expect(job(release, 'rebuild').permissions.contents).toBe('read');
     expect(job(release, 'publish').permissions.contents).toBe('write');
     expect(JSON.stringify(job(intake, 'open-pr'))).not.toMatch(/intake:(prepare|replay)/u);
+    expect(JSON.stringify(job(refresh, 'prepare'))).not.toContain('intake:apply');
+    expect(JSON.stringify(job(refresh, 'update-pr'))).not.toMatch(/intake:(prepare|replay)/u);
     expect(JSON.stringify(job(release, 'publish'))).not.toContain('intake:replay');
   });
 
   it('extracts id-selected artifacts directly into their consumer directories', async () => {
-    for (const file of ['ci.yml', 'intake.yml', 'release.yml']) {
+    for (const file of ['ci.yml', 'intake.yml', 'refresh-candidate.yml', 'release.yml']) {
       const workflow = parse(await readFile(join('.github', 'workflows', file), 'utf8'));
       for (const definition of Object.values(workflow.jobs)) {
         for (const step of definition.steps ?? []) {
@@ -39,10 +44,12 @@ describe('GitHub Actions workflows', () => {
 
   it('qualifies upload-action digests before durable use or API comparison', async () => {
     const intake = parse(await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8'));
+    const refresh = parse(await readFile(join('.github', 'workflows', 'refresh-candidate.yml'), 'utf8'));
     const release = parse(await readFile(join('.github', 'workflows', 'release.yml'), 'utf8'));
     const qualifiedDigest = 'sha256:${{ steps.upload.outputs.artifact-digest }}';
 
     expect(job(intake, 'prepare').outputs?.['artifact-digest']).toBe(qualifiedDigest);
+    expect(job(refresh, 'prepare').outputs?.['artifact-digest']).toBe(qualifiedDigest);
     expect(job(release, 'rebuild').outputs?.['artifact-digest']).toBe(qualifiedDigest);
   });
 
@@ -63,6 +70,26 @@ describe('GitHub Actions workflows', () => {
 
     expect(release.on?.push?.paths).toEqual(['manifest.json']);
   });
+
+  it('advances one Flight lock PR instead of opening conflicting siblings', async () => {
+    const releaseText = await readFile(join('.github', 'workflows', 'release.yml'), 'utf8');
+
+    expect(releaseText).toContain("pull.head.ref.startsWith('reference-image-lock/')");
+    expect(releaseText).toContain('if [ "${EXISTING}" = \'true\' ]');
+    expect(releaseText).toContain('gh pr edit "${PR_NUMBER}"');
+  });
+
+  it('serializes intake and queues later approvals as drafts', async () => {
+    const intakeText = await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8');
+    const intake = parse(intakeText);
+
+    expect(intake.concurrency?.group).toBe('oracle-intake');
+    expect(intake.concurrency?.['cancel-in-progress']).toBe(false);
+    expect(intakeText).toContain('create_options+=(--draft)');
+    for (const name of ['prepare', 'open-pr']) {
+      expect(job(intake, name).steps?.find((step) => step.uses === 'actions/checkout@v4')?.with?.ref).toBe('main');
+    }
+  });
 });
 
 interface Workflow {
@@ -70,6 +97,7 @@ interface Workflow {
     push?: { paths?: string[] };
     repository_dispatch?: { types?: string[] };
   };
+  concurrency?: { 'cancel-in-progress'?: boolean; group?: string };
   jobs: Record<
     string,
     {
