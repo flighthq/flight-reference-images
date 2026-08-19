@@ -1,0 +1,32 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/camera2d-viewport/canvas.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "cd23ef6d7d931fa1e7c959cab6dd9d4a153e10fd75592f44df903d18286b4ee7",
+  "flightCommit": "00028b0f581f46010a9ba6f4d34a54cbfbe90ac0",
+  "preparedArtifact": {
+    "artifactId": 9370225170,
+    "digest": "sha256:77e1476039546850a1c8915ac6d21fb3037365ce4ebefa492874d1df2f7ce816",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32266042550
+  },
+  "records": [
+    {
+      "path": "oracles/functional/camera2d-viewport/canvas.json",
+      "sha256": "bfba32df29fa1fc29138ea39248a60b4893fec298bb06a750c4f8e39bb5cde97"
+    }
+  ],
+  "requestId": "ec8e9b75-1a1f-45fd-b2f1-52c840e2eea8",
+  "requestSha256": "68f9f50dfc0e8e28e35eb2c306fe080ffcc12aed31d6e4cdd92d1a6ae29e6047",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9355059966,
+    "digest": "sha256:8dc710248bb3a679b065df8caadc30d1779621a3191c62009abdd3ef5764a73d",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32223836970
+  }
+}
