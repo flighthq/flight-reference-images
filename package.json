@@ -18,6 +18,7 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "flight:complete": "tsx ./src/cli.ts flight-complete",
+    "flight:reconcile": "tsx ./src/cli.ts flight-reconcile",
     "intake:apply": "tsx ./src/cli.ts intake-apply",
     "intake:approve": "tsx ./src/cli.ts intake-approve",
     "intake:prepare": "tsx ./src/cli.ts intake-prepare",

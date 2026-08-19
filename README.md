@@ -56,6 +56,7 @@ npm run batch:prepare -- --prepared-root <dir> --previous-packs <dir> --output <
 npm run batch:apply -- --prepared <dir> --artifact-id <id> --artifact-digest sha256:<hash> --workflow-run-id <id>
 npm run batch:replay -- --prepared <dir> --previous-packs <dir> --output <new-dir>
 npm run release:verify -- --packs <dir>
+npm run flight:reconcile -- --flight-root <flight-dir> --oracle-commit <40-hex> --request-ids <id,id,...>
 ```
 
 Generated output directories must not already exist. This makes accidental reuse or partial overlay a hard error.

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { PNG } from 'pngjs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { completeFlight } from '../src/completion.js';
+import { completeFlight, reconcileFlight } from '../src/completion.js';
 import {
   applyPreparedIntake,
   applyPreparedBatch,
@@ -497,8 +497,62 @@ describe('completeFlight', () => {
       }),
     ).rejects.toThrow('Flight request checksum is');
     await expect(
+      reconcileFlight({
+        flightRoot,
+        oracleCommit: '8'.repeat(40),
+        oracleRoot: fixture.repositoryRoot,
+        requestIds: [fixture.request.id],
+      }),
+    ).rejects.toThrow('Flight request checksum is');
+    await expect(
       readFile(join(flightRoot, 'reference-image-requests', `${fixture.request.id}.json`)),
     ).resolves.toBeDefined();
+  });
+
+  it('reconstructs fulfilled removals from current Flight bytes and retains changed historical requests', async () => {
+    const fixture = await makeFixture('captured');
+    await installFirstRelease(fixture, join(workspace, 'reconciled-request-prepared'));
+    const flightRoot = join(workspace, 'reconciled-flight');
+    const requestRoot = join(flightRoot, 'reference-image-requests');
+    await mkdir(requestRoot, { recursive: true });
+    await mkdir(join(flightRoot, 'scripts'), { recursive: true });
+    await copyFile(fixture.requestPath, join(requestRoot, `${fixture.request.id}.json`));
+
+    const exactHistoricalRequest = { ...fixture.request, id: 'historical-exact' };
+    const changedHistoricalRequest = { ...fixture.request, id: 'historical-changed' };
+    await writeCanonicalJson(join(requestRoot, 'historical-exact.json'), exactHistoricalRequest);
+    await writeCanonicalJson(join(requestRoot, 'historical-changed.json'), {
+      ...changedHistoricalRequest,
+      reason: 'changed after its earlier release',
+    });
+    const manifestPath = join(fixture.repositoryRoot, 'manifest.json');
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as OracleManifest;
+    manifest.sourceRequests.unshift(
+      {
+        flightCommit: '7'.repeat(40),
+        id: exactHistoricalRequest.id,
+        requestSha256: hashBytes(canonicalJson(exactHistoricalRequest)),
+      },
+      {
+        flightCommit: '6'.repeat(40),
+        id: changedHistoricalRequest.id,
+        requestSha256: hashBytes(canonicalJson(changedHistoricalRequest)),
+      },
+    );
+    await writeCanonicalJson(manifestPath, manifest);
+
+    const result = await reconcileFlight({
+      flightRoot,
+      oracleCommit: '8'.repeat(40),
+      oracleRoot: fixture.repositoryRoot,
+      requestIds: [fixture.request.id],
+    });
+
+    expect(result.removedRequestIds).toEqual(['historical-exact', fixture.request.id]);
+    expect(result.retainedChangedRequestIds).toEqual(['historical-changed']);
+    await expect(readFile(join(requestRoot, 'historical-exact.json'))).rejects.toThrow();
+    await expect(readFile(join(requestRoot, `${fixture.request.id}.json`))).rejects.toThrow();
+    await expect(readFile(join(requestRoot, 'historical-changed.json'))).resolves.toBeDefined();
   });
 });
 

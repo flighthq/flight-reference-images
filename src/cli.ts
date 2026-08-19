@@ -4,7 +4,7 @@ import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { renderApprovalSummary, requestDisplayLabel } from './approval.js';
-import { completeFlight } from './completion.js';
+import { completeFlight, reconcileFlight } from './completion.js';
 import {
   applyPreparedIntake,
   applyPreparedBatch,
@@ -188,6 +188,18 @@ async function main(): Promise<void> {
       requestId: requiredOption(arguments_, '--request-id'),
     });
     console.log(JSON.stringify(lock));
+    return;
+  }
+
+  if (command === 'flight-reconcile') {
+    const requestIds = requiredOption(arguments_, '--request-ids').split(',');
+    const result = await reconcileFlight({
+      flightRoot: requiredOption(arguments_, '--flight-root'),
+      oracleCommit: requiredOption(arguments_, '--oracle-commit'),
+      oracleRoot: option(arguments_, '--root') ?? '.',
+      requestIds,
+    });
+    console.log(JSON.stringify(result));
     return;
   }
 

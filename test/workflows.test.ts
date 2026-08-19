@@ -82,12 +82,15 @@ describe('GitHub Actions workflows', () => {
     expect(release.on?.push?.paths).toEqual(['manifest.json']);
   });
 
-  it('advances one Flight lock PR instead of opening conflicting siblings', async () => {
+  it('reconstructs one Flight lock PR from its current base instead of replaying conflicting deletions', async () => {
     const releaseText = await readFile(join('.github', 'workflows', 'release.yml'), 'utf8');
 
     expect(releaseText).toContain("pull.head.ref.startsWith('reference-image-lock/')");
     expect(releaseText).toContain('if [ "${EXISTING}" = \'true\' ]');
-    expect(releaseText).toContain('git rebase "origin/${BASE_BRANCH}"');
+    expect(releaseText).toContain("ref: ${{ vars.FLIGHT_BASE_BRANCH || 'develop' }}");
+    expect(releaseText).toContain('npm run flight:reconcile');
+    expect(releaseText).toContain('git add -A -- scripts/reference-image-lock.json reference-image-requests');
+    expect(releaseText).not.toContain('git rebase');
     expect(releaseText).toContain('--force-with-lease="refs/heads/${branch}:${EXPECTED_HEAD_SHA}"');
     expect(releaseText).toContain('gh pr edit "${PR_NUMBER}"');
   });

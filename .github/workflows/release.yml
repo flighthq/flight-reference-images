@@ -273,10 +273,9 @@ jobs:
           appendFileSync(
             process.env.GITHUB_OUTPUT,
             existing === undefined
-              ? `existing=false\ncheckout_ref=${process.env.BASE_BRANCH}\n`
+              ? `existing=false\n`
               : [
                   'existing=true',
-                  `checkout_ref=${existing.head.ref}`,
                   `head_ref=${existing.head.ref}`,
                   `head_sha=${existing.head.sha}`,
                   `pull_request=${existing.number}`,
@@ -291,25 +290,10 @@ jobs:
       - name: Check out Flight completion base
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           repository: flighthq/flight
-          ref: ${{ steps.completion.outputs.checkout_ref }}
+          ref: ${{ vars.FLIGHT_BASE_BRANCH || 'develop' }}
           path: flight
           token: ${{ steps.flight-token.outputs.token }}
-      - name: Rebase existing Flight PR onto its current base
-        if: steps.completion.outputs.existing == 'true'
-        working-directory: flight
-        env:
-          BASE_BRANCH: ${{ vars.FLIGHT_BASE_BRANCH || 'develop' }}
-          EXPECTED_HEAD_SHA: ${{ steps.completion.outputs.head_sha }}
-        run: |
-          test "$(git rev-parse HEAD)" = "${EXPECTED_HEAD_SHA}" || {
-            echo '::error::Flight lock PR moved while it was being read'
-            exit 1
-          }
-          git config user.name 'flight-reference-images[bot]'
-          git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
-          git rebase "origin/${BASE_BRANCH}"
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -317,20 +301,14 @@ jobs:
           cache-dependency-path: oracle/package-lock.json
       - run: npm ci
         working-directory: oracle
-      - name: Update the immutable lock and fulfill the request
+      - name: Reconcile the immutable lock and fulfilled requests
         working-directory: oracle
         env:
           ORACLE_COMMIT: ${{ needs.publish.outputs.oracle-commit }}
           REQUEST_IDS: ${{ needs.rebuild.outputs.request-ids }}
-        run: |
-          IFS=',' read -ra request_ids <<< "${REQUEST_IDS}"
-          for request_id in "${request_ids[@]}"; do
-            npm run flight:complete -- \
-              --root . \
-              --flight-root ../flight \
-              --oracle-commit "${ORACLE_COMMIT}" \
-              --request-id "${request_id}"
-          done
+        run: >-
+          npm run flight:reconcile -- --root . --flight-root ../flight --oracle-commit "${ORACLE_COMMIT}" --request-ids "${REQUEST_IDS}"
+
 
       - name: Commit and update Flight PR
         working-directory: flight
@@ -349,15 +327,12 @@ jobs:
             branch="${HEAD_REF}"
           else
             branch="reference-image-lock/${REQUEST_ID}-${GITHUB_RUN_ID}"
-            git switch -c "${branch}"
           fi
+          git switch -c "${branch}"
           git config user.name 'flight-reference-images[bot]'
           git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
-          git add scripts/reference-image-lock.json
+          git add -A -- scripts/reference-image-lock.json reference-image-requests
           IFS=',' read -ra request_ids <<< "${REQUEST_IDS}"
-          for request_id in "${request_ids[@]}"; do
-            git add "reference-image-requests/${request_id}.json"
-          done
           git -c core.hooksPath=/dev/null commit -m "chore(reference-images): lock ${RELEASE_TAG}"
           if [ "${EXISTING}" = 'true' ]; then
             git push --force-with-lease="refs/heads/${branch}:${EXPECTED_HEAD_SHA}" origin "HEAD:refs/heads/${branch}"
@@ -365,7 +340,7 @@ jobs:
             git push origin "HEAD:refs/heads/${branch}"
           fi
 
-          body="Pins the immutable blessed release through \`${RELEASE_TAG}\` and fulfills ${#request_ids[@]} approved request(s). It may retain earlier fulfilled-request removals while this lock update is open. Flight CI must prove every cell is locked and gating before merge."
+          body="Pins the immutable blessed release through \`${RELEASE_TAG}\` and fulfills ${#request_ids[@]} newly approved request(s). The branch is reconstructed from current ${BASE_BRANCH}; prior released requests are removed only when their bytes still match the reviewed checksum. Flight CI must prove every cell is locked and gating before merge."
           if [ "${EXISTING}" = 'true' ]; then
             gh pr edit "${PR_NUMBER}" \
               --repo flighthq/flight \
