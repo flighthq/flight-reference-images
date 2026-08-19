@@ -2,29 +2,29 @@
   "$schema": "./schemas/manifest.schema.json",
   "packs": [
     {
-      "file": "functional-images-oracle-97739c38-f97e-4736-beb9-badba1ffd62a-d41eb1f550b5.tgz",
+      "file": "functional-images-oracle-1850c447-117b-4fce-bc0b-804fb5210d0e-8533e8b84b7a.tgz",
       "id": "functional-images",
-      "imageCount": 15,
-      "sha256": "205c1f38f2a972fecc06a75f8d29d52e50e4acfc4eb1fcdf0d65fe9d19893994",
-      "size": 282289
+      "imageCount": 16,
+      "sha256": "d4b927f369dbbbad3eb8a817fbb80cc54f513882173919b97b1f71d42f0e4f8b",
+      "size": 287859
     },
     {
-      "file": "functional-other-oracle-97739c38-f97e-4736-beb9-badba1ffd62a-d41eb1f550b5.tgz",
+      "file": "functional-other-oracle-1850c447-117b-4fce-bc0b-804fb5210d0e-8533e8b84b7a.tgz",
       "id": "functional-other",
       "imageCount": 5,
       "sha256": "ff1de069b3cfcd9c084c9b40ae1ba68515401e2cdb3a7c2de04df2dd5e325d27",
       "size": 29295
     },
     {
-      "file": "functional-shapes-oracle-97739c38-f97e-4736-beb9-badba1ffd62a-d41eb1f550b5.tgz",
+      "file": "functional-shapes-oracle-1850c447-117b-4fce-bc0b-804fb5210d0e-8533e8b84b7a.tgz",
       "id": "functional-shapes",
       "imageCount": 1,
       "sha256": "afc4373f5d106822b34b74fc1b6ae663a8dc3f5490b6edf656a2730e2464a75e",
       "size": 7371
     }
   ],
-  "parentReleaseTag": "oracle-e4fce4c0-e5a7-45d0-b8e7-21df064a058d-b49091d591ec",
-  "releaseTag": "oracle-97739c38-f97e-4736-beb9-badba1ffd62a-d41eb1f550b5",
+  "parentReleaseTag": "oracle-97739c38-f97e-4736-beb9-badba1ffd62a-d41eb1f550b5",
+  "releaseTag": "oracle-1850c447-117b-4fce-bc0b-804fb5210d0e-8533e8b84b7a",
   "schemaVersion": 1,
   "sourceRequests": [
     {
@@ -66,6 +66,11 @@
       "flightCommit": "9d20d2e0317023af656379bb16f54f02cf43c97a",
       "id": "97739c38-f97e-4736-beb9-badba1ffd62a",
       "requestSha256": "c39d847a34f072015882c7eef917cc153a794bea29b27283384412c2682e30ff"
+    },
+    {
+      "flightCommit": "9d20d2e0317023af656379bb16f54f02cf43c97a",
+      "id": "1850c447-117b-4fce-bc0b-804fb5210d0e",
+      "requestSha256": "f97b3e479dedd9ef326846edda2f81bbb5796116c47960f8b80ca08ebf038296"
     }
   ]
 }
