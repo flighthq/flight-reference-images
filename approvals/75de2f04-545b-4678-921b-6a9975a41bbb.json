@@ -1,0 +1,48 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/effect-brightness-contrast/canvas.json",
+      "sha256": "3a1f463c05997189417dcbbf5c33aa27f11e15ea36ec19775a915e9fa3239c2c"
+    },
+    {
+      "path": "oracles/functional/effect-brightness-contrast/webgl.json",
+      "sha256": "63a74cfe9fb913e300983b375cb8411dc772a3fe7b3c778546df5c6c54a5aa05"
+    },
+    {
+      "path": "oracles/functional/effect-brightness-contrast/webgpu.json",
+      "sha256": "799377207b40dc2bac6b24c193dd51ad1502d707ad769669fd960429a9c2bb28"
+    }
+  ],
+  "candidateSha256": "771e4410a895486b7e653cfb59bcbb6f9b72c26f65894d70fe0ae4caf73a14d5",
+  "flightCommit": "e25e95d60f7439c174b16b0c9c970d4aba8223bd",
+  "preparedArtifact": {
+    "artifactId": 9387311883,
+    "digest": "sha256:b3e9b5844b89dda9e5b69a77d9908bee3b2016a47b60219d618cabdc7e4b6449",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32313584026
+  },
+  "records": [
+    {
+      "path": "oracles/functional/effect-brightness-contrast/canvas.json",
+      "sha256": "79eda4bdca4a369326570e9b285070c3f285480518e6543457d830e0d5ce9d86"
+    },
+    {
+      "path": "oracles/functional/effect-brightness-contrast/webgl.json",
+      "sha256": "97a49d4e153857ee1b17148bc217ae15817634905011314345ebeea736c844f1"
+    },
+    {
+      "path": "oracles/functional/effect-brightness-contrast/webgpu.json",
+      "sha256": "dda7297760d40dd8dded9d7a7ab157203accc2c16e414d1d1d3ecef3504c4d74"
+    }
+  ],
+  "requestId": "75de2f04-545b-4678-921b-6a9975a41bbb",
+  "requestSha256": "19273cf8ba176c22b2ecc62aca7fce14c9206a455e884b520f0bf43a76717672",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9387208056,
+    "digest": "sha256:aec386517310a6959e6fc6ca282936b70d01aa4c04eeffe76654bc357783990d",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32313104775
+  }
+}
