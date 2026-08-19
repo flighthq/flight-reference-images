@@ -13,6 +13,19 @@ describe('GitHub Actions workflows', () => {
     });
   }
 
+  it('keeps shell heredoc terminators unindented', async () => {
+    for (const file of ['ci.yml', 'intake.yml', 'migrate-approvals.yml', 'release.yml', 'stage-release.yml']) {
+      const workflow = parse(await readFile(join('.github', 'workflows', file), 'utf8'));
+      for (const definition of Object.values(workflow.jobs)) {
+        for (const step of definition.steps ?? []) {
+          for (const match of step.run?.matchAll(/<<-?'([A-Z][A-Z0-9_]*)'/gu) ?? []) {
+            expect(step.run?.split('\n'), `${file}: ${step.name ?? 'unnamed step'}`).toContain(match[1]);
+          }
+        }
+      }
+    }
+  });
+
   it('keeps image processing out of both privileged writers', async () => {
     const intake = parse(await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8'));
     const release = parse(await readFile(join('.github', 'workflows', 'release.yml'), 'utf8'));
@@ -156,7 +169,7 @@ interface Workflow {
       if?: string;
       outputs?: Record<string, unknown>;
       permissions: Record<string, string>;
-      steps?: { name?: string; uses?: string; with?: Record<string, unknown> }[];
+      steps?: { name?: string; run?: string; uses?: string; with?: Record<string, unknown> }[];
     }
   >;
 }

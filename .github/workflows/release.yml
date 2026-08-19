@@ -208,21 +208,21 @@ jobs:
             mkdir .artifacts/published-release
             gh release download "${RELEASE_TAG}" --dir .artifacts/published-release
             node --input-type=module <<'NODE'
-            import { readFileSync, readdirSync } from 'node:fs';
+          import { readFileSync, readdirSync } from 'node:fs';
 
-            const expectedDirectory = '.artifacts/release-bundle';
-            const actualDirectory = '.artifacts/published-release';
-            const expected = readdirSync(expectedDirectory).sort();
-            const actual = readdirSync(actualDirectory).sort();
-            if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-              throw new Error(`existing release asset set differs: ${actual.join(', ')}`);
+          const expectedDirectory = '.artifacts/release-bundle';
+          const actualDirectory = '.artifacts/published-release';
+          const expected = readdirSync(expectedDirectory).sort();
+          const actual = readdirSync(actualDirectory).sort();
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`existing release asset set differs: ${actual.join(', ')}`);
+          }
+          for (const file of expected) {
+            if (!readFileSync(`${actualDirectory}/${file}`).equals(readFileSync(`${expectedDirectory}/${file}`))) {
+              throw new Error(`existing release asset ${file} differs`);
             }
-            for (const file of expected) {
-              if (!readFileSync(`${actualDirectory}/${file}`).equals(readFileSync(`${expectedDirectory}/${file}`))) {
-                throw new Error(`existing release asset ${file} differs`);
-              }
-            }
-            NODE
+          }
+          NODE
             echo "oracle_commit=${object_sha}" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
