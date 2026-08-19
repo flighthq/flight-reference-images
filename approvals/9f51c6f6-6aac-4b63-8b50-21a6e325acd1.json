@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/scene-skin-two-skeletons/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/scene-skin-two-skeletons/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "134ccff5df8941c9f0f6846b14deb6e913d0206aee3e54e6688a6d0aa4dc64c6",
+  "flightCommit": "ef4fae7fcce4981f09353ef665113c0034491f34",
+  "preparedArtifact": {
+    "artifactId": 9373667965,
+    "digest": "sha256:b3acabe84e073d66729a7404dc94a892ad6603d849ef8402f6dc8b66e65ed20d",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32275021684
+  },
+  "records": [
+    {
+      "path": "oracles/functional/scene-skin-two-skeletons/webgl.json",
+      "sha256": "50438ed7e57772f3a4147bca930b07cbd1672003a2021a2f580ff2d55afc9b37"
+    },
+    {
+      "path": "oracles/functional/scene-skin-two-skeletons/webgpu.json",
+      "sha256": "4f964fbd26c113b62a566bbf0986d2f0aec7808b3039466fc8c14337a332a420"
+    }
+  ],
+  "requestId": "9f51c6f6-6aac-4b63-8b50-21a6e325acd1",
+  "requestSha256": "1bbb71c0ac6bd3b48a74df3845cc8209ddd1891fabe741aead495f8bec4cd725",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9373464826,
+    "digest": "sha256:6542aa8d3b47ca2622e2d96934b2074ae8854325c850474f11c7d29a0164b21b",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32273941648
+  }
+}
