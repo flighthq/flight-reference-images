@@ -2,29 +2,29 @@
   "$schema": "./schemas/manifest.schema.json",
   "packs": [
     {
-      "file": "functional-images-oracle-1850c447-117b-4fce-bc0b-804fb5210d0e-8533e8b84b7a.tgz",
+      "file": "functional-images-oracle-dcbe3e6f-97e0-4690-804f-85b475be1803-309f4211cb22.tgz",
       "id": "functional-images",
-      "imageCount": 16,
-      "sha256": "d4b927f369dbbbad3eb8a817fbb80cc54f513882173919b97b1f71d42f0e4f8b",
-      "size": 287859
+      "imageCount": 18,
+      "sha256": "2ea903d26f4b9d59ed69e82741a3ed43aa853da03243247b8f57b6120f72a0ee",
+      "size": 292368
     },
     {
-      "file": "functional-other-oracle-1850c447-117b-4fce-bc0b-804fb5210d0e-8533e8b84b7a.tgz",
+      "file": "functional-other-oracle-dcbe3e6f-97e0-4690-804f-85b475be1803-309f4211cb22.tgz",
       "id": "functional-other",
       "imageCount": 5,
       "sha256": "ff1de069b3cfcd9c084c9b40ae1ba68515401e2cdb3a7c2de04df2dd5e325d27",
       "size": 29295
     },
     {
-      "file": "functional-shapes-oracle-1850c447-117b-4fce-bc0b-804fb5210d0e-8533e8b84b7a.tgz",
+      "file": "functional-shapes-oracle-dcbe3e6f-97e0-4690-804f-85b475be1803-309f4211cb22.tgz",
       "id": "functional-shapes",
       "imageCount": 1,
       "sha256": "afc4373f5d106822b34b74fc1b6ae663a8dc3f5490b6edf656a2730e2464a75e",
       "size": 7371
     }
   ],
-  "parentReleaseTag": "oracle-97739c38-f97e-4736-beb9-badba1ffd62a-d41eb1f550b5",
-  "releaseTag": "oracle-1850c447-117b-4fce-bc0b-804fb5210d0e-8533e8b84b7a",
+  "parentReleaseTag": "oracle-1850c447-117b-4fce-bc0b-804fb5210d0e-8533e8b84b7a",
+  "releaseTag": "oracle-dcbe3e6f-97e0-4690-804f-85b475be1803-309f4211cb22",
   "schemaVersion": 1,
   "sourceRequests": [
     {
@@ -71,6 +71,11 @@
       "flightCommit": "9d20d2e0317023af656379bb16f54f02cf43c97a",
       "id": "1850c447-117b-4fce-bc0b-804fb5210d0e",
       "requestSha256": "f97b3e479dedd9ef326846edda2f81bbb5796116c47960f8b80ca08ebf038296"
+    },
+    {
+      "flightCommit": "d7484cfdaa0f9ef0b3e7fd92356d39208e74167f",
+      "id": "dcbe3e6f-97e0-4690-804f-85b475be1803",
+      "requestSha256": "ff17446a95a6eee83de6b8d8b51152a2e2d19d21799653cd73b38324fb07c50f"
     }
   ]
 }
