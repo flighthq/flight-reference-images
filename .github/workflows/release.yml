@@ -136,6 +136,8 @@ jobs:
     permissions:
       actions: read
       contents: write
+    outputs:
+      oracle-commit: ${{ steps.release.outputs.oracle_commit }}
     steps:
       - uses: actions/checkout@v4
       - name: Verify release artifact identity
@@ -181,14 +183,48 @@ jobs:
             if (sha256 !== pack.sha256 || bytes.length !== pack.size) throw new Error(`${pack.file} differs from manifest`);
           }
           NODE
-      - name: Create immutable release
+      - name: Create or verify immutable release
+        id: release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.rebuild.outputs.release-tag }}
         run: |
-          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
-            echo "::error::tag ${RELEASE_TAG} already exists; release assets are immutable"
-            exit 1
+          if tag=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" 2>/dev/null); then
+            object_type=$(jq -r '.object.type' <<< "${tag}")
+            object_sha=$(jq -r '.object.sha' <<< "${tag}")
+            while [ "${object_type}" = 'tag' ]; do
+              tag=$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${object_sha}")
+              object_type=$(jq -r '.object.type' <<< "${tag}")
+              object_sha=$(jq -r '.object.sha' <<< "${tag}")
+            done
+            test "${object_type}" = 'commit' || {
+              echo "::error::release tag ${RELEASE_TAG} does not resolve to a commit"
+              exit 1
+            }
+
+            # A later manual run may retry Flight completion after publication succeeded. Never
+            # replace release assets: continue only when the existing immutable bytes are exact.
+            gh release view "${RELEASE_TAG}" >/dev/null
+            mkdir .artifacts/published-release
+            gh release download "${RELEASE_TAG}" --dir .artifacts/published-release
+            node --input-type=module <<'NODE'
+            import { readFileSync, readdirSync } from 'node:fs';
+
+            const expectedDirectory = '.artifacts/release-bundle';
+            const actualDirectory = '.artifacts/published-release';
+            const expected = readdirSync(expectedDirectory).sort();
+            const actual = readdirSync(actualDirectory).sort();
+            if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+              throw new Error(`existing release asset set differs: ${actual.join(', ')}`);
+            }
+            for (const file of expected) {
+              if (!readFileSync(`${actualDirectory}/${file}`).equals(readFileSync(`${expectedDirectory}/${file}`))) {
+                throw new Error(`existing release asset ${file} differs`);
+              }
+            }
+            NODE
+            echo "oracle_commit=${object_sha}" >> "${GITHUB_OUTPUT}"
+            exit 0
           fi
           gh release create "${RELEASE_TAG}" \
             --target "${GITHUB_SHA}" \
@@ -196,6 +232,7 @@ jobs:
             --notes "Blessed Flight reference images reconstructed from the reviewed candidate artifact." \
             .artifacts/release-bundle/manifest.json \
             .artifacts/release-bundle/*.tgz
+          echo "oracle_commit=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
 
   complete-flight:
     name: Open or advance Flight lock update PR
@@ -254,10 +291,25 @@ jobs:
       - name: Check out Flight completion base
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           repository: flighthq/flight
           ref: ${{ steps.completion.outputs.checkout_ref }}
           path: flight
           token: ${{ steps.flight-token.outputs.token }}
+      - name: Rebase existing Flight PR onto its current base
+        if: steps.completion.outputs.existing == 'true'
+        working-directory: flight
+        env:
+          BASE_BRANCH: ${{ vars.FLIGHT_BASE_BRANCH || 'develop' }}
+          EXPECTED_HEAD_SHA: ${{ steps.completion.outputs.head_sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "${EXPECTED_HEAD_SHA}" || {
+            echo '::error::Flight lock PR moved while it was being read'
+            exit 1
+          }
+          git config user.name 'flight-reference-images[bot]'
+          git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
+          git rebase "origin/${BASE_BRANCH}"
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -268,6 +320,7 @@ jobs:
       - name: Update the immutable lock and fulfill the request
         working-directory: oracle
         env:
+          ORACLE_COMMIT: ${{ needs.publish.outputs.oracle-commit }}
           REQUEST_IDS: ${{ needs.rebuild.outputs.request-ids }}
         run: |
           IFS=',' read -ra request_ids <<< "${REQUEST_IDS}"
@@ -275,7 +328,7 @@ jobs:
             npm run flight:complete -- \
               --root . \
               --flight-root ../flight \
-              --oracle-commit "${GITHUB_SHA}" \
+              --oracle-commit "${ORACLE_COMMIT}" \
               --request-id "${request_id}"
           done
 
@@ -293,10 +346,6 @@ jobs:
           REQUEST_IDS: ${{ needs.rebuild.outputs.request-ids }}
         run: |
           if [ "${EXISTING}" = 'true' ]; then
-            test "$(git rev-parse HEAD)" = "${EXPECTED_HEAD_SHA}" || {
-              echo '::error::Flight lock PR moved while it was being read'
-              exit 1
-            }
             branch="${HEAD_REF}"
           else
             branch="reference-image-lock/${REQUEST_ID}-${GITHUB_RUN_ID}"
@@ -310,7 +359,11 @@ jobs:
             git add "reference-image-requests/${request_id}.json"
           done
           git -c core.hooksPath=/dev/null commit -m "chore(reference-images): lock ${RELEASE_TAG}"
-          git push origin "HEAD:refs/heads/${branch}"
+          if [ "${EXISTING}" = 'true' ]; then
+            git push --force-with-lease="refs/heads/${branch}:${EXPECTED_HEAD_SHA}" origin "HEAD:refs/heads/${branch}"
+          else
+            git push origin "HEAD:refs/heads/${branch}"
+          fi
 
           body="Pins the immutable blessed release through \`${RELEASE_TAG}\` and fulfills ${#request_ids[@]} approved request(s). It may retain earlier fulfilled-request removals while this lock update is open. Flight CI must prove every cell is locked and gating before merge."
           if [ "${EXISTING}" = 'true' ]; then

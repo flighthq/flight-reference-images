@@ -51,9 +51,9 @@ The batch locator remains as current-release audit metadata after publishing, bu
 
 ## Release recovery
 
-Release tags and assets are immutable. If release creation fails before the tag exists, rerun the workflow. If a tag exists, the workflow deliberately fails rather than clobbering it; inspect the existing release and create a new commissioning request for any correction.
+Release tags and assets are immutable. If release creation fails before the tag exists, rerun the workflow. A manual rerun against an existing tag downloads every published asset and continues only when the asset names and bytes exactly equal the reconstructed release; it never replaces an asset. Any difference fails and requires a new commissioning request.
 
-If the release succeeds but the Flight completion PR fails, rerun the failed completion job only after confirming every outstanding Flight request still has the hash recorded in `manifest.json`. The completion tool refuses a moved or missing request.
+If the release succeeds but the Flight completion PR fails, run **Release blessed reference images** manually from the current default branch. The workflow verifies the existing immutable release, resolves its original Oracle commit, rebases the rolling Flight PR onto its current base, and retries completion. Do not rerun the old failed job: GitHub reruns it with the workflow definition from the original release commit. The completion tool still refuses to delete any request whose bytes differ from the hash recorded in `manifest.json`.
 
 ## Pack routing
 

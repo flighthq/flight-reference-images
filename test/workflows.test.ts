@@ -74,7 +74,18 @@ describe('GitHub Actions workflows', () => {
 
     expect(releaseText).toContain("pull.head.ref.startsWith('reference-image-lock/')");
     expect(releaseText).toContain('if [ "${EXISTING}" = \'true\' ]');
+    expect(releaseText).toContain('git rebase "origin/${BASE_BRANCH}"');
+    expect(releaseText).toContain('--force-with-lease="refs/heads/${branch}:${EXPECTED_HEAD_SHA}"');
     expect(releaseText).toContain('gh pr edit "${PR_NUMBER}"');
+  });
+
+  it('retries completion only after verifying an existing immutable release', async () => {
+    const releaseText = await readFile(join('.github', 'workflows', 'release.yml'), 'utf8');
+
+    expect(releaseText).toContain('gh release download "${RELEASE_TAG}"');
+    expect(releaseText).toContain('existing release asset ${file} differs');
+    expect(releaseText).toContain('oracle_commit=${object_sha}');
+    expect(releaseText).toContain('ORACLE_COMMIT: ${{ needs.publish.outputs.oracle-commit }}');
   });
 
   it('opens independently mergeable approval-only PRs', async () => {
@@ -100,6 +111,7 @@ describe('GitHub Actions workflows', () => {
     expect(stageText).toContain('npm run batch:apply');
     expect(stageText).toMatch(/startswith\(['"]publication\/['"]\)/u);
     expect(stageText).toContain('--force-with-lease=');
+    expect(stage.concurrency).toEqual({ group: 'oracle-batch-stage', 'cancel-in-progress': true });
   });
 
   it('migrates only still-legacy approval PRs to independent records', async () => {
