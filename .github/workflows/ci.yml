@@ -22,6 +22,105 @@ jobs:
       - run: npm ci
       - run: npm run check
 
+  approval-changes:
+    name: Find changed approval records
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.approvals.outputs.count }}
+      matrix: ${{ steps.approvals.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Read changed approvals
+        id: approvals
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+
+          const base = process.env.BASE_SHA;
+          const paths = base && !/^0+$/u.test(base)
+            ? execFileSync('git', ['diff', '--name-only', '--diff-filter=AM', base, 'HEAD', '--', 'approvals/*.json'], { encoding: 'utf8' })
+                .trim().split('\n').filter(Boolean)
+            : [];
+          const include = paths.map((path) => {
+            const approval = JSON.parse(readFileSync(path, 'utf8'));
+            return {
+              artifact_digest: approval.preparedArtifact.digest,
+              artifact_id: approval.preparedArtifact.artifactId,
+              path,
+              request_id: approval.requestId,
+              run_id: approval.preparedArtifact.workflowRunId,
+            };
+          });
+          appendFileSync(process.env.GITHUB_OUTPUT, `count=${include.length}\nmatrix=${JSON.stringify({ include })}\n`);
+          NODE
+
+  approval-artifact:
+    name: Verify approved candidate ${{ matrix.request_id }}
+    needs: [quality, approval-changes]
+    if: needs.approval-changes.outputs.count != '0'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.approval-changes.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Verify artifact identity
+        env:
+          ARTIFACT_ID: ${{ matrix.artifact_id }}
+          EXPECTED_DIGEST: ${{ matrix.artifact_digest }}
+          EXPECTED_NAME: oracle-candidate-${{ matrix.request_id }}-${{ matrix.run_id }}
+          EXPECTED_RUN_ID: ${{ matrix.run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mapfile -t fields < <(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" \
+              --jq '[.workflow_run.id, .digest, .expired, .name] | .[]'
+          )
+          test "${fields[0]}" = "${EXPECTED_RUN_ID}"
+          test "${fields[1]}" = "${EXPECTED_DIGEST}"
+          test "${fields[2]}" = 'false'
+          test "${fields[3]}" = "${EXPECTED_NAME}"
+      - name: Download prepared candidate
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ matrix.artifact_id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ matrix.run_id }}
+          path: .artifacts/prepared
+          merge-multiple: true
+      - name: Verify immutable approval binding
+        run: npm run intake:verify-approval -- --approval ${{ matrix.path }} --prepared .artifacts/prepared
+
+  approval-integrity:
+    name: Approval artifact integrity
+    needs: [quality, approval-changes, approval-artifact]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every changed approval to pass artifact verification
+        env:
+          APPROVAL_COUNT: ${{ needs.approval-changes.outputs.count }}
+          APPROVAL_RESULT: ${{ needs.approval-artifact.result }}
+          CHANGES_RESULT: ${{ needs.approval-changes.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        run: |
+          test "${QUALITY_RESULT}" = 'success'
+          test "${CHANGES_RESULT}" = 'success'
+          if [ "${APPROVAL_COUNT}" != '0' ]; then
+            test "${APPROVAL_RESULT}" = 'success'
+          fi
+
   candidate-replay:
     name: Replay reviewed candidate
     needs: quality
@@ -61,29 +160,44 @@ jobs:
           }
           if (files.length !== 1) throw new Error(`expected one candidate locator, found ${files.length}`);
           const locator = JSON.parse(readFileSync(`candidates/${files[0]}`, 'utf8'));
+          const requestId = locator.schemaVersion === 1 ? locator.requestId : `batch-${locator.requestIds.length}`;
           appendFileSync(
             process.env.GITHUB_OUTPUT,
             [
               'present=true',
+              `kind=${locator.schemaVersion === 1 ? 'single' : 'batch'}`,
               `artifact_id=${locator.preparedArtifact.artifactId}`,
               `artifact_digest=${locator.preparedArtifact.digest}`,
               `run_id=${locator.preparedArtifact.workflowRunId}`,
-              `request_id=${locator.requestId}`,
+              `request_id=${requestId}`,
             ].join('\n') + '\n',
           );
           NODE
       - name: Verify prepared artifact identity
         if: steps.locator.outputs.present == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
           ARTIFACT_ID: ${{ steps.locator.outputs.artifact_id }}
           EXPECTED_DIGEST: ${{ steps.locator.outputs.artifact_digest }}
+          EXPECTED_RUN_ID: ${{ steps.locator.outputs.run_id }}
+          GH_TOKEN: ${{ github.token }}
+          LOCATOR_KIND: ${{ steps.locator.outputs.kind }}
+          REQUEST_ID: ${{ steps.locator.outputs.request_id }}
         run: |
-          actual_digest=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" --jq .digest)
-          test "${actual_digest}" = "${EXPECTED_DIGEST}" || {
-            echo "::error::prepared artifact digest is ${actual_digest}, expected ${EXPECTED_DIGEST}"
+          mapfile -t fields < <(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" \
+              --jq '[.workflow_run.id, .digest, .expired, .name] | .[]'
+          )
+          expected_name="oracle-batch-${EXPECTED_RUN_ID}"
+          if [ "${LOCATOR_KIND}" = 'single' ]; then
+            expected_name="oracle-candidate-${REQUEST_ID}-${EXPECTED_RUN_ID}"
+          fi
+          test "${fields[0]}" = "${EXPECTED_RUN_ID}"
+          test "${fields[1]}" = "${EXPECTED_DIGEST}" || {
+            echo "::error::prepared artifact digest is ${fields[1]}, expected ${EXPECTED_DIGEST}"
             exit 1
           }
+          test "${fields[2]}" = 'false'
+          test "${fields[3]}" = "${expected_name}"
       - name: Download prepared candidate
         if: steps.locator.outputs.present == 'true'
         uses: actions/download-artifact@v4
@@ -100,13 +214,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Reconstruct and verify prospective release
-        if: steps.locator.outputs.present == 'true'
+        if: steps.locator.outputs.present == 'true' && steps.locator.outputs.kind == 'single'
         run: >-
           npm run intake:replay -- --prepared .artifacts/prepared --previous-packs .artifacts/previous-packs --output .artifacts/replayed
 
 
+      - name: Reconstruct and verify approved batch
+        if: steps.locator.outputs.present == 'true' && steps.locator.outputs.kind == 'batch'
+        run: >-
+          npm run batch:replay -- --prepared .artifacts/prepared --previous-packs .artifacts/previous-packs --output .artifacts/replayed
+
+
       - name: Publish review report
-        if: always() && steps.locator.outputs.present == 'true'
+        if: always() && steps.locator.outputs.present == 'true' && steps.locator.outputs.kind == 'single'
         uses: actions/upload-artifact@v4
         with:
           name: oracle-review-${{ steps.locator.outputs.request_id }}-${{ github.run_id }}

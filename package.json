@@ -8,6 +8,9 @@
   "scripts": {
     "approval:label": "tsx ./src/cli.ts approval-label",
     "approval:summary": "tsx ./src/cli.ts approval-summary",
+    "batch:apply": "tsx ./src/cli.ts batch-apply",
+    "batch:prepare": "tsx ./src/cli.ts batch-prepare",
+    "batch:replay": "tsx ./src/cli.ts batch-replay",
     "build": "tsc -p tsconfig.build.json",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run repository:check",
     "environment:id": "tsx ./src/cli.ts environment-id",
@@ -23,7 +26,6 @@
     "lint": "oxlint --max-warnings=0",
     "lint:fix": "oxlint --fix --max-warnings=0",
     "packs:download": "tsx ./src/cli.ts packs-download",
-    "queue:select": "tsx ./src/cli.ts queue-select",
     "release:verify": "tsx ./src/cli.ts release-verify",
     "repository:check": "tsx ./src/cli.ts check",
     "schema:check": "tsx ./src/cli.ts schema-check",

@@ -6,6 +6,7 @@ import { findFiles, oracleRecordPath, resolvePack } from './paths.js';
 import { assertSchema } from './schemas.js';
 import type { SchemaName } from './schemas.js';
 import type {
+  BatchLocator,
   CandidateApproval,
   CandidateLocator,
   ComparisonPolicy,
@@ -20,7 +21,7 @@ export interface RepositoryState {
   approvals: ReadonlyMap<string, CandidateApproval>;
   environments: ReadonlyMap<string, EnvironmentDescriptor>;
   intakePolicy: IntakePolicy;
-  locators: readonly CandidateLocator[];
+  locators: ReadonlyArray<BatchLocator | CandidateLocator>;
   manifest: OracleManifest;
   packConfiguration: PackConfiguration;
   policies: ReadonlyMap<string, ComparisonPolicy>;
@@ -35,7 +36,12 @@ export async function readRepository(root: string): Promise<RepositoryState> {
   const environments = await readDirectory<EnvironmentDescriptor>(root, 'environments', 'environment', problems);
   const policies = await readDirectory<ComparisonPolicy>(root, 'comparison-policies', 'comparison-policy', problems);
   const records = await readDirectory<OracleRecord>(root, 'oracles', 'oracle-record', problems);
-  const locatorMap = await readDirectory<CandidateLocator>(root, 'candidates', 'candidate-locator', problems);
+  const locatorMap = await readDirectory<BatchLocator | CandidateLocator>(
+    root,
+    'candidates',
+    'candidate-locator',
+    problems,
+  );
   const approvals = await readDirectory<CandidateApproval>(root, 'approvals', 'approval', problems);
 
   if (manifest !== null && packConfiguration !== null) {
@@ -105,7 +111,7 @@ function validateRepositoryRelationships(
   environments: ReadonlyMap<string, EnvironmentDescriptor>,
   policies: ReadonlyMap<string, ComparisonPolicy>,
   records: ReadonlyMap<string, OracleRecord>,
-  locators: ReadonlyMap<string, CandidateLocator>,
+  locators: ReadonlyMap<string, BatchLocator | CandidateLocator>,
   approvals: ReadonlyMap<string, CandidateApproval>,
   problems: string[],
 ): void {
@@ -214,10 +220,14 @@ function validateRepositoryRelationships(
   if (locators.size > 1)
     problems.push(`candidates contains ${locators.size} live locators; only the current release locator may remain`);
   for (const [path, locator] of locators) {
-    const expectedPath = `candidates/${locator.requestId}.json`;
+    const locatorRequestIds = locator.schemaVersion === 1 ? [locator.requestId] : locator.requestIds;
+    const expectedPath =
+      locator.schemaVersion === 1 ? `candidates/${locator.requestId}.json` : `candidates/${locator.releaseTag}.json`;
     if (path !== expectedPath) problems.push(`${path} must be stored at ${expectedPath}`);
     if (manifest.releaseTag !== locator.releaseTag) problems.push(`${path} release does not match manifest release`);
-    if (!requestIds.has(locator.requestId)) problems.push(`${path} request is absent from manifest sourceRequests`);
+    for (const requestId of locatorRequestIds)
+      if (!requestIds.has(requestId))
+        problems.push(`${path} request ${requestId} is absent from manifest sourceRequests`);
   }
 }
 

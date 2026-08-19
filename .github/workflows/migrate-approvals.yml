@@ -1,0 +1,156 @@
+name: Migrate queued approvals
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/intake.yml
+      - schemas/approval.schema.json
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+jobs:
+  discover:
+    name: Find legacy approval PRs
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.pulls.outputs.count }}
+      matrix: ${{ steps.pulls.outputs.matrix }}
+    steps:
+      - name: Read open legacy approvals
+        id: pulls
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .artifacts
+          gh api "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100" > .artifacts/pulls.json
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { appendFileSync, readFileSync } from 'node:fs';
+          const include = JSON.parse(readFileSync('.artifacts/pulls.json', 'utf8'))
+            .filter((pull) => pull.head.repo?.full_name === process.env.GITHUB_REPOSITORY && pull.head.ref.startsWith('oracle/'))
+            .filter((pull) => {
+              const tree = JSON.parse(execFileSync(
+                'gh',
+                ['api', `repos/${process.env.GITHUB_REPOSITORY}/git/trees/${pull.head.sha}?recursive=1`],
+                { encoding: 'utf8' },
+              ));
+              return tree.tree.some((entry) => /^candidates\/.+\.json$/u.test(entry.path));
+            })
+            .map((pull) => ({ head_ref: pull.head.ref, head_sha: pull.head.sha, number: pull.number }));
+          appendFileSync(process.env.GITHUB_OUTPUT, `count=${include.length}\nmatrix=${JSON.stringify({ include })}\n`);
+          NODE
+
+  migrate:
+    name: Migrate approval PR #${{ matrix.number }}
+    needs: discover
+    if: needs.discover.outputs.count != '0'
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint approval PR token
+        id: oracle-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.ORACLE_APP_ID }}
+          private-key: ${{ secrets.ORACLE_APP_PRIVATE_KEY }}
+          owner: flighthq
+          repositories: flight-reference-images
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ steps.oracle-token.outputs.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Read legacy candidate locator
+        id: locator
+        env:
+          EXPECTED_HEAD_SHA: ${{ matrix.head_sha }}
+          PR_NUMBER: ${{ matrix.number }}
+        run: |
+          mkdir -p .artifacts
+          git fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
+          test "$(git rev-parse FETCH_HEAD)" = "${EXPECTED_HEAD_SHA}"
+          mapfile -t locators < <(git ls-tree -r --name-only FETCH_HEAD -- candidates | grep -E '^candidates/.+\.json$')
+          test "${#locators[@]}" -eq 1
+          git show "FETCH_HEAD:${locators[0]}" > .artifacts/locator.json
+          npm run schema:check -- --schema candidate-locator --file .artifacts/locator.json
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+          const locator = JSON.parse(readFileSync('.artifacts/locator.json', 'utf8'));
+          if (locator.schemaVersion !== 1) throw new Error('legacy approval does not contain a single candidate locator');
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            [
+              `artifact_id=${locator.preparedArtifact.artifactId}`,
+              `artifact_digest=${locator.preparedArtifact.digest}`,
+              `run_id=${locator.preparedArtifact.workflowRunId}`,
+              `request_id=${locator.requestId}`,
+            ].join('\n') + '\n',
+          );
+          NODE
+      - name: Verify prepared artifact identity
+        env:
+          ARTIFACT_ID: ${{ steps.locator.outputs.artifact_id }}
+          EXPECTED_DIGEST: ${{ steps.locator.outputs.artifact_digest }}
+          EXPECTED_NAME: oracle-candidate-${{ steps.locator.outputs.request_id }}-${{ steps.locator.outputs.run_id }}
+          EXPECTED_RUN_ID: ${{ steps.locator.outputs.run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mapfile -t fields < <(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" \
+              --jq '[.workflow_run.id, .digest, .expired, .name] | .[]'
+          )
+          test "${fields[0]}" = "${EXPECTED_RUN_ID}"
+          test "${fields[1]}" = "${EXPECTED_DIGEST}"
+          test "${fields[2]}" = 'false'
+          test "${fields[3]}" = "${EXPECTED_NAME}"
+      - name: Download prepared candidate
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.locator.outputs.artifact_id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.locator.outputs.run_id }}
+          path: .artifacts/prepared
+          merge-multiple: true
+      - name: Replace shared release changes with an approval record
+        env:
+          ARTIFACT_DIGEST: ${{ steps.locator.outputs.artifact_digest }}
+          ARTIFACT_ID: ${{ steps.locator.outputs.artifact_id }}
+          EXPECTED_HEAD_SHA: ${{ matrix.head_sha }}
+          GH_TOKEN: ${{ steps.oracle-token.outputs.token }}
+          HEAD_REF: ${{ matrix.head_ref }}
+          PR_NUMBER: ${{ matrix.number }}
+          REQUEST_ID: ${{ steps.locator.outputs.request_id }}
+          RUN_ID: ${{ steps.locator.outputs.run_id }}
+        run: |
+          npm run intake:approve -- \
+            --prepared .artifacts/prepared \
+            --artifact-id "${ARTIFACT_ID}" \
+            --artifact-digest "${ARTIFACT_DIGEST}" \
+            --workflow-run-id "${RUN_ID}"
+          git switch -c "${HEAD_REF}"
+          git config user.name 'flight-reference-images[bot]'
+          git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
+          git add "approvals/${REQUEST_ID}.json"
+          git -c core.hooksPath=/dev/null commit -m "feat(approvals): bless ${REQUEST_ID}"
+          git push \
+            --force-with-lease="refs/heads/${HEAD_REF}:${EXPECTED_HEAD_SHA}" \
+            origin "HEAD:refs/heads/${HEAD_REF}"
+          title=$(gh pr view "${PR_NUMBER}" --json title --jq '.title | sub("feat\\(oracles\\)"; "feat(approvals)")')
+          gh pr edit "${PR_NUMBER}" --title "${title}"
+          gh pr ready "${PR_NUMBER}" || true

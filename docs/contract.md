@@ -75,7 +75,7 @@ A comparison policy belongs to exactly one environment. Its calibration binds a 
 
 ## Prepared candidate
 
-Read-only intake creates one Oracle-owned artifact containing:
+Read-only intake creates this prepared working set:
 
 ```text
 prepared-intake.json
@@ -88,21 +88,25 @@ prospective-packs/         complete deterministic release packs
 report/                    report.json, index.html, old/new/delta images
 ```
 
-`prepared-intake.json` hashes every premise and result. The privileged PR writer revalidates those hashes, requires the repository still equal the staged base, copies only the expected manifest and listed oracle records, and writes one candidate locator. It does not decode PNGs.
+The retained Oracle-owned candidate artifact contains `prepared-intake.json`, `candidate/`, `request.json`, `envelope.json`, `base/`, and `expected/`. The report is uploaded separately for human review, and the per-candidate prospective packs are not retained because batch publication reconstructs the complete pack set once. `prepared-intake.json` hashes every premise and result. The privileged approval writer revalidates the retained inputs and writes only `approvals/<request-id>.json`. That record binds the request, candidate, source artifact, Oracle-owned prepared artifact, approved record hashes, and the prior hash (or absence) of every target record. It does not decode PNGs or change the manifest, oracle records, packs, or current-release locator.
 
-PR CI downloads the locator's immutable artifact, verifies its GitHub digest, downloads the prior release, reconstructs every complete pack from the staged candidate, and requires the result to equal both the PR metadata and committed manifest.
+Approval PR CI downloads the exact prepared artifact, verifies its GitHub id, run, name, digest, and expiry, and requires its content to reproduce the committed approval record.
 
-### Concurrent approval queue
+### Independent approvals and batch publication
 
-Every prepared candidate is bound to the manifest and complete packs that were current when it was built. Merging one approval therefore makes every sibling approval stale; resolving its manifest conflict textually would not update that cryptographic base. Intake dispatches are serialized, the first approval opens ready for review, and later approvals open as drafts.
+Approval PRs do not edit shared release state. Disjoint requests can therefore be reviewed and merged in any order without rebasing or refreshing each other. Staleness is scoped to the records a request actually changes: publication requires each target's current hash to equal the prior hash recorded at approval. Two approvals for the same target are rejected as overlapping and must be published sequentially, because their order changes the meaning of the second review.
 
-After an approval is merged, the successful release workflow automatically advances the queue. It closes open approvals whose request ids are already recorded in the current manifest, then selects the oldest remaining approval, downloads the exact candidate artifact named by that PR, re-prepares it against current `main` without write credentials, lease-replaces only that PR's allowlisted metadata, and promotes the refreshed draft to ready. **Refresh oldest reference image PR** remains available as a recovery action; its PR-number input is optional. A supplied obsolete PR is closed while the next candidate advances; a supplied pending PR must be the oldest actionable approval. GitHub's ordinary rebase, update-branch, and conflict editor are not valid for these PRs.
+Every approval merge triggers **Stage approved reference image release**. Its read-only preparation job gathers all approved request ids absent from the current manifest in lexical UUID order, verifies and downloads their immutable prepared artifacts, checks their per-target bases and approval hashes, and builds the complete pack set once. The resulting batch artifact contains the exact inputs, approved records, prior release state, fixed manifest, and packs.
+
+A scoped writer then opens or lease-replaces one `publication/*` PR containing only the materialized manifest, oracle records, and batch locator. More approvals merged while that PR is open are accumulated into the same PR; the latest concurrency run supersedes earlier staging runs. Human image review remains on the independent approval PRs, while the publication PR is a deterministic, replay-checked aggregation boundary. It can be merged after any desired group of approvals, and no approval merge order is prescribed.
+
+**Migrate queued approvals** converts open legacy `oracle/*` PRs that still contain a single candidate locator into approval-only changes when this contract first lands. It ignores already migrated heads, so rerunning it is safe. The former refresh queue and its automatic post-release workflow are removed.
 
 ## Release and Flight reference-image lock
 
-After approval, a changed `manifest.json` triggers release automation to repeat reconstruction from candidate bytes and the prior complete release. Candidate-locator-only maintenance does not republish an unchanged release. A separate contents-write job verifies the resulting fixed manifest and pack SHA-256 values, refuses an existing tag, and publishes the files without decoding images.
+Merging the publication PR changes `manifest.json` and triggers release automation. CI and release both download the immutable batch artifact, reconstruct the complete packs once from approved candidate bytes plus the prior release, and require the result to equal the committed manifest and records. Candidate-locator-only maintenance does not republish an unchanged release. A separate contents-write job verifies the resulting fixed manifest and pack SHA-256 values, refuses an existing tag, and publishes the files without decoding images.
 
-The completion job writes Flight's version-2 [`reference-image-lock.schema.json`](../schemas/reference-image-lock.schema.json) shape to `scripts/reference-image-lock.json` and removes the fulfilled request in the same PR. If a Flight lock-update PR is already open, later releases advance that branch and accumulate their fulfilled-request removals instead of opening conflicting siblings. Each pack entry pins both the encoded pack and an identity-keyed `images` map of decoded `pixelSha256` values, so Flight can decide whether a captured image is already represented without downloading the pack. Required `referenceImage` coverage stays in Flight throughout.
+The completion job writes Flight's version-2 [`reference-image-lock.schema.json`](../schemas/reference-image-lock.schema.json) shape to `scripts/reference-image-lock.json` and removes every request fulfilled by the batch in the same PR. If a Flight lock-update PR is already open, later releases advance that branch and accumulate their fulfilled-request removals instead of opening conflicting siblings. Each pack entry pins both the encoded pack and an identity-keyed `images` map of decoded `pixelSha256` values, so Flight can decide whether a captured image is already represented without downloading the pack. Required `referenceImage` coverage stays in Flight throughout.
 
 Flight resolves each required identity with these states:
 

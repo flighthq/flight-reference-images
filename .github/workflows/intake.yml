@@ -170,12 +170,21 @@ jobs:
           const request = JSON.parse(readFileSync('.artifacts/prepared/request.json', 'utf8'));
           appendFileSync(process.env.GITHUB_OUTPUT, `request_id=${request.id}\nrelease_tag=${prepared.releaseTag}\n`);
           NODE
+      - name: Stage compact immutable approval input
+        run: |
+          mkdir .artifacts/approval
+          cp .artifacts/prepared/prepared-intake.json .artifacts/approval/
+          cp .artifacts/prepared/request.json .artifacts/approval/
+          cp .artifacts/prepared/envelope.json .artifacts/approval/
+          cp -R .artifacts/prepared/candidate .artifacts/approval/
+          cp -R .artifacts/prepared/base .artifacts/approval/
+          cp -R .artifacts/prepared/expected .artifacts/approval/
       - name: Store Oracle-owned candidate
         id: upload
         uses: actions/upload-artifact@v4
         with:
           name: oracle-candidate-${{ steps.prepared.outputs.request_id }}-${{ github.run_id }}
-          path: .artifacts/prepared
+          path: .artifacts/approval
           compression-level: 0
           if-no-files-found: error
           retention-days: 30

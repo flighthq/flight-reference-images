@@ -7,15 +7,16 @@ import { renderApprovalSummary, requestDisplayLabel } from './approval.js';
 import { completeFlight } from './completion.js';
 import {
   applyPreparedIntake,
+  applyPreparedBatch,
   approvePreparedIntake,
   prepareIntake,
+  prepareApprovedBatch,
+  replayPreparedBatch,
   replayPreparedIntake,
   verifyPreparedApproval,
 } from './intake.js';
 import { canonicalJson, errorMessage, hashBytes, isRecord, readJson } from './json.js';
 import { downloadReleasePacks, verifyReleasePacks } from './pack.js';
-import { selectApprovalQueue } from './queue.js';
-import type { ApprovalPull } from './queue.js';
 import { readRepository } from './repository.js';
 import { assertSchema } from './schemas.js';
 import type { SchemaName } from './schemas.js';
@@ -51,29 +52,6 @@ async function main(): Promise<void> {
       'utf8',
     );
     console.log(requestDisplayLabel(value));
-    return;
-  }
-
-  if (command === 'queue-select') {
-    const manifestPath = resolve(requiredOption(arguments_, '--manifest'));
-    const manifestValue = await readJson(manifestPath);
-    assertSchema<OracleManifest>('manifest', manifestValue, manifestPath);
-    const pullsPath = resolve(requiredOption(arguments_, '--pulls'));
-    const pulls = await readJson(pullsPath);
-    if (!Array.isArray(pulls)) throw new Error(`${pullsPath} must contain a JSON array`);
-    const requestedPull = optionalPositiveIntegerOption(arguments_, '--pull-request');
-    const selection = selectApprovalQueue(
-      pulls as ApprovalPull[],
-      manifestValue,
-      requiredOption(arguments_, '--repository'),
-      requestedPull,
-    );
-    await writeFile(resolve(requiredOption(arguments_, '--output')), canonicalJson(selection), 'utf8');
-    console.log(
-      selection.selected === null
-        ? `queue has no pending approval; ${selection.obsolete.length} obsolete`
-        : `selected PR #${selection.selected.number}; ${selection.obsolete.length} obsolete`,
-    );
     return;
   }
 
@@ -151,6 +129,40 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === 'batch-prepare') {
+    const prepared = await prepareApprovedBatch({
+      outputDirectory: requiredOption(arguments_, '--output'),
+      preparedRoot: requiredOption(arguments_, '--prepared-root'),
+      previousPackDirectory: requiredOption(arguments_, '--previous-packs'),
+      repositoryRoot: option(arguments_, '--root') ?? '.',
+    });
+    console.log(JSON.stringify(prepared));
+    return;
+  }
+
+  if (command === 'batch-apply') {
+    const locator = await applyPreparedBatch({
+      artifactDigest: requiredOption(arguments_, '--artifact-digest'),
+      artifactId: positiveIntegerOption(arguments_, '--artifact-id'),
+      preparedDirectory: requiredOption(arguments_, '--prepared'),
+      repositoryRoot: option(arguments_, '--root') ?? '.',
+      workflowRunId: positiveIntegerOption(arguments_, '--workflow-run-id'),
+    });
+    console.log(JSON.stringify(locator));
+    return;
+  }
+
+  if (command === 'batch-replay') {
+    const prepared = await replayPreparedBatch({
+      outputDirectory: requiredOption(arguments_, '--output'),
+      preparedDirectory: requiredOption(arguments_, '--prepared'),
+      previousPackDirectory: requiredOption(arguments_, '--previous-packs'),
+      repositoryRoot: option(arguments_, '--root') ?? '.',
+    });
+    console.log(JSON.stringify(prepared));
+    return;
+  }
+
   if (command === 'release-verify') {
     const root = resolve(option(arguments_, '--root') ?? '.');
     const packs = resolve(requiredOption(arguments_, '--packs'));
@@ -197,14 +209,6 @@ async function main(): Promise<void> {
 
 function positiveIntegerOption(arguments_: readonly string[], name: string): number {
   const text = requiredOption(arguments_, name);
-  const value = Number(text);
-  if (!Number.isSafeInteger(value) || value < 1) throw new Error(`${name} must be a positive integer, got ${text}`);
-  return value;
-}
-
-function optionalPositiveIntegerOption(arguments_: readonly string[], name: string): number | undefined {
-  const text = option(arguments_, name);
-  if (text === undefined) return undefined;
   const value = Number(text);
   if (!Number.isSafeInteger(value) || value < 1) throw new Error(`${name} must be a positive integer, got ${text}`);
   return value;

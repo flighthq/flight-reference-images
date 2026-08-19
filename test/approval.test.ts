@@ -15,6 +15,8 @@ describe('approval summary', () => {
     expect(requestDisplayLabel(request)).toBe('node-alpha');
     expect(summary).toContain('## Reference image approval: node-alpha');
     expect(summary).toContain('Request: `request-id`');
+    expect(summary).toContain('Candidate staging identity: `oracle-request-id-123456789abc`');
+    expect(summary).toContain('final release identity is assigned');
     expect(summary).toContain('| `node-alpha` | `webgl` |');
     expect(summary).toContain('| `node-alpha` | `webgpu` |');
     expect(summary).toContain('[Open the visual old/new/delta review artifact](https://example.test/report)');

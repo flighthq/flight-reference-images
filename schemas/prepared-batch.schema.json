@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flighthq/flight-reference-images/schemas/prepared-batch.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestIds",
+    "releaseTag",
+    "baseManifestSha256",
+    "baseRecordsSha256",
+    "approvalSha256s",
+    "expectedManifestSha256",
+    "records",
+    "packs"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "requestIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/identifier" }
+    },
+    "releaseTag": { "type": "string", "pattern": "^oracle-batch-[0-9a-f]{12}$" },
+    "baseManifestSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "baseRecordsSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "approvalSha256s": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requestId", "sha256"],
+        "properties": {
+          "requestId": { "$ref": "common.schema.json#/$defs/identifier" },
+          "sha256": { "$ref": "common.schema.json#/$defs/sha256" }
+        }
+      }
+    },
+    "expectedManifestSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "type": "string", "pattern": "^oracles/.+\\.json$" },
+          "sha256": { "$ref": "common.schema.json#/$defs/sha256" }
+        }
+      }
+    },
+    "packs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "file", "sha256", "size", "imageCount"],
+        "properties": {
+          "id": { "$ref": "common.schema.json#/$defs/identifier" },
+          "file": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*-oracle-batch-[0-9a-f]{12}\\.tgz$" },
+          "sha256": { "$ref": "common.schema.json#/$defs/sha256" },
+          "size": { "type": "integer", "minimum": 1 },
+          "imageCount": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}

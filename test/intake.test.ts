@@ -8,9 +8,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { completeFlight } from '../src/completion.js';
 import {
   applyPreparedIntake,
+  applyPreparedBatch,
   approvePreparedIntake,
   assertRequestFreshness,
   prepareIntake,
+  prepareApprovedBatch,
+  replayPreparedBatch,
   replayPreparedIntake,
   verifyPreparedApproval,
 } from '../src/intake.js';
@@ -43,6 +46,8 @@ describe('prepareIntake', () => {
     const fixture = await makeFixture('captured');
     const preparedDirectory = join(workspace, 'approval-prepared');
     await prepareFixture(fixture, preparedDirectory);
+    await rm(join(preparedDirectory, 'prospective-packs'), { recursive: true });
+    await rm(join(preparedDirectory, 'report'), { recursive: true });
     const before = await readFile(join(fixture.repositoryRoot, 'manifest.json'), 'utf8');
 
     const approval = await approvePreparedIntake({
@@ -59,6 +64,119 @@ describe('prepareIntake', () => {
     await verifyPreparedApproval(approval, preparedDirectory);
     await expect(readFile(join(fixture.repositoryRoot, 'manifest.json'), 'utf8')).resolves.toBe(before);
     expect((await readRepository(fixture.repositoryRoot)).records.size).toBe(0);
+  });
+
+  it('materializes and exactly replays approved candidates as a separate batch', async () => {
+    const fixture = await makeFixture('captured');
+    const sibling = await makeSiblingFixture(fixture);
+    const preparedRoot = join(workspace, 'approved-inputs');
+    const preparedDirectory = join(preparedRoot, fixture.request.id);
+    const siblingPreparedDirectory = join(preparedRoot, sibling.request.id);
+    await prepareFixture(fixture, preparedDirectory);
+    await prepareFixture(sibling, siblingPreparedDirectory);
+    await approvePreparedIntake({
+      artifactDigest: `sha256:${'9'.repeat(64)}`,
+      artifactId: 222,
+      preparedDirectory,
+      repositoryRoot: fixture.repositoryRoot,
+      workflowRunId: 333,
+    });
+    await approvePreparedIntake({
+      artifactDigest: `sha256:${'7'.repeat(64)}`,
+      artifactId: 223,
+      preparedDirectory: siblingPreparedDirectory,
+      repositoryRoot: fixture.repositoryRoot,
+      workflowRunId: 334,
+    });
+
+    const batchDirectory = join(workspace, 'prepared-batch');
+    const batch = await prepareApprovedBatch({
+      outputDirectory: batchDirectory,
+      preparedRoot,
+      previousPackDirectory: join(workspace, 'previous-packs'),
+      repositoryRoot: fixture.repositoryRoot,
+    });
+    expect(batch.requestIds).toEqual([fixture.request.id, sibling.request.id]);
+    expect(batch.releaseTag).toMatch(/^oracle-batch-[0-9a-f]{12}$/u);
+
+    const locator = await applyPreparedBatch({
+      artifactDigest: `sha256:${'8'.repeat(64)}`,
+      artifactId: 444,
+      preparedDirectory: batchDirectory,
+      repositoryRoot: fixture.repositoryRoot,
+      workflowRunId: 555,
+    });
+    expect(locator.requestIds).toEqual([fixture.request.id, sibling.request.id]);
+    expect((await readRepository(fixture.repositoryRoot)).records.size).toBe(2);
+
+    const replay = await replayPreparedBatch({
+      outputDirectory: join(workspace, 'batch-replay'),
+      preparedDirectory: batchDirectory,
+      previousPackDirectory: join(workspace, 'previous-packs'),
+      repositoryRoot: fixture.repositoryRoot,
+    });
+    expect(replay).toEqual(batch);
+  });
+
+  it('refuses to materialize approvals that change the same oracle record', async () => {
+    const fixture = await makeFixture('captured');
+    const overlap = await makeSiblingFixture(fixture, 'shape-basic', 'shape-basic-webgl-second-2026-08-14');
+    const preparedRoot = join(workspace, 'overlapping-approved-inputs');
+    for (const [index, input] of [fixture, overlap].entries()) {
+      const preparedDirectory = join(preparedRoot, input.request.id);
+      await prepareFixture(input, preparedDirectory);
+      await approvePreparedIntake({
+        artifactDigest: `sha256:${String(index + 7).repeat(64)}`,
+        artifactId: 300 + index,
+        preparedDirectory,
+        repositoryRoot: fixture.repositoryRoot,
+        workflowRunId: 400 + index,
+      });
+    }
+
+    await expect(
+      prepareApprovedBatch({
+        outputDirectory: join(workspace, 'overlapping-batch'),
+        preparedRoot,
+        previousPackDirectory: join(workspace, 'previous-packs'),
+        repositoryRoot: fixture.repositoryRoot,
+      }),
+    ).rejects.toThrow('approved candidates overlap oracles/functional/shape-basic/webgl.json');
+  });
+
+  it('refuses to apply a batch after its committed approval changes', async () => {
+    const fixture = await makeFixture('captured');
+    const preparedRoot = join(workspace, 'moved-approval-inputs');
+    const preparedDirectory = join(preparedRoot, fixture.request.id);
+    await prepareFixture(fixture, preparedDirectory);
+    await approvePreparedIntake({
+      artifactDigest: `sha256:${'9'.repeat(64)}`,
+      artifactId: 222,
+      preparedDirectory,
+      repositoryRoot: fixture.repositoryRoot,
+      workflowRunId: 333,
+    });
+    const batchDirectory = join(workspace, 'moved-approval-batch');
+    await prepareApprovedBatch({
+      outputDirectory: batchDirectory,
+      preparedRoot,
+      previousPackDirectory: join(workspace, 'previous-packs'),
+      repositoryRoot: fixture.repositoryRoot,
+    });
+    const approvalPath = join(fixture.repositoryRoot, 'approvals', `${fixture.request.id}.json`);
+    const approval = JSON.parse(await readFile(approvalPath, 'utf8')) as { preparedArtifact: { artifactId: number } };
+    approval.preparedArtifact.artifactId += 1;
+    await writeCanonicalJson(approvalPath, approval);
+
+    await expect(
+      applyPreparedBatch({
+        artifactDigest: `sha256:${'8'.repeat(64)}`,
+        artifactId: 444,
+        preparedDirectory: batchDirectory,
+        repositoryRoot: fixture.repositoryRoot,
+        workflowRunId: 555,
+      }),
+    ).rejects.toThrow(`repository approval ${fixture.request.id} moved after batch preparation`);
   });
 
   it('prepares, applies, and exactly replays the first release', async () => {
@@ -547,6 +665,52 @@ async function prepareFixture(
     repositoryRoot: fixture.repositoryRoot,
     requestPath: fixture.requestPath,
   });
+}
+
+async function makeSiblingFixture(
+  fixture: Readonly<Fixture>,
+  entry = 'shape-secondary',
+  requestId = 'shape-secondary-webgl-2026-08-14',
+): Promise<Fixture> {
+  const request = structuredClone(fixture.request);
+  request.id = requestId;
+  request.reason = 'add a disjoint reference';
+  request.targets[0]!.entry = entry;
+  const requestPath = join(workspace, 'request-sibling.json');
+  await writeCanonicalJson(requestPath, request);
+
+  const candidate = structuredClone(fixture.candidate);
+  candidate.requestId = request.id;
+  candidate.captures[0]!.identity.entry = entry;
+  candidate.captures[0]!.file = `images/functional/${entry}/webgl.png`;
+  const candidateDirectory = join(workspace, 'candidate-sibling');
+  const image = join(candidateDirectory, candidate.captures[0]!.file!);
+  await mkdir(join(image, '..'), { recursive: true });
+  await writeCanonicalJson(join(candidateDirectory, 'candidate.json'), candidate);
+  await writeCanonicalJson(join(candidateDirectory, 'request-image-differences.json'), {
+    differences: [],
+    requestId: request.id,
+    schemaVersion: 1,
+  } satisfies RequestImageDifferences);
+  await copyFile(join(fixture.candidateDirectory, 'images', 'functional', 'shape-basic', 'webgl.png'), image);
+
+  const envelope = structuredClone(fixture.envelope);
+  envelope.artifactId += 1;
+  envelope.requestPath = `reference-image-requests/${request.id}.json`;
+  envelope.requestSha256 = await hashFile(requestPath);
+  envelope.workflowRunId += 1;
+  const envelopePath = join(workspace, 'envelope-sibling.json');
+  await writeCanonicalJson(envelopePath, envelope);
+  return {
+    candidate,
+    candidateDirectory,
+    envelope,
+    envelopePath,
+    repositoryRoot: fixture.repositoryRoot,
+    request,
+    requestImageDifferences: { differences: [], requestId: request.id, schemaVersion: 1 },
+    requestPath,
+  };
 }
 
 async function installFirstRelease(fixture: Readonly<Fixture>, preparedDirectory: string): Promise<void> {

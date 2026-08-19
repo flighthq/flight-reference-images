@@ -31,6 +31,7 @@ jobs:
       manifest-sha256: ${{ steps.bundle.outputs.manifest_sha256 }}
       release-tag: ${{ steps.locator.outputs.release_tag }}
       request-id: ${{ steps.locator.outputs.request_id }}
+      request-ids: ${{ steps.locator.outputs.request_ids }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,28 +48,44 @@ jobs:
           const files = readdirSync('candidates').filter((file) => file.endsWith('.json'));
           if (files.length !== 1) throw new Error(`release requires one candidate locator, found ${files.length}`);
           const locator = JSON.parse(readFileSync(`candidates/${files[0]}`, 'utf8'));
+          const requestIds = locator.schemaVersion === 1 ? [locator.requestId] : locator.requestIds;
           appendFileSync(
             process.env.GITHUB_OUTPUT,
             [
               `artifact_id=${locator.preparedArtifact.artifactId}`,
               `artifact_digest=${locator.preparedArtifact.digest}`,
               `run_id=${locator.preparedArtifact.workflowRunId}`,
-              `request_id=${locator.requestId}`,
+              `kind=${locator.schemaVersion === 1 ? 'single' : 'batch'}`,
+              `request_id=${requestIds[0]}`,
+              `request_ids=${requestIds.join(',')}`,
               `release_tag=${locator.releaseTag}`,
             ].join('\n') + '\n',
           );
           NODE
       - name: Verify prepared artifact identity
         env:
-          GH_TOKEN: ${{ github.token }}
           ARTIFACT_ID: ${{ steps.locator.outputs.artifact_id }}
           EXPECTED_DIGEST: ${{ steps.locator.outputs.artifact_digest }}
+          EXPECTED_RUN_ID: ${{ steps.locator.outputs.run_id }}
+          GH_TOKEN: ${{ github.token }}
+          LOCATOR_KIND: ${{ steps.locator.outputs.kind }}
+          REQUEST_ID: ${{ steps.locator.outputs.request_id }}
         run: |
-          actual_digest=$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" --jq .digest)
-          test "${actual_digest}" = "${EXPECTED_DIGEST}" || {
+          mapfile -t fields < <(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}" \
+              --jq '[.workflow_run.id, .digest, .expired, .name] | .[]'
+          )
+          expected_name="oracle-batch-${EXPECTED_RUN_ID}"
+          if [ "${LOCATOR_KIND}" = 'single' ]; then
+            expected_name="oracle-candidate-${REQUEST_ID}-${EXPECTED_RUN_ID}"
+          fi
+          test "${fields[0]}" = "${EXPECTED_RUN_ID}"
+          test "${fields[1]}" = "${EXPECTED_DIGEST}" || {
             echo "::error::prepared artifact digest differs"
             exit 1
           }
+          test "${fields[2]}" = 'false'
+          test "${fields[3]}" = "${expected_name}"
       - name: Download reviewed candidate
         uses: actions/download-artifact@v4
         with:
@@ -83,8 +100,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Replay construction from reviewed candidate bytes
+        if: steps.locator.outputs.kind == 'single'
         run: >-
           npm run intake:replay -- --prepared .artifacts/prepared --previous-packs .artifacts/previous-packs --output .artifacts/release
+
+
+      - name: Replay construction from approved batch
+        if: steps.locator.outputs.kind == 'batch'
+        run: >-
+          npm run batch:replay -- --prepared .artifacts/prepared --previous-packs .artifacts/previous-packs --output .artifacts/release
 
 
       - name: Assemble verified release bundle
@@ -243,9 +267,17 @@ jobs:
         working-directory: oracle
       - name: Update the immutable lock and fulfill the request
         working-directory: oracle
-        run: >-
-          npm run flight:complete -- --root . --flight-root ../flight --oracle-commit ${{ github.sha }} --request-id ${{ needs.rebuild.outputs.request-id }}
-
+        env:
+          REQUEST_IDS: ${{ needs.rebuild.outputs.request-ids }}
+        run: |
+          IFS=',' read -ra request_ids <<< "${REQUEST_IDS}"
+          for request_id in "${request_ids[@]}"; do
+            npm run flight:complete -- \
+              --root . \
+              --flight-root ../flight \
+              --oracle-commit "${GITHUB_SHA}" \
+              --request-id "${request_id}"
+          done
 
       - name: Commit and update Flight PR
         working-directory: flight
@@ -258,6 +290,7 @@ jobs:
           PR_NUMBER: ${{ steps.completion.outputs.pull_request }}
           RELEASE_TAG: ${{ needs.rebuild.outputs.release-tag }}
           REQUEST_ID: ${{ needs.rebuild.outputs.request-id }}
+          REQUEST_IDS: ${{ needs.rebuild.outputs.request-ids }}
         run: |
           if [ "${EXISTING}" = 'true' ]; then
             test "$(git rev-parse HEAD)" = "${EXPECTED_HEAD_SHA}" || {
@@ -271,11 +304,15 @@ jobs:
           fi
           git config user.name 'flight-reference-images[bot]'
           git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
-          git add scripts/reference-image-lock.json "reference-image-requests/${REQUEST_ID}.json"
+          git add scripts/reference-image-lock.json
+          IFS=',' read -ra request_ids <<< "${REQUEST_IDS}"
+          for request_id in "${request_ids[@]}"; do
+            git add "reference-image-requests/${request_id}.json"
+          done
           git -c core.hooksPath=/dev/null commit -m "chore(reference-images): lock ${RELEASE_TAG}"
           git push origin "HEAD:refs/heads/${branch}"
 
-          body="Pins the immutable blessed release through \`${RELEASE_TAG}\` and fulfills \`${REQUEST_ID}\`. It may retain earlier fulfilled-request removals while this lock update is open. Flight CI must prove every cell is locked and gating before merge."
+          body="Pins the immutable blessed release through \`${RELEASE_TAG}\` and fulfills ${#request_ids[@]} approved request(s). It may retain earlier fulfilled-request removals while this lock update is open. Flight CI must prove every cell is locked and gating before merge."
           if [ "${EXISTING}" = 'true' ]; then
             gh pr edit "${PR_NUMBER}" \
               --repo flighthq/flight \

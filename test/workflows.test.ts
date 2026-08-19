@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { parseDocument } from 'yaml';
 
 describe('GitHub Actions workflows', () => {
-  for (const file of ['ci.yml', 'intake.yml', 'refresh-candidate.yml', 'release.yml']) {
+  for (const file of ['ci.yml', 'intake.yml', 'migrate-approvals.yml', 'release.yml', 'stage-release.yml']) {
     it(`${file} is valid YAML`, async () => {
       const document = parseDocument(await readFile(join('.github', 'workflows', file), 'utf8'));
       expect(document.errors).toEqual([]);
@@ -15,23 +15,21 @@ describe('GitHub Actions workflows', () => {
 
   it('keeps image processing out of both privileged writers', async () => {
     const intake = parse(await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8'));
-    const refresh = parse(await readFile(join('.github', 'workflows', 'refresh-candidate.yml'), 'utf8'));
     const release = parse(await readFile(join('.github', 'workflows', 'release.yml'), 'utf8'));
+    const stage = parse(await readFile(join('.github', 'workflows', 'stage-release.yml'), 'utf8'));
 
     expect(job(intake, 'prepare').permissions.contents).toBe('read');
     expect(job(intake, 'open-pr').permissions.contents).toBe('read');
-    expect(job(refresh, 'prepare').permissions.contents).toBe('read');
-    expect(job(refresh, 'update-pr').permissions.contents).toBe('read');
     expect(job(release, 'rebuild').permissions.contents).toBe('read');
     expect(job(release, 'publish').permissions.contents).toBe('write');
+    expect(job(stage, 'prepare').permissions.contents).toBe('read');
+    expect(job(stage, 'open-pr').permissions.contents).toBe('read');
     expect(JSON.stringify(job(intake, 'open-pr'))).not.toMatch(/intake:(prepare|replay)/u);
-    expect(JSON.stringify(job(refresh, 'prepare'))).not.toContain('intake:apply');
-    expect(JSON.stringify(job(refresh, 'update-pr'))).not.toMatch(/intake:(prepare|replay)/u);
     expect(JSON.stringify(job(release, 'publish'))).not.toContain('intake:replay');
   });
 
   it('extracts id-selected artifacts directly into their consumer directories', async () => {
-    for (const file of ['ci.yml', 'intake.yml', 'refresh-candidate.yml', 'release.yml']) {
+    for (const file of ['ci.yml', 'intake.yml', 'migrate-approvals.yml', 'release.yml', 'stage-release.yml']) {
       const workflow = parse(await readFile(join('.github', 'workflows', file), 'utf8'));
       for (const definition of Object.values(workflow.jobs)) {
         for (const step of definition.steps ?? []) {
@@ -44,13 +42,13 @@ describe('GitHub Actions workflows', () => {
 
   it('qualifies upload-action digests before durable use or API comparison', async () => {
     const intake = parse(await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8'));
-    const refresh = parse(await readFile(join('.github', 'workflows', 'refresh-candidate.yml'), 'utf8'));
     const release = parse(await readFile(join('.github', 'workflows', 'release.yml'), 'utf8'));
+    const stage = parse(await readFile(join('.github', 'workflows', 'stage-release.yml'), 'utf8'));
     const qualifiedDigest = 'sha256:${{ steps.upload.outputs.artifact-digest }}';
 
     expect(job(intake, 'prepare').outputs?.['artifact-digest']).toBe(qualifiedDigest);
-    expect(job(refresh, 'prepare').outputs?.['artifact-digest']).toBe(qualifiedDigest);
     expect(job(release, 'rebuild').outputs?.['artifact-digest']).toBe(qualifiedDigest);
+    expect(job(stage, 'prepare').outputs?.['artifact-digest']).toBe(qualifiedDigest);
   });
 
   it('targets the renamed repository and Flight lock path', async () => {
@@ -93,38 +91,39 @@ describe('GitHub Actions workflows', () => {
     }
   });
 
-  it('automatically advances the oldest queued approval after a successful release', async () => {
-    const refreshText = await readFile(join('.github', 'workflows', 'refresh-candidate.yml'), 'utf8');
-    const refresh = parse(refreshText);
+  it('accumulates merged approvals into one deterministic publication PR', async () => {
+    const stageText = await readFile(join('.github', 'workflows', 'stage-release.yml'), 'utf8');
+    const stage = parse(stageText);
 
-    expect(refresh.on?.workflow_run).toEqual({
-      branches: ['main'],
-      types: ['completed'],
-      workflows: ['Release blessed reference images'],
-    });
-    expect(refresh.on?.workflow_dispatch?.inputs?.pull_request?.required).toBe(false);
-    expect(job(refresh, 'prepare').if).toContain("workflow_run.conclusion == 'success'");
-    expect(job(refresh, 'prepare').outputs?.found).toBe('${{ steps.pull.outputs.found }}');
-    expect(job(refresh, 'prepare').outputs?.['obsolete-prs']).toBe('${{ steps.pull.outputs.obsolete_prs }}');
-    expect(job(refresh, 'update-pr').if).toContain("needs.prepare.outputs.obsolete-prs != ''");
-    expect(refreshText).toContain('queue:select');
-    expect(refreshText).toContain('gh pr close "${pull_request}"');
-    expect(refreshText).toContain('PR_NUMBER: ${{ needs.prepare.outputs.pull-request }}');
+    expect(stage.on?.push?.paths).toEqual(['approvals/*.json']);
+    expect(stageText).toContain('npm run batch:prepare');
+    expect(stageText).toContain('npm run batch:apply');
+    expect(stageText).toMatch(/startswith\(['"]publication\/['"]\)/u);
+    expect(stageText).toContain('--force-with-lease=');
+  });
+
+  it('migrates only still-legacy approval PRs to independent records', async () => {
+    const migrationText = await readFile(join('.github', 'workflows', 'migrate-approvals.yml'), 'utf8');
+    const migration = parse(migrationText);
+
+    expect(migration.on?.push?.paths).toContain('schemas/approval.schema.json');
+    expect(migrationText).toContain('/^candidates\\/.+\\.json$/u');
+    expect(migrationText).toContain('npm run intake:approve');
+    expect(migrationText).toContain('git add "approvals/${REQUEST_ID}.json"');
+    expect(migrationText).toContain('--force-with-lease=');
+    expect(migrationText).not.toContain('npm run intake:apply');
   });
 
   it('derives readable approval labels without changing request identity', async () => {
     const intakeText = await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8');
-    const refreshText = await readFile(join('.github', 'workflows', 'refresh-candidate.yml'), 'utf8');
     const requestSchema = JSON.parse(await readFile(join('schemas', 'request.schema.json'), 'utf8')) as {
       properties: Record<string, unknown>;
     };
 
-    for (const workflow of [intakeText, refreshText]) {
-      expect(workflow).toContain('approval:label');
-      expect(workflow).toContain('approval:summary');
-      expect(workflow).toContain('REQUEST_LABEL');
-      expect(workflow).toContain('GITHUB_STEP_SUMMARY');
-    }
+    expect(intakeText).toContain('approval:label');
+    expect(intakeText).toContain('approval:summary');
+    expect(intakeText).toContain('REQUEST_LABEL');
+    expect(intakeText).toContain('GITHUB_STEP_SUMMARY');
     expect(requestSchema.properties).not.toHaveProperty('label');
   });
 });

@@ -13,19 +13,21 @@ flowchart LR
   A[Flight request lands] --> B[Flight captures requested cells]
   B --> C[Read-only Oracle intake]
   C --> D[Oracle-owned candidate artifact]
-  D --> E[Approval PR: JSON and review report]
-  E -->|merge blesses| F[Rebuild exact deterministic packs]
-  F --> G[Immutable GitHub release]
-  G --> H[Flight lock-bump PR]
+  D --> E[Independent approval PR]
+  E -->|merge blesses exact bytes| F[Rolling publication PR]
+  F -->|merge materializes batch| G[Rebuild exact deterministic packs]
+  G --> H[Immutable GitHub release]
+  H --> I[Flight lock-bump PR]
 ```
 
-The capture job never receives an Oracle write credential. Intake processes candidate-controlled PNGs with read-only repository permissions. The privileged PR writer accepts only schema-validated metadata and writes only `manifest.json`, `oracles/**`, and `candidates/**`. Release reconstruction also runs without contents-write permission; a separate publisher receives already-verified pack bytes and checks their fixed hashes without decoding candidate images.
+The capture job never receives an Oracle write credential. Intake processes candidate-controlled PNGs with read-only repository permissions. The first privileged writer can add only `approvals/<request-id>.json`. A separate staging workflow verifies every merged approval and its immutable artifact, then updates one rolling publication PR with only `manifest.json`, `oracles/**`, and `candidates/**`. Release reconstruction also runs without contents-write permission; a separate publisher receives already-verified pack bytes and checks their fixed hashes without decoding candidate images.
 
 ## Stored records
 
 - `manifest.json` names the current immutable release and maps each complete pack to its SHA-256.
 - `oracles/<subject>/<entry>/<renderer>.json` records stable identity, Flight request and commit, capture provenance, environment and policy, dimensions, `artifactSha256`, `pixelSha256`, and pack.
-- `candidates/<request-id>.json` locates the Oracle-owned artifact containing the exact reviewed bytes. Merging its PR is the approval; there is no mutable `approved` field.
+- `approvals/<request-id>.json` binds a human-approved request and candidate to immutable source and prepared artifacts. These records do not change shared release state, so disjoint approvals merge in any order.
+- `candidates/<release-tag>.json` locates the Oracle-owned batch artifact from which the current release is exactly replayed.
 - `environments/*.json` describes a canonical capture environment. Its content-derived id prevents silent environment drift.
 - `comparison-policies/*.json` contains independently calibrated pixel thresholds.
 - `pack-config.json` assigns identities to independently downloadable packs.
@@ -49,8 +51,10 @@ npm run check
 npm run repository:check
 npm run packs:download -- --output .artifacts/previous-packs
 npm run intake:prepare -- --candidate <dir> --request <request.json> --envelope <envelope.json> --previous-packs <dir> --output <new-dir>
-npm run intake:apply -- --prepared <dir> --artifact-id <id> --artifact-digest sha256:<hash> --workflow-run-id <id>
-npm run intake:replay -- --prepared <dir> --previous-packs <dir> --output <new-dir>
+npm run intake:approve -- --prepared <dir> --artifact-id <id> --artifact-digest sha256:<hash> --workflow-run-id <id>
+npm run batch:prepare -- --prepared-root <dir> --previous-packs <dir> --output <new-dir>
+npm run batch:apply -- --prepared <dir> --artifact-id <id> --artifact-digest sha256:<hash> --workflow-run-id <id>
+npm run batch:replay -- --prepared <dir> --previous-packs <dir> --output <new-dir>
 npm run release:verify -- --packs <dir>
 ```
 

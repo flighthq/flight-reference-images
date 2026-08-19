@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { copyFile, mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -21,6 +21,7 @@ import { assertSchema } from './schemas.js';
 import type { SchemaName } from './schemas.js';
 import type {
   ArtifactLocator,
+  BatchLocator,
   CandidateLocator,
   CandidateApproval,
   CandidateManifest,
@@ -33,6 +34,7 @@ import type {
   OracleRecord,
   PackConfiguration,
   PreparedIntake,
+  PreparedBatch,
   RequestImageDifferences,
 } from './types.js';
 
@@ -70,6 +72,21 @@ export interface ReplayIntakeOptions {
   repositoryRoot: string;
 }
 
+export interface PrepareBatchOptions {
+  outputDirectory: string;
+  preparedRoot: string;
+  previousPackDirectory: string;
+  repositoryRoot: string;
+}
+
+export interface ApplyBatchOptions {
+  artifactDigest: string;
+  artifactId: number;
+  preparedDirectory: string;
+  repositoryRoot: string;
+  workflowRunId: number;
+}
+
 interface IntakeBase {
   environments: ReadonlyMap<string, EnvironmentDescriptor>;
   intakePolicy: IntakePolicy;
@@ -87,7 +104,7 @@ export async function approvePreparedIntake(options: Readonly<ApproveIntakeOptio
   const preparedDirectory = resolve(options.preparedDirectory);
   const repositoryRoot = resolve(options.repositoryRoot);
   const prepared = await readPreparedIntake(preparedDirectory);
-  await validatePreparedIntakeFiles(preparedDirectory, prepared);
+  await validatePreparedIntakeFiles(preparedDirectory, prepared, false);
   const request = await readTyped<FlightOracleRequest>(join(preparedDirectory, 'request.json'), 'request');
   const envelope = await readTyped<DispatchEnvelope>(join(preparedDirectory, 'envelope.json'), 'dispatch-envelope');
   const baseRecords = await readOracleRecords(join(preparedDirectory, 'base'));
@@ -138,7 +155,7 @@ export async function verifyPreparedApproval(
 ): Promise<void> {
   const directory = resolve(preparedDirectory);
   const prepared = await readPreparedIntake(directory);
-  await validatePreparedIntakeFiles(directory, prepared);
+  await validatePreparedIntakeFiles(directory, prepared, false);
   const request = await readTyped<FlightOracleRequest>(join(directory, 'request.json'), 'request');
   const envelope = await readTyped<DispatchEnvelope>(join(directory, 'envelope.json'), 'dispatch-envelope');
   if (approval.requestId !== request.id) throw new Error('approval request id differs from prepared request');
@@ -288,6 +305,272 @@ export async function replayPreparedIntake(options: Readonly<ReplayIntakeOptions
     join(resolve(options.outputDirectory), 'prospective-packs'),
   );
   return replayed;
+}
+
+export async function prepareApprovedBatch(options: Readonly<PrepareBatchOptions>): Promise<PreparedBatch> {
+  const repository = await readRepository(resolve(options.repositoryRoot));
+  const released = new Set(repository.manifest.sourceRequests.map((request) => request.id));
+  const approvals = [...repository.approvals.values()]
+    .filter((approval) => !released.has(approval.requestId))
+    .sort((left, right) => left.requestId.localeCompare(right.requestId));
+  if (approvals.length === 0) throw new Error('there are no approved candidates awaiting release');
+  return produceApprovedBatch(
+    {
+      environments: repository.environments,
+      intakePolicy: repository.intakePolicy,
+      manifest: repository.manifest,
+      packConfiguration: repository.packConfiguration,
+      policies: repository.policies,
+      records: repository.records,
+    },
+    approvals.map((approval) => ({
+      approval,
+      directory: join(resolve(options.preparedRoot), approval.requestId),
+      fullyPrepared: true,
+    })),
+    options,
+  );
+}
+
+export async function applyPreparedBatch(options: Readonly<ApplyBatchOptions>): Promise<BatchLocator> {
+  const preparedDirectory = resolve(options.preparedDirectory);
+  const repositoryRoot = resolve(options.repositoryRoot);
+  const prepared = await readPreparedBatch(preparedDirectory);
+  await validatePreparedBatchFiles(preparedDirectory, prepared);
+  const base = await readRepository(repositoryRoot);
+  if (hashBytes(canonicalJson(base.manifest)) !== prepared.baseManifestSha256)
+    throw new Error('repository manifest moved after batch preparation');
+  if (hashRecordMap(base.records) !== prepared.baseRecordsSha256)
+    throw new Error('repository oracle records moved after batch preparation');
+  const released = new Set(base.manifest.sourceRequests.map((request) => request.id));
+  const pendingRequestIds = [...base.approvals.values()]
+    .filter((approval) => !released.has(approval.requestId))
+    .map((approval) => approval.requestId)
+    .sort();
+  if (canonicalJson(pendingRequestIds) !== canonicalJson(prepared.requestIds))
+    throw new Error('repository pending approval set moved after batch preparation');
+  for (const expected of prepared.approvalSha256s) {
+    const approval = base.approvals.get(`approvals/${expected.requestId}.json`);
+    if (approval === undefined || hashBytes(canonicalJson(approval)) !== expected.sha256)
+      throw new Error(`repository approval ${expected.requestId} moved after batch preparation`);
+  }
+
+  const expected = join(preparedDirectory, 'expected');
+  await copyFile(join(expected, 'manifest.json'), join(repositoryRoot, 'manifest.json'));
+  for (const record of prepared.records) {
+    const destination = resolveInside(repositoryRoot, record.path);
+    await mkdir(dirname(destination), { recursive: true });
+    await copyFile(resolveInside(expected, record.path), destination);
+  }
+  for (const path of await findFiles(join(repositoryRoot, 'candidates'), '.json'))
+    await unlink(resolveInside(join(repositoryRoot, 'candidates'), path));
+  const locator: BatchLocator = {
+    $schema: '../schemas/candidate-locator.schema.json',
+    manifestSha256: prepared.expectedManifestSha256,
+    preparedArtifact: {
+      artifactId: options.artifactId,
+      digest: options.artifactDigest,
+      repository: 'flighthq/flight-reference-images',
+      workflowRunId: options.workflowRunId,
+    },
+    releaseTag: prepared.releaseTag,
+    requestIds: prepared.requestIds,
+    schemaVersion: 2,
+  };
+  assertSchema<BatchLocator>('candidate-locator', locator);
+  await writeCanonicalJson(join(repositoryRoot, 'candidates', `${prepared.releaseTag}.json`), locator);
+  await readRepository(repositoryRoot);
+  return locator;
+}
+
+export async function replayPreparedBatch(options: Readonly<ReplayIntakeOptions>): Promise<PreparedBatch> {
+  const preparedDirectory = resolve(options.preparedDirectory);
+  const committed = await readRepository(resolve(options.repositoryRoot));
+  const baseManifest = await readTyped<OracleManifest>(join(preparedDirectory, 'base', 'manifest.json'), 'manifest');
+  const baseRecords = await readOracleRecords(join(preparedDirectory, 'base'));
+  const original = await readPreparedBatch(preparedDirectory);
+  const approvals = await Promise.all(
+    original.requestIds.map(async (requestId) => ({
+      approval: await readTyped<CandidateApproval>(
+        join(preparedDirectory, 'inputs', requestId, 'approval.json'),
+        'approval',
+      ),
+      directory: join(preparedDirectory, 'inputs', requestId),
+      fullyPrepared: false,
+    })),
+  );
+  const replayed = await produceApprovedBatch(
+    {
+      environments: committed.environments,
+      intakePolicy: committed.intakePolicy,
+      manifest: baseManifest,
+      packConfiguration: committed.packConfiguration,
+      policies: committed.policies,
+      records: baseRecords,
+    },
+    approvals,
+    options,
+  );
+  if (canonicalJson(replayed) !== canonicalJson(original)) throw new Error('replayed batch descriptor differs');
+  const output = resolve(options.outputDirectory);
+  if ((await readFile(join(output, 'expected', 'manifest.json'), 'utf8')) !== canonicalJson(committed.manifest))
+    throw new Error('replayed batch manifest differs from committed manifest');
+  for (const record of replayed.records) {
+    const committedRecord = committed.records.get(record.path);
+    if (committedRecord === undefined) throw new Error(`committed repository is missing ${record.path}`);
+    if (
+      (await readFile(resolveInside(join(output, 'expected'), record.path), 'utf8')) !== canonicalJson(committedRecord)
+    )
+      throw new Error(`replayed batch ${record.path} differs from committed record`);
+  }
+  await verifyReleasePacks(committed.manifest, committed.records, join(output, 'prospective-packs'));
+  return replayed;
+}
+
+interface BatchInput {
+  approval: CandidateApproval;
+  directory: string;
+  fullyPrepared: boolean;
+}
+
+type ProduceBatchOptions = Pick<PrepareBatchOptions, 'outputDirectory' | 'previousPackDirectory' | 'repositoryRoot'>;
+
+async function produceApprovedBatch(
+  originalBase: Readonly<IntakeBase>,
+  inputs: readonly BatchInput[],
+  options: Readonly<ProduceBatchOptions>,
+): Promise<PreparedBatch> {
+  const outputDirectory = resolve(options.outputDirectory);
+  await createNewDirectory(outputDirectory);
+  const workspace = await mkdtemp(join(tmpdir(), 'flight-reference-images-batch-'));
+  try {
+    const requestIds = inputs.map((input) => input.approval.requestId);
+    if (new Set(requestIds).size !== requestIds.length) throw new Error('approved batch repeats a request');
+    if (canonicalJson(requestIds) !== canonicalJson([...requestIds].sort()))
+      throw new Error('approved batch inputs must be sorted by request id');
+    const baseManifestSha256 = hashBytes(canonicalJson(originalBase.manifest));
+    const baseRecordsSha256 = hashRecordMap(originalBase.records);
+    const touched = new Set<string>();
+    const changedRecords = new Map<string, OracleRecord>();
+    const changedSources = new Map<string, string>();
+    const approvalSha256s: PreparedBatch['approvalSha256s'] = [];
+    const recordsByPath = new Map(originalBase.records);
+    const sourceRequests = [...originalBase.manifest.sourceRequests];
+    const released = new Set(sourceRequests.map((request) => request.id));
+
+    for (const input of inputs) {
+      const { approval } = input;
+      if (input.fullyPrepared) await verifyPreparedApproval(approval, input.directory);
+      else await verifyMinimalApprovalInput(approval, input.directory);
+      if (released.has(approval.requestId)) throw new Error(`request ${approval.requestId} was already released`);
+      for (const expected of approval.baseRecords) {
+        if (touched.has(expected.path)) throw new Error(`approved candidates overlap ${expected.path}`);
+        const record = originalBase.records.get(expected.path);
+        const actual = record === undefined ? null : hashBytes(canonicalJson(record));
+        if (actual !== expected.sha256)
+          throw new Error(`${approval.requestId} was reviewed against stale ${expected.path}`);
+        touched.add(expected.path);
+      }
+      const candidate = await readTyped<CandidateManifest>(
+        join(input.directory, 'candidate', 'candidate.json'),
+        'candidate',
+      );
+      const captures = new Map(
+        candidate.captures.map((capture) => [oracleRecordPath(capture.identity), capture] as const),
+      );
+      for (const approved of approval.records) {
+        const value = await readTyped<OracleRecord>(
+          resolveInside(join(input.directory, 'expected'), approved.path),
+          'oracle-record',
+        );
+        if (hashBytes(canonicalJson(value)) !== approved.sha256)
+          throw new Error(`${approval.requestId} approved record ${approved.path} checksum differs`);
+        if (oracleRecordPath(value.identity) !== approved.path)
+          throw new Error(`${approval.requestId} approved record identity differs from ${approved.path}`);
+        if (
+          value.environmentId !== candidate.environmentId ||
+          value.comparisonPolicyId !== candidate.comparisonPolicyId
+        )
+          throw new Error(`${approval.requestId} approved record policy binding differs from its candidate`);
+        const environment = originalBase.environments.get(`environments/${value.environmentId}.json`);
+        const policy = originalBase.policies.get(`comparison-policies/${value.comparisonPolicyId}.json`);
+        if (environment === undefined || policy === undefined || policy.environmentId !== value.environmentId)
+          throw new Error(`${approval.requestId} approved record names unavailable calibration metadata`);
+        if (resolvePack(value.identity, originalBase.packConfiguration) !== value.pack)
+          throw new Error(`${approval.requestId} approved record pack routing is stale`);
+        const capture = captures.get(approved.path);
+        if (capture?.status !== 'captured' || capture.file === undefined)
+          throw new Error(`${approval.requestId} has no captured image for ${approved.path}`);
+        recordsByPath.set(approved.path, value);
+        changedRecords.set(approved.path, value);
+        changedSources.set(approved.path, resolveInside(join(input.directory, 'candidate'), capture.file));
+      }
+      sourceRequests.push({
+        flightCommit: approval.flightCommit,
+        id: approval.requestId,
+        requestSha256: approval.requestSha256,
+      });
+      released.add(approval.requestId);
+      approvalSha256s.push({ requestId: approval.requestId, sha256: hashBytes(canonicalJson(approval)) });
+
+      const staged = join(outputDirectory, 'inputs', approval.requestId);
+      await mkdir(staged, { recursive: true });
+      await cp(join(input.directory, 'candidate'), join(staged, 'candidate'), { recursive: true });
+      await copyFile(join(input.directory, 'request.json'), join(staged, 'request.json'));
+      await copyFile(join(input.directory, 'envelope.json'), join(staged, 'envelope.json'));
+      await writeCanonicalJson(join(staged, 'approval.json'), approval);
+      for (const approved of approval.records) {
+        const destination = resolveInside(join(staged, 'expected'), approved.path);
+        await mkdir(dirname(destination), { recursive: true });
+        await copyFile(resolveInside(join(input.directory, 'expected'), approved.path), destination);
+      }
+    }
+
+    const previousImages = join(workspace, 'previous-images');
+    await extractVerifiedReleasePacks(originalBase.manifest, resolve(options.previousPackDirectory), previousImages);
+    const releaseTag = `oracle-batch-${hashBytes(canonicalJson({ approvalSha256s, baseManifestSha256, baseRecordsSha256 })).slice(0, 12)}`;
+    const sources = [...recordsByPath.entries()].map(([path, record]) => ({
+      path: changedSources.get(path) ?? join(previousImages, record.pack, imagePath(record.identity)),
+      record,
+    }));
+    const packs = await buildReleasePacks(sources, releaseTag, join(outputDirectory, 'prospective-packs'));
+    const manifest: OracleManifest = {
+      $schema: './schemas/manifest.schema.json',
+      packs,
+      parentReleaseTag: originalBase.manifest.releaseTag,
+      releaseTag,
+      schemaVersion: 1,
+      sourceRequests,
+    };
+    assertSchema<OracleManifest>('manifest', manifest);
+    const expected = join(outputDirectory, 'expected');
+    await mkdir(expected, { recursive: true });
+    await writeCanonicalJson(join(expected, 'manifest.json'), manifest);
+    const records: PreparedBatch['records'] = [];
+    for (const [path, record] of [...changedRecords].sort(([left], [right]) => left.localeCompare(right))) {
+      const destination = resolveInside(expected, path);
+      await mkdir(dirname(destination), { recursive: true });
+      await writeCanonicalJson(destination, record);
+      records.push({ path, sha256: hashBytes(canonicalJson(record)) });
+    }
+    await stageBatchBase(outputDirectory, originalBase);
+    const prepared: PreparedBatch = {
+      approvalSha256s,
+      baseManifestSha256,
+      baseRecordsSha256,
+      expectedManifestSha256: hashBytes(canonicalJson(manifest)),
+      packs,
+      records,
+      releaseTag,
+      requestIds,
+      schemaVersion: 1,
+    };
+    assertSchema<PreparedBatch>('prepared-batch', prepared);
+    await writeCanonicalJson(join(outputDirectory, 'prepared-batch.json'), prepared);
+    return prepared;
+  } finally {
+    await rm(workspace, { force: true, recursive: true });
+  }
 }
 
 async function produceIntake(
@@ -520,6 +803,17 @@ async function stageInputs(
   }
 }
 
+async function stageBatchBase(outputDirectory: string, base: Readonly<IntakeBase>): Promise<void> {
+  const root = join(outputDirectory, 'base');
+  await mkdir(root, { recursive: true });
+  await writeCanonicalJson(join(root, 'manifest.json'), base.manifest);
+  for (const [path, record] of base.records) {
+    const destination = resolveInside(root, path);
+    await mkdir(dirname(destination), { recursive: true });
+    await writeCanonicalJson(destination, record);
+  }
+}
+
 async function validateBindings(
   base: Readonly<IntakeBase>,
   candidateDirectory: string,
@@ -647,7 +941,11 @@ export function assertRequestFreshness(
   }
 }
 
-async function validatePreparedIntakeFiles(directory: string, prepared: Readonly<PreparedIntake>): Promise<void> {
+async function validatePreparedIntakeFiles(
+  directory: string,
+  prepared: Readonly<PreparedIntake>,
+  includeProspectivePacks = true,
+): Promise<void> {
   const baseManifest = await readTyped<OracleManifest>(join(directory, 'base', 'manifest.json'), 'manifest');
   if (hashBytes(canonicalJson(baseManifest)) !== prepared.baseManifestSha256)
     throw new Error('prepared base manifest checksum differs');
@@ -671,16 +969,122 @@ async function validatePreparedIntakeFiles(directory: string, prepared: Readonly
       throw new Error(`prepared ${record.path} checksum differs`);
     }
   }
-  for (const pack of prepared.packs) {
-    if ((await hashFile(join(directory, 'prospective-packs', pack.file))) !== pack.sha256) {
-      throw new Error(`prepared ${pack.file} checksum differs`);
+  if (includeProspectivePacks) {
+    for (const pack of prepared.packs) {
+      if ((await hashFile(join(directory, 'prospective-packs', pack.file))) !== pack.sha256) {
+        throw new Error(`prepared ${pack.file} checksum differs`);
+      }
     }
+  }
+}
+
+async function validatePreparedBatchFiles(directory: string, prepared: Readonly<PreparedBatch>): Promise<void> {
+  const approvalRequestIds = prepared.approvalSha256s.map((approval) => approval.requestId);
+  if (canonicalJson(prepared.requestIds) !== canonicalJson(approvalRequestIds))
+    throw new Error('prepared batch request and approval identities differ');
+  if (new Set(prepared.requestIds).size !== prepared.requestIds.length)
+    throw new Error('prepared batch repeats a request');
+  if (new Set(prepared.records.map((record) => record.path)).size !== prepared.records.length)
+    throw new Error('prepared batch repeats an oracle record');
+  if (new Set(prepared.packs.map((pack) => pack.id)).size !== prepared.packs.length)
+    throw new Error('prepared batch repeats a pack');
+  const baseManifest = await readTyped<OracleManifest>(join(directory, 'base', 'manifest.json'), 'manifest');
+  if (hashBytes(canonicalJson(baseManifest)) !== prepared.baseManifestSha256)
+    throw new Error('prepared batch base manifest checksum differs');
+  const baseRecords = await readOracleRecords(join(directory, 'base'));
+  if (hashRecordMap(baseRecords) !== prepared.baseRecordsSha256)
+    throw new Error('prepared batch base records checksum differs');
+  const expectedManifest = await readTyped<OracleManifest>(join(directory, 'expected', 'manifest.json'), 'manifest');
+  if (hashBytes(canonicalJson(expectedManifest)) !== prepared.expectedManifestSha256)
+    throw new Error('prepared batch expected manifest checksum differs');
+  if (
+    expectedManifest.releaseTag !== prepared.releaseTag ||
+    canonicalJson(expectedManifest.packs) !== canonicalJson(prepared.packs)
+  )
+    throw new Error('prepared batch expected manifest identity differs');
+  if (
+    expectedManifest.sourceRequests.length !== baseManifest.sourceRequests.length + prepared.requestIds.length ||
+    canonicalJson(expectedManifest.sourceRequests.slice(0, baseManifest.sourceRequests.length)) !==
+      canonicalJson(baseManifest.sourceRequests) ||
+    canonicalJson(
+      expectedManifest.sourceRequests.slice(baseManifest.sourceRequests.length).map((request) => request.id),
+    ) !== canonicalJson(prepared.requestIds)
+  )
+    throw new Error('prepared batch expected manifest request set differs');
+  for (const record of prepared.records)
+    if ((await hashFile(resolveInside(join(directory, 'expected'), record.path))) !== record.sha256)
+      throw new Error(`prepared batch ${record.path} checksum differs`);
+  for (const pack of prepared.packs)
+    if ((await hashFile(join(directory, 'prospective-packs', pack.file))) !== pack.sha256)
+      throw new Error(`prepared batch ${pack.file} checksum differs`);
+  const approvedRecordPaths: string[] = [];
+  for (const expected of prepared.approvalSha256s) {
+    const input = join(directory, 'inputs', expected.requestId);
+    const approval = await readTyped<CandidateApproval>(join(input, 'approval.json'), 'approval');
+    if (approval.requestId !== expected.requestId)
+      throw new Error(`prepared batch approval identity differs for ${expected.requestId}`);
+    if (hashBytes(canonicalJson(approval)) !== expected.sha256)
+      throw new Error(`prepared batch approval ${expected.requestId} checksum differs`);
+    const sourceRequest = expectedManifest.sourceRequests.find((request) => request.id === expected.requestId);
+    if (
+      sourceRequest === undefined ||
+      sourceRequest.flightCommit !== approval.flightCommit ||
+      sourceRequest.requestSha256 !== approval.requestSha256
+    )
+      throw new Error(`prepared batch manifest binding differs for ${expected.requestId}`);
+    approvedRecordPaths.push(...approval.records.map((record) => record.path));
+    await verifyMinimalApprovalInput(approval, input);
+  }
+  if (
+    canonicalJson([...approvedRecordPaths].sort()) !==
+    canonicalJson(prepared.records.map((record) => record.path).sort())
+  )
+    throw new Error('prepared batch record set differs from its approvals');
+}
+
+async function verifyMinimalApprovalInput(approval: Readonly<CandidateApproval>, directory: string): Promise<void> {
+  const request = await readTyped<FlightOracleRequest>(join(directory, 'request.json'), 'request');
+  const envelope = await readTyped<DispatchEnvelope>(join(directory, 'envelope.json'), 'dispatch-envelope');
+  const candidate = await readTyped<CandidateManifest>(join(directory, 'candidate', 'candidate.json'), 'candidate');
+  if (request.id !== approval.requestId || candidate.requestId !== approval.requestId)
+    throw new Error(`approval input request differs from ${approval.requestId}`);
+  if ((await hashFile(join(directory, 'request.json'))) !== approval.requestSha256)
+    throw new Error(`approval input request hash differs for ${approval.requestId}`);
+  if ((await hashCandidate(join(directory, 'candidate'), candidate)) !== approval.candidateSha256)
+    throw new Error(`approval input candidate hash differs for ${approval.requestId}`);
+  if (envelope.flightCommit !== approval.flightCommit || envelope.requestSha256 !== approval.requestSha256)
+    throw new Error(`approval input envelope differs for ${approval.requestId}`);
+  if (envelope.requestPath !== `reference-image-requests/${approval.requestId}.json`)
+    throw new Error(`approval input request path differs for ${approval.requestId}`);
+  const sourceArtifact: ArtifactLocator = {
+    artifactId: envelope.artifactId,
+    digest: envelope.artifactDigest,
+    repository: envelope.repository,
+    workflowRunId: envelope.workflowRunId,
+  };
+  if (canonicalJson(sourceArtifact) !== canonicalJson(approval.sourceArtifact))
+    throw new Error(`approval input source artifact differs for ${approval.requestId}`);
+  const basePaths = approval.baseRecords.map((record) => record.path);
+  const recordPaths = approval.records.map((record) => record.path);
+  if (canonicalJson(basePaths) !== canonicalJson(recordPaths))
+    throw new Error(`approval input record scope differs for ${approval.requestId}`);
+  for (const approved of approval.records) {
+    const record = await readTyped<OracleRecord>(
+      resolveInside(join(directory, 'expected'), approved.path),
+      'oracle-record',
+    );
+    if (hashBytes(canonicalJson(record)) !== approved.sha256)
+      throw new Error(`approval input ${approved.path} checksum differs for ${approval.requestId}`);
   }
 }
 
 async function readPreparedIntake(directory: string): Promise<PreparedIntake> {
   const prepared = await readTyped<PreparedIntake>(join(directory, 'prepared-intake.json'), 'prepared-intake');
   return prepared;
+}
+
+async function readPreparedBatch(directory: string): Promise<PreparedBatch> {
+  return readTyped<PreparedBatch>(join(directory, 'prepared-batch.json'), 'prepared-batch');
 }
 
 async function readOracleRecords(root: string): Promise<Map<string, OracleRecord>> {

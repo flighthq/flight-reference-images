@@ -16,6 +16,7 @@ export type SchemaName =
   | 'pack-manifest'
   | 'pack-config'
   | 'prepared-intake'
+  | 'prepared-batch'
   | 'request'
   | 'request-image-differences';
 
@@ -33,6 +34,7 @@ const schemaNames: readonly SchemaName[] = [
   'pack-manifest',
   'pack-config',
   'prepared-intake',
+  'prepared-batch',
   'request',
   'request-image-differences',
 ];

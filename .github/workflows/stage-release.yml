@@ -1,0 +1,210 @@
+name: Stage approved reference image release
+
+on:
+  push:
+    branches: [main]
+    paths: [approvals/*.json]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: oracle-batch-stage
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    name: Build one release from all approved candidates
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    outputs:
+      artifact-digest: sha256:${{ steps.upload.outputs.artifact-digest }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      found: ${{ steps.pending.outputs.found }}
+      release-tag: ${{ steps.identity.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Find approvals absent from the current release
+        id: pending
+        run: |
+          mkdir -p .artifacts
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+
+          const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
+          const released = new Set(manifest.sourceRequests.map((request) => request.id));
+          const approvals = readdirSync('approvals')
+            .filter((file) => file.endsWith('.json'))
+            .map((file) => JSON.parse(readFileSync(`approvals/${file}`, 'utf8')))
+            .filter((approval) => !released.has(approval.requestId))
+            .sort((left, right) => left.requestId.localeCompare(right.requestId));
+          writeFileSync('.artifacts/pending.json', `${JSON.stringify(approvals, null, 2)}\n`);
+          appendFileSync(process.env.GITHUB_OUTPUT, `found=${approvals.length > 0}\n`);
+          NODE
+      - name: Verify and download approved candidates
+        if: steps.pending.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE' > .artifacts/artifacts.tsv
+          import { readFileSync } from 'node:fs';
+          for (const approval of JSON.parse(readFileSync('.artifacts/pending.json', 'utf8'))) {
+            console.log([
+              approval.requestId,
+              approval.preparedArtifact.artifactId,
+              approval.preparedArtifact.digest,
+              approval.preparedArtifact.workflowRunId,
+            ].join('\t'));
+          }
+          NODE
+          mkdir -p .artifacts/prepared
+          while IFS=$'\t' read -r request_id artifact_id expected_digest expected_run; do
+            mapfile -t fields < <(
+              gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}" \
+                --jq '[.workflow_run.id, .digest, .expired, .name] | .[]'
+            )
+            test "${fields[0]}" = "${expected_run}"
+            test "${fields[1]}" = "${expected_digest}"
+            test "${fields[2]}" = 'false' || {
+              echo "::error::approved artifact for ${request_id} has expired"
+              exit 1
+            }
+            expected_name="oracle-candidate-${request_id}-${expected_run}"
+            test "${fields[3]}" = "${expected_name}" || {
+              echo "::error::approved artifact for ${request_id} is named ${fields[3]}, expected ${expected_name}"
+              exit 1
+            }
+            gh run download "${expected_run}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --name "${expected_name}" \
+              --dir ".artifacts/prepared/${request_id}"
+            test -f ".artifacts/prepared/${request_id}/prepared-intake.json" || {
+              echo "::error::approved artifact for ${request_id} has an invalid archive root"
+              exit 1
+            }
+          done < .artifacts/artifacts.tsv
+      - name: Download current blessed packs
+        if: steps.pending.outputs.found == 'true'
+        run: npm run packs:download -- --output .artifacts/previous-packs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Build deterministic batch
+        if: steps.pending.outputs.found == 'true'
+        run: >-
+          npm run batch:prepare -- --prepared-root .artifacts/prepared --previous-packs .artifacts/previous-packs --output .artifacts/batch
+
+
+      - name: Read batch identity
+        id: identity
+        if: steps.pending.outputs.found == 'true'
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+          const batch = JSON.parse(readFileSync('.artifacts/batch/prepared-batch.json', 'utf8'));
+          appendFileSync(process.env.GITHUB_OUTPUT, `release_tag=${batch.releaseTag}\n`);
+          NODE
+      - name: Store prepared batch
+        id: upload
+        if: steps.pending.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-batch-${{ github.run_id }}
+          path: .artifacts/batch
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+
+  open-pr:
+    name: Open or advance one mechanical release PR
+    needs: prepare
+    if: needs.prepare.outputs.found == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Mint publication token
+        id: oracle-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.ORACLE_APP_ID }}
+          private-key: ${{ secrets.ORACLE_APP_PRIVATE_KEY }}
+          owner: flighthq
+          repositories: flight-reference-images
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ steps.oracle-token.outputs.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Download prepared batch
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact-id }}
+          path: .artifacts/batch
+          merge-multiple: true
+      - name: Apply allowlisted batch metadata
+        run: >-
+          npm run batch:apply -- --prepared .artifacts/batch --artifact-id ${{ needs.prepare.outputs.artifact-id }} --artifact-digest ${{ needs.prepare.outputs.artifact-digest }} --workflow-run-id ${{ github.run_id }}
+
+
+      - name: Open or replace publication branch
+        env:
+          GH_TOKEN: ${{ steps.oracle-token.outputs.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release-tag }}
+        run: |
+          existing=$(gh pr list --base main --state open --limit 100 \
+            --json number,headRefName,headRefOid,isCrossRepository \
+            --jq '[.[] | select(.isCrossRepository == false and (.headRefName | startswith("publication/")))]')
+          count=$(jq length <<< "${existing}")
+          test "${count}" -le 1 || { echo '::error::multiple publication PRs are open'; exit 1; }
+          if [ "${count}" -eq 1 ]; then
+            branch=$(jq -r '.[0].headRefName' <<< "${existing}")
+            expected=$(jq -r '.[0].headRefOid' <<< "${existing}")
+            pull_request=$(jq -r '.[0].number' <<< "${existing}")
+          else
+            branch="publication/${GITHUB_RUN_ID}"
+          fi
+          git switch -c "${branch}"
+          git config user.name 'flight-reference-images[bot]'
+          git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
+          git add manifest.json oracles candidates
+          git -c core.hooksPath=/dev/null commit -m "feat(release): stage ${RELEASE_TAG}"
+          if [ "${count}" -eq 1 ]; then
+            git push --force-with-lease="refs/heads/${branch}:${expected}" origin "HEAD:refs/heads/${branch}"
+          else
+            git push origin "${branch}"
+          fi
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const batch = JSON.parse(readFileSync('.artifacts/batch/prepared-batch.json', 'utf8'));
+          writeFileSync(
+            '.artifacts/pr-body.md',
+            `Publishes ${batch.requestIds.length} independently approved candidate request(s) as \`${batch.releaseTag}\`.\n\n` +
+              batch.requestIds.map((id) => `- \`${id}\``).join('\n') +
+              '\n\nThis PR is deterministic release materialization; human image approval occurred in the individual approval PRs.\n',
+          );
+          NODE
+          if [ "${count}" -eq 1 ]; then
+            gh pr edit "${pull_request}" --title "feat(release): stage ${RELEASE_TAG}" --body-file .artifacts/pr-body.md
+          else
+            gh pr create --base main --head "${branch}" --title "feat(release): stage ${RELEASE_TAG}" --body-file .artifacts/pr-body.md
+          fi

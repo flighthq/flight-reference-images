@@ -32,7 +32,7 @@ export function renderApprovalSummary(options: Readonly<ApprovalSummaryOptions>)
   return `## Reference image approval: ${label}
 
 - Request: \`${request.id}\`
-- Prospective release: \`${releaseTag}\`
+- Candidate staging identity: \`${releaseTag}\`
 - Cells: ${request.targets.length}
 ${dirtyWarning}
 | Entry | Renderer | Reviewed pixels | Flight build |
@@ -41,7 +41,7 @@ ${rows}
 
 [Open the visual old/new/delta review artifact](${reportUrl}).
 
-Merging the approval PR blesses the exact candidate bytes. The display label is derived from target entries; the request UUID remains the identity.
+Merging the approval PR blesses the exact candidate bytes. The final release identity is assigned when all merged approvals awaiting publication are materialized together. The display label is derived from target entries; the request UUID remains the identity.
 `;
 }
 

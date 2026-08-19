@@ -22,7 +22,9 @@ export async function completeFlight(options: Readonly<CompleteFlightOptions>): 
   if (state.manifest.releaseTag === null) throw new Error('cannot complete Flight from the bootstrap manifest');
   const sourceRequest = state.manifest.sourceRequests.find((entry) => entry.id === options.requestId);
   if (sourceRequest === undefined) throw new Error(`release does not name request ${options.requestId}`);
-  const locator = state.locators.find((entry) => entry.requestId === options.requestId);
+  const locator = state.locators.find((entry) =>
+    entry.schemaVersion === 1 ? entry.requestId === options.requestId : entry.requestIds.includes(options.requestId),
+  );
   if (locator === undefined || locator.releaseTag !== state.manifest.releaseTag) {
     throw new Error(`current release has no matching reviewed candidate locator for ${options.requestId}`);
   }

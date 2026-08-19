@@ -36,6 +36,15 @@ export interface CandidateLocator {
   sourceArtifact: ArtifactLocator;
 }
 
+export interface BatchLocator {
+  $schema?: string;
+  manifestSha256: string;
+  preparedArtifact: ArtifactLocator;
+  releaseTag: string;
+  requestIds: string[];
+  schemaVersion: 2;
+}
+
 export interface CandidateManifest {
   $schema?: string;
   captures: CandidateCapture[];
@@ -218,6 +227,18 @@ export interface PreparedIntake {
   records: Array<{ path: string; sha256: string }>;
   releaseTag: string;
   requestSha256: string;
+  schemaVersion: 1;
+}
+
+export interface PreparedBatch {
+  approvalSha256s: Array<{ requestId: string; sha256: string }>;
+  baseManifestSha256: string;
+  baseRecordsSha256: string;
+  expectedManifestSha256: string;
+  packs: ManifestPack[];
+  records: Array<{ path: string; sha256: string }>;
+  releaseTag: string;
+  requestIds: string[];
   schemaVersion: 1;
 }
 
