@@ -1,0 +1,56 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/text-align-right/canvas.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/text-align-right/dom.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/text-align-right/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/text-align-right/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "bec5f8e69280b99b1dfa13906f44d6bc67b18b25f70d1f8bd89169dec2e29e1b",
+  "flightCommit": "ef4fae7fcce4981f09353ef665113c0034491f34",
+  "preparedArtifact": {
+    "artifactId": 9373671460,
+    "digest": "sha256:a2514639c6859c91f7c882bed1734ab75babb8d9fd886cba1a554a89af122f43",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32275020406
+  },
+  "records": [
+    {
+      "path": "oracles/functional/text-align-right/canvas.json",
+      "sha256": "d0ceb74b3c1c33b8009b067b3023e99985792100ddd08729fc71f974859b449b"
+    },
+    {
+      "path": "oracles/functional/text-align-right/dom.json",
+      "sha256": "a95a90c97969af25e8ccec199a9ffd2b73657333687b404b1efff7cb600e60fa"
+    },
+    {
+      "path": "oracles/functional/text-align-right/webgl.json",
+      "sha256": "1ae5b679920abc7bbdc8c17a2fdede998435d2871b448296c4e651a46f9b8357"
+    },
+    {
+      "path": "oracles/functional/text-align-right/webgpu.json",
+      "sha256": "6d38e3be7dc254a33389405a75b83d265ef499e934a0caf90d780515b1d1c3ab"
+    }
+  ],
+  "requestId": "953ef160-da5a-4a5c-b181-e2419874735c",
+  "requestSha256": "aae272216d6b5883ed80a84277310816a8b37831287f719faa47ba756854f2ce",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9373476616,
+    "digest": "sha256:d87debe3f44d1a0f68511360f2c628efbd0cae945085a3b2c81e6ad3d6622316",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32273941648
+  }
+}
