@@ -5,7 +5,13 @@ import { resolve } from 'node:path';
 
 import { renderApprovalSummary, requestDisplayLabel } from './approval.js';
 import { completeFlight } from './completion.js';
-import { applyPreparedIntake, prepareIntake, replayPreparedIntake } from './intake.js';
+import {
+  applyPreparedIntake,
+  approvePreparedIntake,
+  prepareIntake,
+  replayPreparedIntake,
+  verifyPreparedApproval,
+} from './intake.js';
 import { canonicalJson, errorMessage, hashBytes, isRecord, readJson } from './json.js';
 import { downloadReleasePacks, verifyReleasePacks } from './pack.js';
 import { selectApprovalQueue } from './queue.js';
@@ -13,7 +19,7 @@ import type { ApprovalPull } from './queue.js';
 import { readRepository } from './repository.js';
 import { assertSchema } from './schemas.js';
 import type { SchemaName } from './schemas.js';
-import type { FlightOracleRequest, OracleManifest } from './types.js';
+import type { CandidateApproval, FlightOracleRequest, OracleManifest } from './types.js';
 
 async function main(): Promise<void> {
   const [command, ...arguments_] = process.argv.slice(2);
@@ -110,6 +116,27 @@ async function main(): Promise<void> {
       workflowRunId: positiveIntegerOption(arguments_, '--workflow-run-id'),
     });
     console.log(JSON.stringify(locator));
+    return;
+  }
+
+  if (command === 'intake-approve') {
+    const approval = await approvePreparedIntake({
+      artifactDigest: requiredOption(arguments_, '--artifact-digest'),
+      artifactId: positiveIntegerOption(arguments_, '--artifact-id'),
+      preparedDirectory: requiredOption(arguments_, '--prepared'),
+      repositoryRoot: option(arguments_, '--root') ?? '.',
+      workflowRunId: positiveIntegerOption(arguments_, '--workflow-run-id'),
+    });
+    console.log(JSON.stringify(approval));
+    return;
+  }
+
+  if (command === 'intake-verify-approval') {
+    const approvalPath = resolve(requiredOption(arguments_, '--approval'));
+    const value = await readJson(approvalPath);
+    assertSchema<CandidateApproval>('approval', value, approvalPath);
+    await verifyPreparedApproval(value, requiredOption(arguments_, '--prepared'));
+    console.log(`verified approval ${value.requestId}`);
     return;
   }
 

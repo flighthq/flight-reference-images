@@ -6,6 +6,7 @@ import { findFiles, oracleRecordPath, resolvePack } from './paths.js';
 import { assertSchema } from './schemas.js';
 import type { SchemaName } from './schemas.js';
 import type {
+  CandidateApproval,
   CandidateLocator,
   ComparisonPolicy,
   EnvironmentDescriptor,
@@ -16,6 +17,7 @@ import type {
 } from './types.js';
 
 export interface RepositoryState {
+  approvals: ReadonlyMap<string, CandidateApproval>;
   environments: ReadonlyMap<string, EnvironmentDescriptor>;
   intakePolicy: IntakePolicy;
   locators: readonly CandidateLocator[];
@@ -34,9 +36,19 @@ export async function readRepository(root: string): Promise<RepositoryState> {
   const policies = await readDirectory<ComparisonPolicy>(root, 'comparison-policies', 'comparison-policy', problems);
   const records = await readDirectory<OracleRecord>(root, 'oracles', 'oracle-record', problems);
   const locatorMap = await readDirectory<CandidateLocator>(root, 'candidates', 'candidate-locator', problems);
+  const approvals = await readDirectory<CandidateApproval>(root, 'approvals', 'approval', problems);
 
   if (manifest !== null && packConfiguration !== null) {
-    validateRepositoryRelationships(manifest, packConfiguration, environments, policies, records, locatorMap, problems);
+    validateRepositoryRelationships(
+      manifest,
+      packConfiguration,
+      environments,
+      policies,
+      records,
+      locatorMap,
+      approvals,
+      problems,
+    );
   }
 
   if (problems.length > 0)
@@ -50,6 +62,7 @@ export async function readRepository(root: string): Promise<RepositoryState> {
     throw new Error('repository validation failed without a diagnostic');
 
   return {
+    approvals,
     environments,
     intakePolicy,
     locators: [...locatorMap.values()],
@@ -93,6 +106,7 @@ function validateRepositoryRelationships(
   policies: ReadonlyMap<string, ComparisonPolicy>,
   records: ReadonlyMap<string, OracleRecord>,
   locators: ReadonlyMap<string, CandidateLocator>,
+  approvals: ReadonlyMap<string, CandidateApproval>,
   problems: string[],
 ): void {
   const environmentsById = indexUnique(environments, (value) => value.id, 'environment id', problems);
@@ -168,9 +182,33 @@ function validateRepositoryRelationships(
   }
 
   const requestIds = new Set<string>();
+  const requestsById = new Map<string, OracleManifest['sourceRequests'][number]>();
   for (const request of manifest.sourceRequests) {
     if (requestIds.has(request.id)) problems.push(`manifest repeats source request ${request.id}`);
     requestIds.add(request.id);
+    requestsById.set(request.id, request);
+  }
+
+  const approvalIds = new Set<string>();
+  for (const [path, approval] of approvals) {
+    const expectedPath = `approvals/${approval.requestId}.json`;
+    if (path !== expectedPath) problems.push(`${path} must be stored at ${expectedPath}`);
+    if (approvalIds.has(approval.requestId)) problems.push(`${path} repeats approval ${approval.requestId}`);
+    approvalIds.add(approval.requestId);
+    const basePaths = approval.baseRecords.map((record) => record.path);
+    const recordPaths = approval.records.map((record) => record.path);
+    if (new Set(basePaths).size !== basePaths.length) problems.push(`${path} repeats a base record path`);
+    if (new Set(recordPaths).size !== recordPaths.length) problems.push(`${path} repeats an approved record path`);
+    if (canonicalJson([...basePaths].sort()) !== canonicalJson([...recordPaths].sort())) {
+      problems.push(`${path} base and approved record paths differ`);
+    }
+    const released = requestsById.get(approval.requestId);
+    if (
+      released !== undefined &&
+      (released.flightCommit !== approval.flightCommit || released.requestSha256 !== approval.requestSha256)
+    ) {
+      problems.push(`${path} differs from released request ${approval.requestId}`);
+    }
   }
 
   if (locators.size > 1)

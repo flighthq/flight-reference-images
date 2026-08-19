@@ -20,7 +20,9 @@ import { writeReviewReport, type ReviewRow } from './report.js';
 import { assertSchema } from './schemas.js';
 import type { SchemaName } from './schemas.js';
 import type {
+  ArtifactLocator,
   CandidateLocator,
+  CandidateApproval,
   CandidateManifest,
   ComparisonPolicy,
   DispatchEnvelope,
@@ -37,6 +39,14 @@ import type {
 const REQUEST_IMAGE_DIFFERENCES_FILE = 'request-image-differences.json';
 
 export interface ApplyIntakeOptions {
+  artifactDigest: string;
+  artifactId: number;
+  preparedDirectory: string;
+  repositoryRoot: string;
+  workflowRunId: number;
+}
+
+export interface ApproveIntakeOptions {
   artifactDigest: string;
   artifactId: number;
   preparedDirectory: string;
@@ -71,6 +81,93 @@ interface IntakeBase {
 
 interface ProduceIntakeOptions extends PrepareIntakeOptions {
   enforceRequestAge: boolean;
+}
+
+export async function approvePreparedIntake(options: Readonly<ApproveIntakeOptions>): Promise<CandidateApproval> {
+  const preparedDirectory = resolve(options.preparedDirectory);
+  const repositoryRoot = resolve(options.repositoryRoot);
+  const prepared = await readPreparedIntake(preparedDirectory);
+  await validatePreparedIntakeFiles(preparedDirectory, prepared);
+  const request = await readTyped<FlightOracleRequest>(join(preparedDirectory, 'request.json'), 'request');
+  const envelope = await readTyped<DispatchEnvelope>(join(preparedDirectory, 'envelope.json'), 'dispatch-envelope');
+  const baseRecords = await readOracleRecords(join(preparedDirectory, 'base'));
+  const expectedPaths = prepared.records.map((record) => record.path).sort();
+  const targetPaths = request.targets
+    .map((target) => oracleRecordPath({ entry: target.entry, renderer: target.renderer, subject: request.subject }))
+    .sort();
+  if (canonicalJson(expectedPaths) !== canonicalJson(targetPaths)) {
+    throw new Error('prepared record paths differ from the approved request targets');
+  }
+
+  const preparedArtifact: ArtifactLocator = {
+    artifactId: options.artifactId,
+    digest: options.artifactDigest,
+    repository: 'flighthq/flight-reference-images',
+    workflowRunId: options.workflowRunId,
+  };
+  const approval: CandidateApproval = {
+    $schema: '../schemas/approval.schema.json',
+    baseRecords: expectedPaths.map((path) => {
+      const record = baseRecords.get(path);
+      return { path, sha256: record === undefined ? null : hashBytes(canonicalJson(record)) };
+    }),
+    candidateSha256: prepared.candidateSha256,
+    flightCommit: envelope.flightCommit,
+    preparedArtifact,
+    records: [...prepared.records].sort((left, right) => left.path.localeCompare(right.path)),
+    requestId: request.id,
+    requestSha256: prepared.requestSha256,
+    schemaVersion: 1,
+    sourceArtifact: {
+      artifactId: envelope.artifactId,
+      digest: envelope.artifactDigest,
+      repository: envelope.repository,
+      workflowRunId: envelope.workflowRunId,
+    },
+  };
+  assertSchema<CandidateApproval>('approval', approval);
+  await verifyPreparedApproval(approval, preparedDirectory);
+  await mkdir(join(repositoryRoot, 'approvals'), { recursive: true });
+  await writeCanonicalJson(join(repositoryRoot, 'approvals', `${request.id}.json`), approval);
+  return approval;
+}
+
+export async function verifyPreparedApproval(
+  approval: Readonly<CandidateApproval>,
+  preparedDirectory: string,
+): Promise<void> {
+  const directory = resolve(preparedDirectory);
+  const prepared = await readPreparedIntake(directory);
+  await validatePreparedIntakeFiles(directory, prepared);
+  const request = await readTyped<FlightOracleRequest>(join(directory, 'request.json'), 'request');
+  const envelope = await readTyped<DispatchEnvelope>(join(directory, 'envelope.json'), 'dispatch-envelope');
+  if (approval.requestId !== request.id) throw new Error('approval request id differs from prepared request');
+  if (approval.requestSha256 !== prepared.requestSha256)
+    throw new Error('approval request hash differs from prepared intake');
+  if (approval.candidateSha256 !== prepared.candidateSha256)
+    throw new Error('approval candidate hash differs from prepared intake');
+  if (approval.flightCommit !== envelope.flightCommit) throw new Error('approval Flight commit differs from envelope');
+  if (
+    canonicalJson(approval.records) !==
+    canonicalJson([...prepared.records].sort((a, b) => a.path.localeCompare(b.path)))
+  ) {
+    throw new Error('approval record hashes differ from prepared intake');
+  }
+  const sourceArtifact: ArtifactLocator = {
+    artifactId: envelope.artifactId,
+    digest: envelope.artifactDigest,
+    repository: envelope.repository,
+    workflowRunId: envelope.workflowRunId,
+  };
+  if (canonicalJson(approval.sourceArtifact) !== canonicalJson(sourceArtifact))
+    throw new Error('approval source artifact differs from envelope');
+  const baseRecords = await readOracleRecords(join(directory, 'base'));
+  const expectedBase = approval.records.map(({ path }) => {
+    const record = baseRecords.get(path);
+    return { path, sha256: record === undefined ? null : hashBytes(canonicalJson(record)) };
+  });
+  if (canonicalJson(approval.baseRecords) !== canonicalJson(expectedBase))
+    throw new Error('approval base record hashes differ from prepared intake');
 }
 
 export async function applyPreparedIntake(options: Readonly<ApplyIntakeOptions>): Promise<CandidateLocator> {

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flighthq/flight-reference-images/schemas/approval.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "flightCommit",
+    "requestSha256",
+    "candidateSha256",
+    "sourceArtifact",
+    "preparedArtifact",
+    "baseRecords",
+    "records"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "requestId": { "$ref": "common.schema.json#/$defs/identifier" },
+    "flightCommit": { "$ref": "common.schema.json#/$defs/gitCommit" },
+    "requestSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "candidateSha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "sourceArtifact": { "$ref": "#/$defs/artifact" },
+    "preparedArtifact": { "$ref": "#/$defs/artifact" },
+    "baseRecords": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "$ref": "#/$defs/oraclePath" },
+          "sha256": {
+            "oneOf": [{ "$ref": "common.schema.json#/$defs/sha256" }, { "type": "null" }]
+          }
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "$ref": "#/$defs/oraclePath" },
+          "sha256": { "$ref": "common.schema.json#/$defs/sha256" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "workflowRunId", "artifactId", "digest"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+        "workflowRunId": { "type": "integer", "minimum": 1 },
+        "artifactId": { "type": "integer", "minimum": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "oraclePath": {
+      "type": "string",
+      "pattern": "^oracles/[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*\\.json$"
+    }
+  }
+}

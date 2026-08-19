@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { Ajv2020, type AnySchema, type ErrorObject, type ValidateFunction } from 'ajv/dist/2020.js';
 
 export type SchemaName =
+  | 'approval'
   | 'candidate'
   | 'candidate-locator'
   | 'comparison-policy'
@@ -19,6 +20,7 @@ export type SchemaName =
   | 'request-image-differences';
 
 const schemaNames: readonly SchemaName[] = [
+  'approval',
   'candidate',
   'candidate-locator',
   'comparison-policy',

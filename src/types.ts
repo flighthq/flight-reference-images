@@ -5,6 +5,19 @@ export interface ArtifactLocator {
   workflowRunId: number;
 }
 
+export interface CandidateApproval {
+  $schema?: string;
+  baseRecords: Array<{ path: string; sha256: string | null }>;
+  candidateSha256: string;
+  flightCommit: string;
+  preparedArtifact: ArtifactLocator;
+  records: Array<{ path: string; sha256: string }>;
+  requestId: string;
+  requestSha256: string;
+  schemaVersion: 1;
+  sourceArtifact: ArtifactLocator;
+}
+
 export interface CandidateCapture {
   error?: string;
   file?: string;

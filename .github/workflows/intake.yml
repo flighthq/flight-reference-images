@@ -28,11 +28,6 @@ on:
         description: Flight candidate artifact digest
         required: true
 
-concurrency:
-  # Serialize dispatches so exactly one newly opened approval is ready; later candidates form a draft queue.
-  group: oracle-intake
-  cancel-in-progress: false
-
 jobs:
   prepare:
     name: Validate and stage candidate without repository write credentials
@@ -242,9 +237,9 @@ jobs:
           # An id is still handled as a multi-artifact selection. Flatten its contents so the fixed
           # prepared-intake.json contract is rooted at the directory passed to intake:apply.
           merge-multiple: true
-      - name: Apply schema-validated allowlisted metadata
+      - name: Write independently mergeable approval record
         run: >-
-          npm run intake:apply -- --prepared .artifacts/prepared --artifact-id ${{ needs.prepare.outputs.artifact-id }} --artifact-digest ${{ needs.prepare.outputs.artifact-digest }} --workflow-run-id ${{ github.run_id }}
+          npm run intake:approve -- --prepared .artifacts/prepared --artifact-id ${{ needs.prepare.outputs.artifact-id }} --artifact-digest ${{ needs.prepare.outputs.artifact-digest }} --workflow-run-id ${{ github.run_id }}
 
 
       - name: Build approval PR summary
@@ -266,22 +261,15 @@ jobs:
           REQUEST_ID: ${{ needs.prepare.outputs.request-id }}
           REQUEST_LABEL: ${{ needs.prepare.outputs.request-label }}
         run: |
-          branch="oracle/${REQUEST_ID}-${GITHUB_RUN_ID}"
+          branch="approval/${REQUEST_ID}-${GITHUB_RUN_ID}"
           git switch -c "${branch}"
           git config user.name 'flight-reference-images[bot]'
           git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
-          git add manifest.json oracles candidates
-          git -c core.hooksPath=/dev/null commit -m "feat(oracles): bless ${REQUEST_ID}"
+          git add "approvals/${REQUEST_ID}.json"
+          git -c core.hooksPath=/dev/null commit -m "feat(approvals): bless ${REQUEST_ID}"
           git push origin "${branch}"
-
-          create_options=()
-          if gh pr list --base main --state open --limit 1000 --json headRefName --jq \
-            '.[] | select(.headRefName | startswith("oracle/")) | .number' | grep -q .; then
-            create_options+=(--draft)
-          fi
           gh pr create \
             --base main \
             --head "${branch}" \
-            --title "feat(oracles): bless ${REQUEST_LABEL}" \
-            --body-file .artifacts/pr-body.md \
-            "${create_options[@]}"
+            --title "feat(approvals): bless ${REQUEST_LABEL}" \
+            --body-file .artifacts/pr-body.md

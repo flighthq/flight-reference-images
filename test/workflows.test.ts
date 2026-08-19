@@ -79,13 +79,15 @@ describe('GitHub Actions workflows', () => {
     expect(releaseText).toContain('gh pr edit "${PR_NUMBER}"');
   });
 
-  it('serializes intake and queues later approvals as drafts', async () => {
+  it('opens independently mergeable approval-only PRs', async () => {
     const intakeText = await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8');
     const intake = parse(intakeText);
 
-    expect(intake.concurrency?.group).toBe('oracle-intake');
-    expect(intake.concurrency?.['cancel-in-progress']).toBe(false);
-    expect(intakeText).toContain('create_options+=(--draft)');
+    expect(intake.concurrency).toBeUndefined();
+    expect(intakeText).toContain('intake:approve');
+    expect(intakeText).toContain('git add "approvals/${REQUEST_ID}.json"');
+    expect(intakeText).not.toContain('create_options+=(--draft)');
+    expect(intakeText).not.toContain('git add manifest.json oracles candidates');
     for (const name of ['prepare', 'open-pr']) {
       expect(job(intake, name).steps?.find((step) => step.uses === 'actions/checkout@v4')?.with?.ref).toBe('main');
     }

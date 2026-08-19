@@ -6,7 +6,14 @@ import { PNG } from 'pngjs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { completeFlight } from '../src/completion.js';
-import { applyPreparedIntake, assertRequestFreshness, prepareIntake, replayPreparedIntake } from '../src/intake.js';
+import {
+  applyPreparedIntake,
+  approvePreparedIntake,
+  assertRequestFreshness,
+  prepareIntake,
+  replayPreparedIntake,
+  verifyPreparedApproval,
+} from '../src/intake.js';
 import { canonicalJson, hashBytes, hashFile, writeCanonicalJson } from '../src/json.js';
 import { readRepository } from '../src/repository.js';
 import type {
@@ -32,6 +39,28 @@ afterEach(async () => {
 });
 
 describe('prepareIntake', () => {
+  it('writes an independently mergeable approval without changing release state', async () => {
+    const fixture = await makeFixture('captured');
+    const preparedDirectory = join(workspace, 'approval-prepared');
+    await prepareFixture(fixture, preparedDirectory);
+    const before = await readFile(join(fixture.repositoryRoot, 'manifest.json'), 'utf8');
+
+    const approval = await approvePreparedIntake({
+      artifactDigest: `sha256:${'9'.repeat(64)}`,
+      artifactId: 222,
+      preparedDirectory,
+      repositoryRoot: fixture.repositoryRoot,
+      workflowRunId: 333,
+    });
+
+    expect(approval.requestId).toBe(fixture.request.id);
+    expect(approval.baseRecords).toEqual([{ path: 'oracles/functional/shape-basic/webgl.json', sha256: null }]);
+    expect(approval.records).toHaveLength(1);
+    await verifyPreparedApproval(approval, preparedDirectory);
+    await expect(readFile(join(fixture.repositoryRoot, 'manifest.json'), 'utf8')).resolves.toBe(before);
+    expect((await readRepository(fixture.repositoryRoot)).records.size).toBe(0);
+  });
+
   it('prepares, applies, and exactly replays the first release', async () => {
     const fixture = await makeFixture('captured');
     const preparedDirectory = join(workspace, 'prepared');
