@@ -1,0 +1,48 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/effect-hue-saturation/canvas.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/effect-hue-saturation/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/effect-hue-saturation/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "581928ceb318b773cda5c7a23340e17d42c0b03b0dec2fe5ce65588dd8d9adbb",
+  "flightCommit": "e25e95d60f7439c174b16b0c9c970d4aba8223bd",
+  "preparedArtifact": {
+    "artifactId": 9387286583,
+    "digest": "sha256:c27ae90169ccbacb7677682ea5bb467fd0cab245be9b7d293fd13b80a0964d18",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32313571908
+  },
+  "records": [
+    {
+      "path": "oracles/functional/effect-hue-saturation/canvas.json",
+      "sha256": "568775943b7912de31905de9e55aa6c5e3f79d1f2b6cbd7b4d45de397cb72bc9"
+    },
+    {
+      "path": "oracles/functional/effect-hue-saturation/webgl.json",
+      "sha256": "bb8335dfa8ada0838f61a03237429ec0fa0c9d1d387bb5da2d271d67df0c1076"
+    },
+    {
+      "path": "oracles/functional/effect-hue-saturation/webgpu.json",
+      "sha256": "5cc6013b179640ab2288ad3ccb1956393ba32eed61b4fe2f73ff453e6801fd01"
+    }
+  ],
+  "requestId": "ca3d5c39-9188-46bc-ad88-e1950a3b4ab4",
+  "requestSha256": "7fe94e5de7c875cc9f89869c8f3b9140b2a8d9779af8f004e759e241b8d7d952",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9387271103,
+    "digest": "sha256:1c1fd93328502087ca6c7b8010c80cdf85321eed8c59d5a0f8580d0e4ff4dadd",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32313104775
+  }
+}
