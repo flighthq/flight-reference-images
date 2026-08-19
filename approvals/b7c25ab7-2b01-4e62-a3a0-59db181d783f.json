@@ -1,0 +1,56 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/svg-use-symbol/canvas.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/svg-use-symbol/dom.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/svg-use-symbol/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/svg-use-symbol/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "1b7814ae2089bcd64715a9eaaa7a13b5bed3a22933cef44a23f6470ef271c365",
+  "flightCommit": "ef4fae7fcce4981f09353ef665113c0034491f34",
+  "preparedArtifact": {
+    "artifactId": 9373651864,
+    "digest": "sha256:a2eb26e258744da88c511aa7f292e63a858aa89ba1919f11140d0a988eb5cca2",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32275012822
+  },
+  "records": [
+    {
+      "path": "oracles/functional/svg-use-symbol/canvas.json",
+      "sha256": "f12bf9a102aedaf9a0799ad8325bb67bf89057724083c1225b20e9359aa8b674"
+    },
+    {
+      "path": "oracles/functional/svg-use-symbol/dom.json",
+      "sha256": "8324d589c2942893ff7e7d18dffdf19b3e21842264f3cf36af1966b950bb7d36"
+    },
+    {
+      "path": "oracles/functional/svg-use-symbol/webgl.json",
+      "sha256": "1c23a84011e96d1d5d06daa981a7f7fbf59e5c8d4e18d266333feeb71b388cfd"
+    },
+    {
+      "path": "oracles/functional/svg-use-symbol/webgpu.json",
+      "sha256": "2ca3305b111ab4804fc9501cc548efbeedc1836ae1d8dcf45c3f1b794f104c0a"
+    }
+  ],
+  "requestId": "b7c25ab7-2b01-4e62-a3a0-59db181d783f",
+  "requestSha256": "119b13d441ed7f90d6772afbc5d96c94677696c8c4ec016956d2ffe15cd3f447",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9373594474,
+    "digest": "sha256:da7bbc26957b5ef09409ec5bed7544a00164f98539de543b0a1928c359515e8b",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32273941648
+  }
+}
