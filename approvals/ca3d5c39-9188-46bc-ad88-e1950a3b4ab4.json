@@ -1,0 +1,48 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/effect-hue-saturation/canvas.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/effect-hue-saturation/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/effect-hue-saturation/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "581928ceb318b773cda5c7a23340e17d42c0b03b0dec2fe5ce65588dd8d9adbb",
+  "flightCommit": "ef4fae7fcce4981f09353ef665113c0034491f34",
+  "preparedArtifact": {
+    "artifactId": 9373654171,
+    "digest": "sha256:7b3cb63fa73abfd0ce999c86da196f963907a0ada781e24c23c937943076e1af",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32275015010
+  },
+  "records": [
+    {
+      "path": "oracles/functional/effect-hue-saturation/canvas.json",
+      "sha256": "3428419a7545be11d38c4397378e12989c4f0fcc6c8da7a2c007a871ef0235ff"
+    },
+    {
+      "path": "oracles/functional/effect-hue-saturation/webgl.json",
+      "sha256": "7a8a792d3f94b503692d77747d60c7a9e1c18478b7fa9c128f8302708da21dea"
+    },
+    {
+      "path": "oracles/functional/effect-hue-saturation/webgpu.json",
+      "sha256": "3993b80aff04d1eeff34cace3be50d629c006658c379cf55271c7721cdd79f55"
+    }
+  ],
+  "requestId": "ca3d5c39-9188-46bc-ad88-e1950a3b4ab4",
+  "requestSha256": "7fe94e5de7c875cc9f89869c8f3b9140b2a8d9779af8f004e759e241b8d7d952",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9373583179,
+    "digest": "sha256:6f0560b0751a4ceba2d9ba514f9207889d195f922617011a168052506be34a18",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32273941648
+  }
+}
