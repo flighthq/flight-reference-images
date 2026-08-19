@@ -1,0 +1,43 @@
+{
+  "$schema": "../schemas/candidate-locator.schema.json",
+  "manifestSha256": "029856e6edb48eb9a53fcd34ce199803e8278b0cd5b736d3124e83b60cafce5f",
+  "preparedArtifact": {
+    "artifactId": 9370720607,
+    "digest": "sha256:4b19793ce604af96967548d2a4432dfb5b80d0133a549e245f596058943b1203",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32267215770
+  },
+  "releaseTag": "oracle-batch-bfd1400c5657",
+  "requestIds": [
+    "10340863-b276-4a92-8d6d-3000e3af81e7",
+    "1595b3c3-97a8-4c62-8ccb-a133b6511659",
+    "1f2d74e7-6bea-4f86-9595-c30c6a42a5b2",
+    "22649b1b-37ba-4fa1-a87a-e0915f75ceb4",
+    "22822f5c-f0c9-41fe-afc5-d71c004f798b",
+    "24c57f0b-c69f-4efc-8a7c-d024754b0594",
+    "357cd1fd-a622-412f-ad88-39388b1a9043",
+    "40cab230-f8e6-41ec-ae7b-609e79907699",
+    "4878ef48-0b12-496e-bf6d-b44252dc1a9e",
+    "72337524-7d14-47d0-9793-6c4a808c0566",
+    "89e97302-3576-4347-9fe0-9f0b07e30e0d",
+    "8aa702da-aca4-479d-876f-dd19f21bf2ff",
+    "b37090f9-bc98-4f02-a897-7c85902b09c1",
+    "b6d08380-7690-408a-979c-8a0c57ace75e",
+    "bcd4bc25-ca5b-463a-883c-59086c2d0c41",
+    "c25770be-f07a-4181-94e4-a06c7b24e79c",
+    "d6746416-363c-405a-b08d-368bde6416bf",
+    "e5f8aa28-6cf5-460f-8ed3-de6ac97ef955",
+    "e678a831-568c-47ef-9702-8ce07ff4e472",
+    "e759459a-daa9-43df-bdd1-10a74db75ca1",
+    "ebb7d0bc-b631-403d-b934-1478909d4951",
+    "ec159b8a-90fa-4d87-a87b-d8085770080f",
+    "ec8e9b75-1a1f-45fd-b2f1-52c840e2eea8",
+    "ef46b59c-2203-492c-acd4-1b7507b58cef",
+    "f00dc64d-6500-4996-92d4-5a98742a015c",
+    "f814e4f3-d23c-44ed-b3ae-5e2656639e23",
+    "fb427948-0fed-4455-bab7-662dd2205c43",
+    "fc7dc341-732a-40bc-82a7-9ef7d826b1a5",
+    "ff28dcf3-8481-4b01-80a9-025d7f17b350"
+  ],
+  "schemaVersion": 2
+}
