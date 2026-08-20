@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/scene2d-clip-contour-hdr/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/scene2d-clip-contour-hdr/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "8f6a42eaec4df98ff0b352b5be0fb68d49dd42b08094905af34ff324738f032b",
+  "flightCommit": "43bcb37d9a5a44d81b8490439b9e43ac5d1e82f7",
+  "preparedArtifact": {
+    "artifactId": 9393626603,
+    "digest": "sha256:c66e27619f6b4516b9c17a2ba0cad651ee9c6cb2f05c655d500d8dd9593b9c6d",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32332878254
+  },
+  "records": [
+    {
+      "path": "oracles/functional/scene2d-clip-contour-hdr/webgl.json",
+      "sha256": "708370c4fe60bc9b913632322a02ad4e4e959b3a3ca2e575d9395b8b94a1feec"
+    },
+    {
+      "path": "oracles/functional/scene2d-clip-contour-hdr/webgpu.json",
+      "sha256": "f8d6bde3f6bb3e8b78dac5ed033810b152952298c9e0323f2b6d67a2b9f88873"
+    }
+  ],
+  "requestId": "6f79f773-8d87-4a03-8747-c4aafa75002e",
+  "requestSha256": "89a8c64392c3f44ca81209b0743f1e6d6afc8617ed2b3a94db44279060c8db9c",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9393594463,
+    "digest": "sha256:e613087fe5ea77398933733e818ec90017de437936d433ba1105ebbb00cb19e0",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32332644101
+  }
+}
