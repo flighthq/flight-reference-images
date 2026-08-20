@@ -312,7 +312,7 @@ jobs:
           pulls=$(gh pr list --base main --state open --limit 100 \
             --json number,headRefName,headRefOid,isCrossRepository)
           existing=$(jq --arg stable "${stable_branch}" \
-            '[.[] | select(.isCrossRepository == false and (.headRefName == $stable or (.headRefName | startswith($stable + "-"))))]' \
+            '[.[] | select(.isCrossRepository == false and (.headRefName == $stable or (.headRefName | test("^" + $stable + "-[0-9]+$"))))]' \
             <<< "${pulls}")
           count=$(jq length <<< "${existing}")
           test "${count}" -le 1 || { echo "::error::multiple approval PRs are open for ${REQUEST_ID}"; exit 1; }

@@ -123,6 +123,8 @@ describe('GitHub Actions workflows', () => {
     expect(intakeText).toContain('intake:approve');
     expect(intakeText).toContain('git add "${approval_path}"');
     expect(intakeText).toContain('stable_branch="approval/${REQUEST_ID}"');
+    expect(intakeText).toContain('test("^" + $stable + "-[0-9]+$")');
+    expect(intakeText).not.toContain('startswith($stable + "-")');
     expect(intakeText).toContain('--force-with-lease="refs/heads/${branch}:${expected}"');
     expect(intakeText).toContain('gh pr edit "${pull_request}"');
     expect(intakeText).not.toContain('create_options+=(--draft)');
