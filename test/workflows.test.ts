@@ -4,8 +4,17 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseDocument } from 'yaml';
 
+const workflowFiles = [
+  'ci.yml',
+  'intake.yml',
+  'intake-batch.yml',
+  'migrate-approvals.yml',
+  'release.yml',
+  'stage-release.yml',
+];
+
 describe('GitHub Actions workflows', () => {
-  for (const file of ['ci.yml', 'intake.yml', 'migrate-approvals.yml', 'release.yml', 'stage-release.yml']) {
+  for (const file of workflowFiles) {
     it(`${file} is valid YAML`, async () => {
       const document = parseDocument(await readFile(join('.github', 'workflows', file), 'utf8'));
       expect(document.errors).toEqual([]);
@@ -14,7 +23,7 @@ describe('GitHub Actions workflows', () => {
   }
 
   it('keeps shell heredoc terminators unindented', async () => {
-    for (const file of ['ci.yml', 'intake.yml', 'migrate-approvals.yml', 'release.yml', 'stage-release.yml']) {
+    for (const file of workflowFiles) {
       const workflow = parse(await readFile(join('.github', 'workflows', file), 'utf8'));
       for (const definition of Object.values(workflow.jobs)) {
         for (const step of definition.steps ?? []) {
@@ -42,7 +51,7 @@ describe('GitHub Actions workflows', () => {
   });
 
   it('extracts id-selected artifacts directly into their consumer directories', async () => {
-    for (const file of ['ci.yml', 'intake.yml', 'migrate-approvals.yml', 'release.yml', 'stage-release.yml']) {
+    for (const file of workflowFiles) {
       const workflow = parse(await readFile(join('.github', 'workflows', file), 'utf8'));
       for (const definition of Object.values(workflow.jobs)) {
         for (const step of definition.steps ?? []) {
@@ -67,9 +76,11 @@ describe('GitHub Actions workflows', () => {
   it('targets the renamed repository and Flight lock path', async () => {
     const intakeText = await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8');
     const intake = parse(intakeText);
+    const batchIntake = parse(await readFile(join('.github', 'workflows', 'intake-batch.yml'), 'utf8'));
     const releaseText = await readFile(join('.github', 'workflows', 'release.yml'), 'utf8');
 
     expect(intake.on?.repository_dispatch?.types).toEqual(['flight-reference-image-candidate']);
+    expect(batchIntake.on?.repository_dispatch?.types).toEqual(['flight-reference-image-candidate-batch']);
     expect(intakeText).toContain('repositories: flight-reference-images');
     expect(releaseText).toContain('scripts/reference-image-lock.json');
     expect(`${intakeText}\n${releaseText}`).not.toContain('flight-oracles');
@@ -110,12 +121,33 @@ describe('GitHub Actions workflows', () => {
 
     expect(intake.concurrency).toBeUndefined();
     expect(intakeText).toContain('intake:approve');
-    expect(intakeText).toContain('git add "approvals/${REQUEST_ID}.json"');
+    expect(intakeText).toContain('git add "${approval_path}"');
+    expect(intakeText).toContain('stable_branch="approval/${REQUEST_ID}"');
+    expect(intakeText).toContain('--force-with-lease="refs/heads/${branch}:${expected}"');
+    expect(intakeText).toContain('gh pr edit "${pull_request}"');
     expect(intakeText).not.toContain('create_options+=(--draft)');
     expect(intakeText).not.toContain('git add manifest.json oracles candidates');
     for (const name of ['prepare', 'open-pr']) {
       expect(job(intake, name).steps?.find((step) => step.uses === 'actions/checkout@v4')?.with?.ref).toBe('main');
     }
+  });
+
+  it('fans one complete v2 dispatch into bounded independent v1 intake calls', async () => {
+    const batchText = await readFile(join('.github', 'workflows', 'intake-batch.yml'), 'utf8');
+    const batch = parse(batchText);
+    const intake = parse(await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8'));
+    const intakeJob = job(batch, 'intake');
+
+    expect(batchText).toContain('npm run schema:check -- --schema dispatch-batch');
+    expect(batchText).toContain('npm run --silent dispatch:expand');
+    expect(intakeJob.strategy).toMatchObject({ 'fail-fast': false, 'max-parallel': 12 });
+    expect(intakeJob.uses).toBe('./.github/workflows/intake.yml');
+    expect(JSON.stringify(intakeJob.with)).toContain('matrix.candidate.artifactDigest');
+    expect(intake.on?.workflow_call?.inputs?.artifact_id).toMatchObject({ required: true, type: 'number' });
+    expect(intake.on?.workflow_call?.secrets).toEqual({
+      ORACLE_APP_ID: { required: true },
+      ORACLE_APP_PRIVATE_KEY: { required: true },
+    });
   });
 
   it('accumulates merged approvals into one deterministic publication PR', async () => {
@@ -160,6 +192,10 @@ interface Workflow {
   on?: {
     push?: { paths?: string[] };
     repository_dispatch?: { types?: string[] };
+    workflow_call?: {
+      inputs?: Record<string, { required?: boolean; type?: string }>;
+      secrets?: Record<string, { required?: boolean }>;
+    };
     workflow_dispatch?: {
       inputs?: Record<string, { required?: boolean }>;
     };
@@ -172,7 +208,10 @@ interface Workflow {
       if?: string;
       outputs?: Record<string, unknown>;
       permissions: Record<string, string>;
+      strategy?: Record<string, unknown>;
       steps?: { name?: string; run?: string; uses?: string; with?: Record<string, unknown> }[];
+      uses?: string;
+      with?: Record<string, unknown>;
     }
   >;
 }

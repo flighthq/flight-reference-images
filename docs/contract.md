@@ -32,7 +32,11 @@ The UUID `id` is the request's sole identity. Approval workflows derive a displa
 }
 ```
 
-The trusted Flight bridge dispatches only the source repository, landed 40-character Flight SHA, request path and SHA-256, Actions artifact id, workflow run id, and artifact digest. Oracle intake fetches the request again from that exact commit and verifies the hash before trusting its scope. It also queries GitHub for that commit's authoritative committer time and adds `flightCommittedAt` to its internal envelope. `intake-policy.json` rejects a request older than 336 hours, so pending work cannot become a permanent skip list. Exact release replay does not reapply this wall-clock check; it proves the already-admitted artifact instead.
+The trusted Flight bridge sends one version-2 `flight-reference-image-candidate-batch` dispatch after a capture workflow run completes. [`dispatch-batch.schema.json`](../schemas/dispatch-batch.schema.json) binds the source repository, landed 40-character Flight SHA, source workflow run id, and the complete candidate membership. Every candidate carries its request path and SHA-256 plus its Actions artifact id and digest. Request paths and artifact ids must each be unique; intake sorts the set by request path and expands it into the existing version-1 per-candidate envelopes. The batch is limited to 256 candidates, matching GitHub's matrix limit, and Flight must fail explicitly rather than silently omit a candidate if a run exceeds it.
+
+Batch membership is atomic, while candidate processing and approval remain independent and retryable. The matrix uses `fail-fast: false` with bounded parallelism, so one invalid candidate does not cancel unrelated work. Each candidate still crosses a separate read-only decoding job and scoped writer job. Stable request-keyed approval branches update an existing PR with a force-with-lease on retry instead of opening duplicates. The legacy `flight-reference-image-candidate` version-1 event remains accepted during migration.
+
+Oracle intake fetches every request again from the exact landed commit and verifies the hash before trusting its scope. It also queries GitHub for that commit's authoritative committer time and adds `flightCommittedAt` to the internal per-candidate envelope. `intake-policy.json` rejects a request older than 336 hours, so pending work cannot become a permanent skip list. Exact release replay does not reapply this wall-clock check; it proves the already-admitted artifact instead.
 
 ## Candidate bundle
 

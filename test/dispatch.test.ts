@@ -59,6 +59,18 @@ describe('expandBatchDispatch', () => {
     expect(() => expandBatchDispatch(batch)).toThrow('repeats artifact id');
   });
 
+  it('rejects a batch larger than the GitHub matrix limit', () => {
+    const batch = makeBatch();
+    batch.candidates = Array.from({ length: 257 }, (_, index) => ({
+      artifactDigest: `sha256:${index.toString(16).padStart(64, '0')}`,
+      artifactId: index + 1,
+      requestPath: `reference-image-requests/request-${index}.json`,
+      requestSha256: index.toString(16).padStart(64, '0'),
+    }));
+
+    expect(() => expandBatchDispatch(batch)).toThrow('must NOT have more than 256 items');
+  });
+
   it('fails closed on unversioned or incomplete additions', () => {
     expect(() => expandBatchDispatch({ ...makeBatch(), quietAddition: true })).toThrow(
       'must NOT have additional properties',

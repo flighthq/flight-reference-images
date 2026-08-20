@@ -49,6 +49,7 @@ npm run check
 
 ```sh
 npm run repository:check
+npm run dispatch:expand -- --file <dispatch-batch.json>
 npm run packs:download -- --output .artifacts/previous-packs
 npm run intake:prepare -- --candidate <dir> --request <request.json> --envelope <envelope.json> --previous-packs <dir> --output <new-dir>
 npm run intake:approve -- --prepared <dir> --artifact-id <id> --artifact-digest sha256:<hash> --workflow-run-id <id>

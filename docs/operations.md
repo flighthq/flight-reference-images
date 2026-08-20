@@ -15,7 +15,28 @@ Protect `main` with the `Quality and repository integrity`, `Approval artifact i
 
 ## Dispatch
 
-Flight sends a `repository_dispatch` event of type `flight-reference-image-candidate` with this camel-case payload:
+Flight normally sends one `repository_dispatch` event of type `flight-reference-image-candidate-batch` after the source capture run completes:
+
+```json
+{
+  "schemaVersion": 2,
+  "repository": "flighthq/flight",
+  "flightCommit": "<40-hex landed commit>",
+  "workflowRunId": 456,
+  "candidates": [
+    {
+      "requestPath": "reference-image-requests/<id>.json",
+      "requestSha256": "<64-hex>",
+      "artifactId": 123,
+      "artifactDigest": "sha256:<64-hex>"
+    }
+  ]
+}
+```
+
+The array is the complete membership for that Flight run. It must contain 1–256 candidates with unique request paths and artifact ids. The serialized GitHub `client_payload` must also remain within GitHub's 65,535-character limit. Batch intake validates the whole envelope before starting any candidate, then processes candidates independently with `fail-fast: false` and at most 12 concurrent reusable intake calls.
+
+The legacy `flight-reference-image-candidate` event remains available during migration and has this version-1 camel-case payload:
 
 ```json
 {
@@ -29,7 +50,9 @@ Flight sends a `repository_dispatch` event of type `flight-reference-image-candi
 }
 ```
 
-The same values are available as manual workflow inputs for recovery. Manual dispatch does not weaken validation: the request is still fetched from the exact commit, and artifact ownership, run id, and digest are checked through GitHub's API.
+The same version-1 values are available as manual workflow inputs for single-candidate recovery. **Reference image candidate batch intake** accepts the complete version-2 JSON as its manual `payload` input. Manual dispatch does not weaken validation: each request is still fetched from the exact commit, and artifact ownership, run id, and digest are checked through GitHub's API.
+
+For rollout, land batch support here first while Flight continues sending version 1. After the workflow is present on the default branch, switch Flight to one version-2 batch event per completed capture run. Retire version 1 only after in-flight old bridge runs no longer need recovery.
 
 Oracle intake adds the landed commit's GitHub-reported committer time and applies `intake-policy.json`. Flight CI should mirror the same 336-hour bound when reporting pending requests so an expired request fails on both sides of the boundary.
 

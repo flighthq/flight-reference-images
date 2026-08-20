@@ -1,0 +1,77 @@
+name: Reference image candidate batch intake
+
+on:
+  repository_dispatch:
+    types: [flight-reference-image-candidate-batch]
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: Complete version-2 batch dispatch JSON
+        required: true
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  validate:
+    name: Validate complete dispatch membership
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      candidates: ${{ steps.expand.outputs.candidates }}
+      count: ${{ steps.expand.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Materialize the fixed batch payload
+        env:
+          EVENT_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+          MANUAL_PAYLOAD: ${{ inputs.payload }}
+        run: |
+          mkdir -p .artifacts
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+
+          const text = process.env.MANUAL_PAYLOAD || process.env.EVENT_PAYLOAD;
+          const payload = JSON.parse(text);
+          writeFileSync('.artifacts/dispatch-batch.json', `${JSON.stringify(payload, null, 2)}\n`);
+          NODE
+          npm run schema:check -- --schema dispatch-batch --file .artifacts/dispatch-batch.json
+      - name: Expand deterministic candidate matrix
+        id: expand
+        run: |
+          candidates=$(npm run --silent dispatch:expand -- --file .artifacts/dispatch-batch.json)
+          echo "candidates=${candidates}" >> "${GITHUB_OUTPUT}"
+          count=$(jq length <<< "${candidates}")
+          echo "count=${count}" >> "${GITHUB_OUTPUT}"
+          echo "Accepted an atomic dispatch set of ${count} candidate request(s)." >> "${GITHUB_STEP_SUMMARY}"
+
+  intake:
+    name: Intake ${{ matrix.candidate.requestPath }}
+    needs: validate
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        candidate: ${{ fromJSON(needs.validate.outputs.candidates) }}
+    uses: ./.github/workflows/intake.yml
+    with:
+      repository: ${{ matrix.candidate.repository }}
+      flight_commit: ${{ matrix.candidate.flightCommit }}
+      request_path: ${{ matrix.candidate.requestPath }}
+      request_sha256: ${{ matrix.candidate.requestSha256 }}
+      artifact_id: ${{ matrix.candidate.artifactId }}
+      workflow_run_id: ${{ matrix.candidate.workflowRunId }}
+      artifact_digest: ${{ matrix.candidate.artifactDigest }}
+    secrets:
+      ORACLE_APP_ID: ${{ secrets.ORACLE_APP_ID }}
+      ORACLE_APP_PRIVATE_KEY: ${{ secrets.ORACLE_APP_PRIVATE_KEY }}
