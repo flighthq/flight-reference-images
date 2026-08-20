@@ -74,7 +74,12 @@ async function main(): Promise<void> {
       assertSchema<OracleManifest>('manifest', value, manifestPath);
       manifest = value;
     }
-    await downloadReleasePacks(manifest, repository, output);
+    const attempts = option(arguments_, '--attempts');
+    const retryDelay = option(arguments_, '--retry-delay-ms');
+    await downloadReleasePacks(manifest, repository, output, {
+      attempts: attempts === undefined ? 1 : parsePositiveInteger(attempts, '--attempts'),
+      retryDelayMilliseconds: retryDelay === undefined ? 0 : parseNonNegativeInteger(retryDelay, '--retry-delay-ms'),
+    });
     console.log(`downloaded and verified ${manifest.packs.length} packs in ${output}`);
     return;
   }
@@ -227,9 +232,18 @@ async function main(): Promise<void> {
 }
 
 function positiveIntegerOption(arguments_: readonly string[], name: string): number {
-  const text = requiredOption(arguments_, name);
+  return parsePositiveInteger(requiredOption(arguments_, name), name);
+}
+
+function parsePositiveInteger(text: string, name: string): number {
   const value = Number(text);
   if (!Number.isSafeInteger(value) || value < 1) throw new Error(`${name} must be a positive integer, got ${text}`);
+  return value;
+}
+
+function parseNonNegativeInteger(text: string, name: string): number {
+  const value = Number(text);
+  if (!Number.isSafeInteger(value) || value < 0) throw new Error(`${name} must be a non-negative integer, got ${text}`);
   return value;
 }
 

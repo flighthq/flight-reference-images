@@ -4,7 +4,7 @@ import { basename, dirname, join } from 'node:path';
 
 import { create, extract, list } from 'tar';
 
-import { canonicalJson, hashBytes, hashFile, readJson } from './json.js';
+import { canonicalJson, errorMessage, hashBytes, hashFile, isRecord, readJson } from './json.js';
 import { assertSafeRelativePath, findFiles, imagePath, resolveInside } from './paths.js';
 import { readPng } from './png.js';
 import { assertSchema } from './schemas.js';
@@ -13,6 +13,11 @@ import type { ManifestPack, OracleManifest, OracleRecord, PackImage, PackManifes
 export interface PackImageSource {
   path: string;
   record: OracleRecord;
+}
+
+export interface PackDownloadOptions {
+  attempts?: number;
+  retryDelayMilliseconds?: number;
 }
 
 export async function buildReleasePacks(
@@ -48,13 +53,21 @@ export async function downloadReleasePacks(
   manifest: Readonly<OracleManifest>,
   repository: string,
   outputDirectory: string,
+  options: Readonly<PackDownloadOptions> = {},
 ): Promise<void> {
   if (manifest.releaseTag === null) {
     if (manifest.packs.length !== 0) throw new Error('bootstrap manifest cannot name packs');
     return;
   }
   await mkdir(outputDirectory, { recursive: true });
+  const attempts = options.attempts ?? 1;
+  const retryDelayMilliseconds = options.retryDelayMilliseconds ?? 0;
+  if (!Number.isSafeInteger(attempts) || attempts < 1) throw new Error('pack download attempts must be positive');
+  if (!Number.isSafeInteger(retryDelayMilliseconds) || retryDelayMilliseconds < 0) {
+    throw new Error('pack download retry delay must be non-negative');
+  }
 
+  const pending: ManifestPack[] = [];
   for (const pack of manifest.packs) {
     const destination = join(outputDirectory, pack.file);
     try {
@@ -62,13 +75,35 @@ export async function downloadReleasePacks(
     } catch {
       // A missing or invalid cache entry is replaced only after the download verifies.
     }
+    pending.push(pack);
+  }
+  if (pending.length === 0) return;
 
-    const url = `https://github.com/${repository}/releases/download/${encodeURIComponent(manifest.releaseTag)}/${encodeURIComponent(pack.file)}`;
-    const headers: Record<string, string> = {};
-    if (process.env['GH_TOKEN']) headers['Authorization'] = `Bearer ${process.env['GH_TOKEN']}`;
-    const response = await fetch(url, { headers });
-    if (!response.ok) throw new Error(`cannot download ${pack.file}: HTTP ${response.status}`);
-    const bytes = Buffer.from(await response.arrayBuffer());
+  const token = process.env['GH_TOKEN'];
+  const authenticated = token !== undefined && token.length > 0;
+  const assetIds = authenticated
+    ? await resolveReleaseAssetIds(
+        repository,
+        manifest.releaseTag,
+        pending.map((pack) => pack.file),
+        token,
+        attempts,
+        retryDelayMilliseconds,
+      )
+    : undefined;
+
+  for (const pack of pending) {
+    const destination = join(outputDirectory, pack.file);
+    const bytes = authenticated
+      ? await downloadAuthenticatedReleaseAsset(
+          repository,
+          pack.file,
+          assetIds?.get(pack.file),
+          token,
+          attempts,
+          retryDelayMilliseconds,
+        )
+      : await downloadPublicReleaseAsset(repository, manifest.releaseTag, pack.file, attempts, retryDelayMilliseconds);
     const actual = hashBytes(bytes);
     if (actual !== pack.sha256) throw new Error(`${pack.file} checksum is ${actual}, expected ${pack.sha256}`);
     if (bytes.length !== pack.size) throw new Error(`${pack.file} size is ${bytes.length}, expected ${pack.size}`);
@@ -77,6 +112,135 @@ export async function downloadReleasePacks(
     await writeFile(temporary, bytes);
     await rename(temporary, destination);
   }
+}
+
+type AttemptResult<T> = { value: T } | { failure: string; retryable: boolean };
+
+async function retryDownload<T>(
+  label: string,
+  attempts: number,
+  retryDelayMilliseconds: number,
+  operation: () => Promise<AttemptResult<T>>,
+): Promise<T> {
+  let lastFailure = 'asset is not available';
+  let completedAttempts = 0;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    completedAttempts = attempt;
+    try {
+      const result = await operation();
+      if ('value' in result) return result.value;
+      lastFailure = result.failure;
+      if (!result.retryable) break;
+    } catch (error) {
+      lastFailure = errorMessage(error);
+    }
+    if (attempt < attempts && retryDelayMilliseconds > 0) {
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMilliseconds));
+    }
+  }
+  throw new Error(`cannot download ${label} after ${completedAttempts} attempt(s): ${lastFailure}`);
+}
+
+async function downloadPublicReleaseAsset(
+  repository: string,
+  releaseTag: string,
+  file: string,
+  attempts: number,
+  retryDelayMilliseconds: number,
+): Promise<Buffer> {
+  const url = `https://github.com/${repository}/releases/download/${encodeURIComponent(releaseTag)}/${encodeURIComponent(file)}`;
+  return retryDownload(`${file} from ${releaseTag}`, attempts, retryDelayMilliseconds, async () => {
+    const response = await fetch(url);
+    return response.ok
+      ? { value: Buffer.from(await response.arrayBuffer()) }
+      : { failure: `HTTP ${response.status}`, retryable: retryableDownloadStatus(response.status) };
+  });
+}
+
+async function resolveReleaseAssetIds(
+  repository: string,
+  releaseTag: string,
+  files: readonly string[],
+  token: string,
+  attempts: number,
+  retryDelayMilliseconds: number,
+): Promise<Map<string, number>> {
+  const repositoryPath = githubRepositoryPath(repository);
+  const headers = githubApiHeaders(token, 'application/vnd.github+json');
+  return retryDownload(`release ${releaseTag}`, attempts, retryDelayMilliseconds, async () => {
+    const releaseResponse = await fetch(
+      `https://api.github.com/repos/${repositoryPath}/releases/tags/${encodeURIComponent(releaseTag)}`,
+      { headers },
+    );
+    if (!releaseResponse.ok) {
+      return {
+        failure: `release API returned HTTP ${releaseResponse.status}`,
+        retryable: retryableDownloadStatus(releaseResponse.status),
+      };
+    }
+    const release: unknown = await releaseResponse.json();
+    if (!isRecord(release) || !Array.isArray(release['assets'])) {
+      return { failure: 'release API response has no asset list', retryable: false };
+    }
+    const ids = new Map<string, number>();
+    for (const asset of release['assets']) {
+      if (!isRecord(asset) || typeof asset['name'] !== 'string' || !Number.isSafeInteger(asset['id'])) continue;
+      const assetId = asset['id'] as number;
+      if (assetId < 1) continue;
+      if (ids.has(asset['name'])) {
+        return { failure: `release contains multiple assets named ${asset['name']}`, retryable: false };
+      }
+      ids.set(asset['name'], assetId);
+    }
+    const missing = files.filter((file) => !ids.has(file));
+    return missing.length === 0
+      ? { value: ids }
+      : { failure: `release is missing ${missing.join(', ')}`, retryable: true };
+  });
+}
+
+async function downloadAuthenticatedReleaseAsset(
+  repository: string,
+  file: string,
+  assetId: number | undefined,
+  token: string,
+  attempts: number,
+  retryDelayMilliseconds: number,
+): Promise<Buffer> {
+  if (assetId === undefined) throw new Error(`release asset id is missing for ${file}`);
+  const repositoryPath = githubRepositoryPath(repository);
+  return retryDownload(file, attempts, retryDelayMilliseconds, async () => {
+    const response = await fetch(`https://api.github.com/repos/${repositoryPath}/releases/assets/${assetId}`, {
+      headers: githubApiHeaders(token, 'application/octet-stream'),
+    });
+    return response.ok
+      ? { value: Buffer.from(await response.arrayBuffer()) }
+      : {
+          failure: `release asset API returned HTTP ${response.status}`,
+          retryable: retryableDownloadStatus(response.status),
+        };
+  });
+}
+
+function githubRepositoryPath(repository: string): string {
+  const parts = repository.split('/');
+  if (parts.length !== 2 || parts.some((part) => !/^[a-z0-9_.-]+$/iu.test(part))) {
+    throw new Error(`invalid GitHub repository ${repository}`);
+  }
+  return parts.map((part) => encodeURIComponent(part)).join('/');
+}
+
+function githubApiHeaders(token: string, accept: string): Record<string, string> {
+  return {
+    Accept: accept,
+    Authorization: `Bearer ${token}`,
+    'User-Agent': 'flight-reference-images',
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
+}
+
+function retryableDownloadStatus(status: number): boolean {
+  return status === 404 || status === 408 || status === 409 || status === 429 || status >= 500;
 }
 
 export async function extractVerifiedReleasePacks(

@@ -62,6 +62,20 @@ describe('GitHub Actions workflows', () => {
     }
   });
 
+  it('allows release publication to catch up before failing pack downloads', async () => {
+    for (const file of ['ci.yml', 'intake.yml', 'release.yml', 'stage-release.yml']) {
+      const workflow = parse(await readFile(join('.github', 'workflows', file), 'utf8'));
+      const downloads = Object.values(workflow.jobs)
+        .flatMap((definition) => definition.steps ?? [])
+        .filter((step) => step.run?.includes('packs:download'));
+      expect(downloads.length).toBeGreaterThan(0);
+      for (const step of downloads) {
+        expect(step.run).toContain('--attempts 60');
+        expect(step.run).toContain('--retry-delay-ms 10000');
+      }
+    }
+  });
+
   it('qualifies upload-action digests before durable use or API comparison', async () => {
     const intake = parse(await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8'));
     const release = parse(await readFile(join('.github', 'workflows', 'release.yml'), 'utf8'));

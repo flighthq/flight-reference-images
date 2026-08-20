@@ -210,7 +210,10 @@ jobs:
           merge-multiple: true
       - name: Download prior complete packs
         if: steps.locator.outputs.present == 'true'
-        run: npm run packs:download -- --manifest .artifacts/prepared/base/manifest.json --output .artifacts/previous-packs
+        run: >-
+          npm run packs:download -- --manifest .artifacts/prepared/base/manifest.json --attempts 60 --retry-delay-ms 10000 --output .artifacts/previous-packs
+
+
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Reconstruct and verify prospective release

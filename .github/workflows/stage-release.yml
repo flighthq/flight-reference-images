@@ -97,7 +97,7 @@ jobs:
           done < .artifacts/artifacts.tsv
       - name: Download current blessed packs
         if: steps.pending.outputs.found == 'true'
-        run: npm run packs:download -- --output .artifacts/previous-packs
+        run: npm run packs:download -- --attempts 60 --retry-delay-ms 10000 --output .artifacts/previous-packs
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Build deterministic batch
