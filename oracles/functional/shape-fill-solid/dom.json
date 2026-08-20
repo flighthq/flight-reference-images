@@ -1,6 +1,6 @@
 {
   "$schema": "../../../schemas/oracle-record.schema.json",
-  "artifactSha256": "a15e05665b950ebafa00ad2a68ddfc4f5b162abb266fdcd5c9d762714a2b5830",
+  "artifactSha256": "f6e50d7eb44f5b06a8c5717b6bd2cec93cabf051380d26e6bbf60add5f3c5405",
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
@@ -8,7 +8,7 @@
   "height": 600,
   "identity": {
     "entry": "shape-fill-solid",
-    "renderer": "webgl",
+    "renderer": "dom",
     "subject": "functional"
   },
   "pack": "functional-shapes",
@@ -17,8 +17,8 @@
   "provenance": {
     "frames": 1,
     "sourceHash": "940e07c2c5fe8ac6eb194004aa6d78e8ba712736f9eb1a0764aa57a851ead10b",
-    "targetKind": "webgl",
-    "verifyPublished": true,
+    "targetKind": "dom",
+    "verifyPublished": false,
     "warmupFrames": 0
   },
   "request": {
