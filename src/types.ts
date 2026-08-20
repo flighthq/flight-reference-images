@@ -26,6 +26,19 @@ export interface CandidateCapture {
   status: 'captured' | 'missing';
 }
 
+export interface BatchDispatchEnvelope {
+  candidates: Array<{
+    artifactDigest: string;
+    artifactId: number;
+    requestPath: `reference-image-requests/${string}.json`;
+    requestSha256: string;
+  }>;
+  flightCommit: string;
+  repository: 'flighthq/flight';
+  schemaVersion: 2;
+  workflowRunId: number;
+}
+
 export interface CandidateLocator {
   $schema?: string;
   manifestSha256: string;

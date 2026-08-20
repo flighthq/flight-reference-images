@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 
 import { renderApprovalSummary, requestDisplayLabel } from './approval.js';
 import { completeFlight, reconcileFlight } from './completion.js';
+import { expandBatchDispatch } from './dispatch.js';
 import {
   applyPreparedIntake,
   applyPreparedBatch,
@@ -52,6 +53,12 @@ async function main(): Promise<void> {
       'utf8',
     );
     console.log(requestDisplayLabel(value));
+    return;
+  }
+
+  if (command === 'dispatch-expand') {
+    const file = resolve(requiredOption(arguments_, '--file'));
+    console.log(JSON.stringify(expandBatchDispatch(await readJson(file))));
     return;
   }
 

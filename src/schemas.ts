@@ -7,6 +7,7 @@ export type SchemaName =
   | 'candidate'
   | 'candidate-locator'
   | 'comparison-policy'
+  | 'dispatch-batch'
   | 'dispatch-envelope'
   | 'environment'
   | 'intake-policy'
@@ -25,6 +26,7 @@ const schemaNames: readonly SchemaName[] = [
   'candidate',
   'candidate-locator',
   'comparison-policy',
+  'dispatch-batch',
   'dispatch-envelope',
   'environment',
   'intake-policy',

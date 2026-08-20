@@ -13,6 +13,7 @@
     "batch:replay": "tsx ./src/cli.ts batch-replay",
     "build": "tsc -p tsconfig.build.json",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run repository:check",
+    "dispatch:expand": "tsx ./src/cli.ts dispatch-expand",
     "environment:id": "tsx ./src/cli.ts environment-id",
     "fix": "npm run lint:fix && npm run format",
     "format": "oxfmt --write .",
