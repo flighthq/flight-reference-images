@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/mesh-tangent-mirrored-uv/webgl.json",
+      "sha256": "551cf96b8a7d1e57a56f9f57f8609f02a83df96e3a18701bb6737580a3703bdb"
+    },
+    {
+      "path": "oracles/functional/mesh-tangent-mirrored-uv/webgpu.json",
+      "sha256": "1e303783a6ecb3ade7dc74f5e313635f399f7d00a6461dcbb748678444aecabc"
+    }
+  ],
+  "candidateSha256": "701cbc0a8f73bb9a3c99db543502170e73133e4604c68d18e1eca158e721231a",
+  "flightCommit": "b82d313abae5abbfe0568f8a0ecf7e7cf834d269",
+  "preparedArtifact": {
+    "artifactId": 9438372138,
+    "digest": "sha256:cc548d4b8d2c26aef7f9e1aea10d86ddb19c13e2df85852a7f7a3cf333453ef2",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32459228114
+  },
+  "records": [
+    {
+      "path": "oracles/functional/mesh-tangent-mirrored-uv/webgl.json",
+      "sha256": "0e76d68eef1018595f121bca198e2d8e28c9ce245fbf7e02ec82757dabe04832"
+    },
+    {
+      "path": "oracles/functional/mesh-tangent-mirrored-uv/webgpu.json",
+      "sha256": "6c6a7d6ac88770e5533f67cf6e5464efcc4e6d46ef511870e8cfd300f3fa2865"
+    }
+  ],
+  "requestId": "67c6ec71-e394-4dfd-9138-7b75fe8f390b",
+  "requestSha256": "bce465732554db3bc1903302f5064d31af5cc5e2b1ac28945e4fec42071486c9",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9438290673,
+    "digest": "sha256:e3ec8e44c06eeb56663cbc40b05111f052d367d877a536fa4ec0359a96ae8eb6",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32458258017
+  }
+}
