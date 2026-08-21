@@ -28,9 +28,12 @@ The UUID `id` is the request's sole identity. Approval workflows derive a displa
     }
   ],
   "frames": 1,
-  "reason": "add the first full-resolution reference for the solid-fill scene"
+  "reason": "add the first full-resolution reference for the solid-fill scene",
+  "createdAt": "2026-08-21T04:32:42.755Z"
 }
 ```
+
+`createdAt` is an optional Flight queue-ordering timestamp so a newer open commission can supersede an older request for the same cell. Oracle retains it in the exact request bytes but does not trust it for admission age; intake freshness remains bound to the landed commit's authoritative GitHub committer time.
 
 The trusted Flight bridge sends one version-2 `flight-reference-image-candidate-batch` dispatch after a capture workflow run completes. [`dispatch-batch.schema.json`](../schemas/dispatch-batch.schema.json) binds the source repository, landed 40-character Flight SHA, source workflow run id, and the complete candidate membership. Every candidate carries its request path and SHA-256 plus its Actions artifact id and digest. Request paths and artifact ids must each be unique; intake sorts the set by request path and expands it into the existing version-1 per-candidate envelopes. The batch is limited to 256 candidates, matching GitHub's matrix limit, and Flight must fail explicitly rather than silently omit a candidate if a run exceeds it.
 

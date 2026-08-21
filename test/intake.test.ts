@@ -405,6 +405,24 @@ describe('prepareIntake', () => {
       }),
     ).rejects.toThrow('non-regular entry outside-link');
   });
+
+  it('accepts Flight queue ordering timestamps without using them for freshness', async () => {
+    const fixture = await makeFixture('captured');
+    fixture.request.createdAt = '2000-01-01T00:00:00.000Z';
+    await writeRequestAndEnvelope(fixture);
+
+    await expect(prepareFixture(fixture, join(workspace, 'created-at'))).resolves.toBeDefined();
+  });
+
+  it('rejects a malformed Flight queue ordering timestamp', async () => {
+    const fixture = await makeFixture('captured');
+    fixture.request.createdAt = 'today';
+    await writeRequestAndEnvelope(fixture);
+
+    await expect(prepareFixture(fixture, join(workspace, 'invalid-created-at'))).rejects.toThrow(
+      '/createdAt must match pattern',
+    );
+  });
 });
 
 describe('assertRequestFreshness', () => {

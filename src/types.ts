@@ -141,6 +141,7 @@ export interface EnvironmentDescriptor {
 
 export interface FlightOracleRequest {
   $schema?: string;
+  createdAt?: string;
   frames: number;
   id: string;
   reason: string;
