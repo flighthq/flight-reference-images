@@ -135,6 +135,9 @@ async function retryDownload<T>(
       lastFailure = errorMessage(error);
     }
     if (attempt < attempts && retryDelayMilliseconds > 0) {
+      console.warn(
+        `cannot download ${label} (attempt ${attempt}/${attempts}): ${lastFailure}; retrying in ${retryDelayMilliseconds}ms`,
+      );
       await new Promise((resolve) => setTimeout(resolve, retryDelayMilliseconds));
     }
   }

@@ -73,7 +73,7 @@ describe('expandBatchDispatch', () => {
 
   it('fails closed on unversioned or incomplete additions', () => {
     expect(() => expandBatchDispatch({ ...makeBatch(), quietAddition: true })).toThrow(
-      'must NOT have additional properties',
+      'must NOT have additional properties ("quietAddition")',
     );
     const batch = makeBatch();
     const { artifactDigest: ignored, ...withoutDigest } = batch.candidates[0]!;

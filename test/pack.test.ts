@@ -79,6 +79,7 @@ describe('downloadReleasePacks', () => {
     process.env['GH_TOKEN'] = 'test-token';
     const bytes = Buffer.from('eventual pack bytes');
     const manifest = makeDownloadManifest(bytes);
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(new Response(null, { status: 404 }))
@@ -89,10 +90,18 @@ describe('downloadReleasePacks', () => {
 
     await downloadReleasePacks(manifest, 'flighthq/flight-reference-images', workspace, {
       attempts: 3,
-      retryDelayMilliseconds: 0,
+      retryDelayMilliseconds: 1,
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(warning).toHaveBeenNthCalledWith(
+      1,
+      `cannot download release ${RELEASE_TAG} (attempt 1/3): release API returned HTTP 404; retrying in 1ms`,
+    );
+    expect(warning).toHaveBeenNthCalledWith(
+      2,
+      `cannot download release ${RELEASE_TAG} (attempt 2/3): release is missing ${manifest.packs[0]!.file}; retrying in 1ms`,
+    );
     expect(await readFile(join(workspace, manifest.packs[0]!.file))).toEqual(bytes);
   });
 

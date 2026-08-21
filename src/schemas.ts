@@ -57,7 +57,13 @@ export function assertSchema<T>(name: SchemaName, value: unknown, label: string 
 
 function formatErrors(errors: ErrorObject[] | null | undefined): string {
   return (errors ?? [])
-    .map((error) => `  ${error.instancePath === '' ? '/' : error.instancePath} ${error.message ?? 'is invalid'}`)
+    .map((error) => {
+      const detail =
+        error.keyword === 'additionalProperties' && typeof error.params.additionalProperty === 'string'
+          ? ` (${JSON.stringify(error.params.additionalProperty)})`
+          : '';
+      return `  ${error.instancePath === '' ? '/' : error.instancePath} ${error.message ?? 'is invalid'}${detail}`;
+    })
     .join('\n');
 }
 
