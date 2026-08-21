@@ -4,7 +4,7 @@
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "ef4fae7fcce4981f09353ef665113c0034491f34",
+  "flightCommit": "93f6f63eca2b6864dedc151c301be624236f131b",
   "height": 600,
   "identity": {
     "entry": "scene-skin-two-skeletons",
@@ -16,14 +16,14 @@
   "pixelSha256": "73ee40351e3f1fefd3d48154b3e4cddf3e09201dd6ec675078e8f12bcb38ff4c",
   "provenance": {
     "frames": 1,
-    "sourceHash": "9087aed5c3e5518689edd96091be6177bc121e680c0c3ffeb7a7105d44e17387",
+    "sourceHash": "485b99d6a82c35cd4a275bf16482b2071b5e68d5fe003719fb4d2d3282e46b58",
     "targetKind": "webgpu",
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "9f51c6f6-6aac-4b63-8b50-21a6e325acd1",
-    "sha256": "1bbb71c0ac6bd3b48a74df3845cc8209ddd1891fabe741aead495f8bec4cd725"
+    "id": "706eac6a-630d-403e-a9fb-ae2f7c6f2789",
+    "sha256": "977d3dab4e8d6769175a71c00eab79a7fa50c9ab3cc46e15e647f26685f64d43"
   },
   "schemaVersion": 1,
   "width": 800

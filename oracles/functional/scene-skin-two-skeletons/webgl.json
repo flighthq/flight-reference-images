@@ -1,10 +1,10 @@
 {
   "$schema": "../../../schemas/oracle-record.schema.json",
-  "artifactSha256": "e065628bf9dae58a382b0d7721ab2c5685331a09c3dc2dcca8b9330ab3041be0",
+  "artifactSha256": "e5cb9c0f629fe326616ff19a83c6107d4c354ea973063b2bc4a00cd4900553ea",
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "ef4fae7fcce4981f09353ef665113c0034491f34",
+  "flightCommit": "93f6f63eca2b6864dedc151c301be624236f131b",
   "height": 600,
   "identity": {
     "entry": "scene-skin-two-skeletons",
@@ -13,17 +13,17 @@
   },
   "pack": "functional-other",
   "pixelFormat": "rgba8",
-  "pixelSha256": "2331f14ecbd80ddfe36a5f3255a485172203e51719bf0887c852071f6d03ab5e",
+  "pixelSha256": "73ee40351e3f1fefd3d48154b3e4cddf3e09201dd6ec675078e8f12bcb38ff4c",
   "provenance": {
     "frames": 1,
-    "sourceHash": "3b56e790a628c740bee4b2621e4491c19d211c754ecf4bb345c86e1c9298b54f",
+    "sourceHash": "a5bc5c75365628a795714d1f1bcbefbc9c944eafb942e77c8575df78c5cd5333",
     "targetKind": null,
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "9f51c6f6-6aac-4b63-8b50-21a6e325acd1",
-    "sha256": "1bbb71c0ac6bd3b48a74df3845cc8209ddd1891fabe741aead495f8bec4cd725"
+    "id": "706eac6a-630d-403e-a9fb-ae2f7c6f2789",
+    "sha256": "977d3dab4e8d6769175a71c00eab79a7fa50c9ab3cc46e15e647f26685f64d43"
   },
   "schemaVersion": 1,
   "width": 800
