@@ -1,10 +1,10 @@
 {
   "$schema": "../../../schemas/oracle-record.schema.json",
-  "artifactSha256": "3cbdcb2f579460335df3f43b8c5097ba81b79aa33ce2db324e7dbcd3ca3acf17",
+  "artifactSha256": "ed0200213c7f5750eceadf2c49aead8ab9365ff6a9d7517fb7f698b4103b0747",
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "598ef6f62b6f1ae2873956501069ed824699021a",
+  "flightCommit": "9eb98e11caee246589365df812ece128264ef638",
   "height": 600,
   "identity": {
     "entry": "camera-orthographic",
@@ -13,7 +13,7 @@
   },
   "pack": "functional-other",
   "pixelFormat": "rgba8",
-  "pixelSha256": "76d4a3bbd52c496661468c6be9a04779baa1f5179790b9cbfc9dc062e69ca8bd",
+  "pixelSha256": "4739a36b8538de3a4c1156f9e85c5d2b33a5155323d1a4a9215a52074dbc64d3",
   "provenance": {
     "frames": 1,
     "sourceHash": "50891f74ea03baf0e851671e76a8f7e1808bfe2fb00750748809c7d82c3fc985",
@@ -22,8 +22,8 @@
     "warmupFrames": 0
   },
   "request": {
-    "id": "c82a5f58-ec6b-43db-a5b0-1498a21a151b",
-    "sha256": "fcfa8ff07cec9db96cff478308e981e960bc962f2b804aa82f9ef40889745c25"
+    "id": "ceec5dd6-b11d-45c0-896a-ddfe28a5452d",
+    "sha256": "6b8d2129b07f3a179d7c96dbb356ed8d3905b24ff552e3227ee81d614d76e14f"
   },
   "schemaVersion": 1,
   "width": 800

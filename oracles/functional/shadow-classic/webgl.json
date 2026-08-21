@@ -1,29 +1,29 @@
 {
   "$schema": "../../../schemas/oracle-record.schema.json",
-  "artifactSha256": "6a8e944af433f1aebd9fbb341f79a7c8f8cb16c7a35fb3f13c38e613b0db04aa",
+  "artifactSha256": "49c7ec842d54fd32f340b97e8f98b128fd2f9b469d267c3e73acbbff37c77a3e",
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
   "flightCommit": "9eb98e11caee246589365df812ece128264ef638",
   "height": 600,
   "identity": {
-    "entry": "material-alpha-map-pbr",
+    "entry": "shadow-classic",
     "renderer": "webgl",
     "subject": "functional"
   },
   "pack": "functional-scene3d",
   "pixelFormat": "rgba8",
-  "pixelSha256": "95aec27eb262c9905785bf45e84858bec7287bbfb4ea8bcdb1c9b42207406d55",
+  "pixelSha256": "430712de0c61eef2bec1ad76b12e22c8dbad43ed80e7884d97ca9a2f39c73e4e",
   "provenance": {
     "frames": 1,
-    "sourceHash": "b298b89c3dd7aefe3d6f7d969b3e987799217671adf9ed24ce4a8e2c819ad9d0",
+    "sourceHash": "cd4a99314e543a79951f90794e6d6fb9c3749a501b4fcbfa7695fc6ac000ccb4",
     "targetKind": null,
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "4b8f53f9-e495-45eb-bea2-ad02aa4f66d2",
-    "sha256": "36f2bc621a9540a4c5fa4929214e99fbd1cebf0ecaa70888453f4b45bebd9bbd"
+    "id": "9b40e0d3-8b42-4b2b-a8ca-5a7fc8533a2e",
+    "sha256": "698a9f59753bc153b650588f5588e2c9d570a46783f34e22661c8a1a6f81a6e0"
   },
   "schemaVersion": 1,
   "width": 800
