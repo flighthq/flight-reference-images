@@ -1,0 +1,32 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/effect-bokeh-dof/webgl.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "a71408f548ee8724b77f5725888b54a46754fe9fccf361b64d5d9d68fad15013",
+  "flightCommit": "9eb98e11caee246589365df812ece128264ef638",
+  "preparedArtifact": {
+    "artifactId": 9441471357,
+    "digest": "sha256:04304e6229851ccd048ea9d219469088d2ae45a9b5839cf3c052d41db096106e",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32468088908
+  },
+  "records": [
+    {
+      "path": "oracles/functional/effect-bokeh-dof/webgl.json",
+      "sha256": "3aa48ce4bf05f9c192fe48536e717a0927483c7e86578466b86e17a7c97f484d"
+    }
+  ],
+  "requestId": "bff8be95-e320-4f3a-8cc1-c1c3c3754324",
+  "requestSha256": "eca64ce6f2a7c97626e61697d16d027a34d659ec415f8730790c56e24c5cb54e",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9441427395,
+    "digest": "sha256:759c2a450e8c7442cf9cad7b2673d289e239b1266dfdcdd72183f9234f4ba652",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32467874275
+  }
+}
