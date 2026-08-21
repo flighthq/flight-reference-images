@@ -2,43 +2,43 @@
   "$schema": "./schemas/manifest.schema.json",
   "packs": [
     {
-      "file": "functional-images-oracle-batch-31220a104dc5.tgz",
+      "file": "functional-images-oracle-batch-bd5b91e8a807.tgz",
       "id": "functional-images",
       "imageCount": 114,
       "sha256": "0f9a3f761ca106d670afb3194e49cb5e15a55f9c911f865a33b70f94dc275e44",
       "size": 4940805
     },
     {
-      "file": "functional-other-oracle-batch-31220a104dc5.tgz",
+      "file": "functional-other-oracle-batch-bd5b91e8a807.tgz",
       "id": "functional-other",
       "imageCount": 148,
       "sha256": "1aeeaf4cc7b9ca75cd0b952001664b2ff82825ba6c7177253acc7661b112fd3b",
       "size": 1680749
     },
     {
-      "file": "functional-scene3d-oracle-batch-31220a104dc5.tgz",
+      "file": "functional-scene3d-oracle-batch-bd5b91e8a807.tgz",
       "id": "functional-scene3d",
       "imageCount": 68,
-      "sha256": "0044c7bb96048bf92436ddb53bf9e385d8f7ffd5683b3ac50f2459a9e81a7a8c",
-      "size": 1007523
+      "sha256": "a1102fda8b963c60e1ac6bec89f2d79283abea5d007c04a0a09078ec294cf875",
+      "size": 1006671
     },
     {
-      "file": "functional-shapes-oracle-batch-31220a104dc5.tgz",
+      "file": "functional-shapes-oracle-batch-bd5b91e8a807.tgz",
       "id": "functional-shapes",
       "imageCount": 34,
       "sha256": "209872a5f82e96eee3d3548e976883eafca1c01131aa88051bf6248e75f78842",
       "size": 474109
     },
     {
-      "file": "functional-text-oracle-batch-31220a104dc5.tgz",
+      "file": "functional-text-oracle-batch-bd5b91e8a807.tgz",
       "id": "functional-text",
       "imageCount": 44,
       "sha256": "9b55b01955bb9a3c55b7d9290250cb184c19e86629c879c9924ffed840832fb6",
       "size": 242140
     }
   ],
-  "parentReleaseTag": "oracle-batch-fae322c2f5c9",
-  "releaseTag": "oracle-batch-31220a104dc5",
+  "parentReleaseTag": "oracle-batch-31220a104dc5",
+  "releaseTag": "oracle-batch-bd5b91e8a807",
   "schemaVersion": 1,
   "sourceRequests": [
     {
@@ -1055,6 +1055,11 @@
       "flightCommit": "f69160b30438f81d8ec0f7641b68cd1acef88df2",
       "id": "fc735acf-440d-4503-913d-143b52d4d534",
       "requestSha256": "8f3eac5fa3b9da5b6ea061bbfa9165c474eae5edac943f889476abaf39ae6dd9"
+    },
+    {
+      "flightCommit": "b3eea5f93b4df315e1bc80cc7af37a9fce30e49d",
+      "id": "e4492c94-9938-4fe4-a6f5-68b25b259f34",
+      "requestSha256": "e749cd4000b4c003dadc4ad36d313652957b27341aabbc191cdcded2da4c6cfd"
     }
   ]
 }
