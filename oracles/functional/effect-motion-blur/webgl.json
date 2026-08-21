@@ -4,7 +4,7 @@
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "bf131c8abe61502de71895639d57db3e2e2c1ab0",
+  "flightCommit": "b82d313abae5abbfe0568f8a0ecf7e7cf834d269",
   "height": 600,
   "identity": {
     "entry": "effect-motion-blur",
@@ -16,14 +16,14 @@
   "pixelSha256": "36323689b9075175d837432f888b9af21974fd84c60a53b39b69c0be5fb1b6bc",
   "provenance": {
     "frames": 1,
-    "sourceHash": "03b037ba717d82ac0f251b87b4097e96bd198d14b013ed569cd048bc94bb2ca9",
+    "sourceHash": "ca6f0ff088bfae1cb7c2fa64d7e0495a00f31ef5aad23777da93d3031fa21fda",
     "targetKind": null,
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "ce090b7f-4fb5-4c11-964a-cbba4d687235",
-    "sha256": "3e58e2adf43da9d00e20a96a557c83cb578ba6597ab37b9b1a226b3262e2597e"
+    "id": "1bb29090-c955-46f0-8179-6211cdd66816",
+    "sha256": "813604b1b77f41d0b80b9c5854ad79b01af5f4b0b44c9fb88ca4505d986a08b2"
   },
   "schemaVersion": 1,
   "width": 800

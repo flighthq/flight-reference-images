@@ -1,0 +1,30 @@
+{
+  "$schema": "../../../schemas/oracle-record.schema.json",
+  "artifactSha256": "da510937b4d2eb5bdaa06365896a27d885267ca985085b3efdffe06326b07721",
+  "colorSpace": "srgb",
+  "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
+  "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
+  "flightCommit": "b82d313abae5abbfe0568f8a0ecf7e7cf834d269",
+  "height": 600,
+  "identity": {
+    "entry": "effect-radial-blur",
+    "renderer": "webgpu",
+    "subject": "functional"
+  },
+  "pack": "functional-images",
+  "pixelFormat": "rgba8",
+  "pixelSha256": "d5dded843f76c57901aa0289a70e63fa4c489fe739b9a7165a54c02c755a7933",
+  "provenance": {
+    "frames": 1,
+    "sourceHash": "09ce8186c80ade774f855bc07db1d0495a981b37f9b60529d84feb61009867fb",
+    "targetKind": "webgpu",
+    "verifyPublished": true,
+    "warmupFrames": 0
+  },
+  "request": {
+    "id": "0bbc0dc0-78be-40c5-8384-5a68e867f076",
+    "sha256": "2c040889d52289d9ac997c1177b234d48aab144f7b538f67385181e12af90ca0"
+  },
+  "schemaVersion": 1,
+  "width": 800
+}

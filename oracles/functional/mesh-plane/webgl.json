@@ -1,0 +1,30 @@
+{
+  "$schema": "../../../schemas/oracle-record.schema.json",
+  "artifactSha256": "bffd639a57bc4da487217e2da886bbf0a3058a4e53578b418740f7eeb9f63429",
+  "colorSpace": "srgb",
+  "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
+  "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
+  "flightCommit": "b82d313abae5abbfe0568f8a0ecf7e7cf834d269",
+  "height": 600,
+  "identity": {
+    "entry": "mesh-plane",
+    "renderer": "webgl",
+    "subject": "functional"
+  },
+  "pack": "functional-scene3d",
+  "pixelFormat": "rgba8",
+  "pixelSha256": "bd2e8e20f8005eb2f6d0faf72ae185bee9421f9caa2a98bcbb484a171d3fc54d",
+  "provenance": {
+    "frames": 1,
+    "sourceHash": "99401ee62bb951ada3a01eb5e825543caf7ce38fe7aa455451c9560856f756aa",
+    "targetKind": null,
+    "verifyPublished": true,
+    "warmupFrames": 0
+  },
+  "request": {
+    "id": "b5db2004-30b9-4560-8303-3174f45ad36d",
+    "sha256": "5d85d2c231010296f0e5e53e028e76b12cf1ed13d28ab615c60007c0de103e33"
+  },
+  "schemaVersion": 1,
+  "width": 800
+}
