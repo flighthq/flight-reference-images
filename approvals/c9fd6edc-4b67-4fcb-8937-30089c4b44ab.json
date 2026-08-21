@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/material-toon/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/material-toon/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "a1a6457600cbfc9c6cca328ee00d7fa0ea6747805ae750f1d5e03593b5167cc4",
+  "flightCommit": "598ef6f62b6f1ae2873956501069ed824699021a",
+  "preparedArtifact": {
+    "artifactId": 9435956278,
+    "digest": "sha256:a38f797676b58ed4cee888bf07bfc37f822a9ff37d5ff49c3b61ef4cdf6a0bca",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32450632967
+  },
+  "records": [
+    {
+      "path": "oracles/functional/material-toon/webgl.json",
+      "sha256": "094e0eea795b43bdea6e739e82d95a60507e4243d57ec3be4f395db58ea0de48"
+    },
+    {
+      "path": "oracles/functional/material-toon/webgpu.json",
+      "sha256": "a75a92481a5eb616e3293606b1c5a7b272140f130b907c87237eecf3a5034e69"
+    }
+  ],
+  "requestId": "c9fd6edc-4b67-4fcb-8937-30089c4b44ab",
+  "requestSha256": "1330a0a41239e60033f848b8e3879b274ec3ce5dcf1358a1050c35b96af38f93",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9435240149,
+    "digest": "sha256:ab090246cf4d9d2d0e42ca5ac2a35be3acf2aab0ad63f70412cec6420b97e206",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32448690535
+  }
+}
