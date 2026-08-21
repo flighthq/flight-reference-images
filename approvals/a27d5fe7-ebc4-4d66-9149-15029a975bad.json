@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/effect-lift-gamma-gain/webgl.json",
+      "sha256": "4266cc4d9e5c5dcbf8b0ca0c2bffd3611ad37e4d0485517547d05878aa102050"
+    },
+    {
+      "path": "oracles/functional/effect-lift-gamma-gain/webgpu.json",
+      "sha256": "f1b5808fda58b5cf02f625a3f359b472339d59f2ad5a0f93f027cacd6ba699ab"
+    }
+  ],
+  "candidateSha256": "058fe875e2a0271e352b3dcb7b54b763b50d575f3183616e852832db534e146f",
+  "flightCommit": "93f6f63eca2b6864dedc151c301be624236f131b",
+  "preparedArtifact": {
+    "artifactId": 9437013824,
+    "digest": "sha256:a73733d3594e7a188891dbd7ea6d54dc4418de23a7b2cc0bf447348787e19dd4",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32455111007
+  },
+  "records": [
+    {
+      "path": "oracles/functional/effect-lift-gamma-gain/webgl.json",
+      "sha256": "8105392b17cb6283263554827db3a1cd69bb62dc111a08e3bb3a09c5eaaccfa6"
+    },
+    {
+      "path": "oracles/functional/effect-lift-gamma-gain/webgpu.json",
+      "sha256": "c70a69d4c98d0890cf0fb8c0aabf1b268e0b0be93ac3aaa5c69880a7111e036b"
+    }
+  ],
+  "requestId": "a27d5fe7-ebc4-4d66-9149-15029a975bad",
+  "requestSha256": "94d3cf7879ca33c5f1ed1aa4a5f2a7aeccb186def619f75532d411e26a94763a",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9436965803,
+    "digest": "sha256:b29e69adc124545dad297957fc7908842875c83bc13fb3759bd035d00e050124",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32453759242
+  }
+}

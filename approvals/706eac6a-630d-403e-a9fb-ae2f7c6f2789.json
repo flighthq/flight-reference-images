@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/scene-skin-two-skeletons/webgl.json",
+      "sha256": "50438ed7e57772f3a4147bca930b07cbd1672003a2021a2f580ff2d55afc9b37"
+    },
+    {
+      "path": "oracles/functional/scene-skin-two-skeletons/webgpu.json",
+      "sha256": "4f964fbd26c113b62a566bbf0986d2f0aec7808b3039466fc8c14337a332a420"
+    }
+  ],
+  "candidateSha256": "aacb134524c3bf090c317ad58997d9db6e2ee9d5809b00dffdb37f6c706df815",
+  "flightCommit": "93f6f63eca2b6864dedc151c301be624236f131b",
+  "preparedArtifact": {
+    "artifactId": 9437010962,
+    "digest": "sha256:39de2f920433f137d2db674063c9b2be5ad109050406027339304dc62072f596",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32455111007
+  },
+  "records": [
+    {
+      "path": "oracles/functional/scene-skin-two-skeletons/webgl.json",
+      "sha256": "13c2058d6fcff9bf69ed3a3666a7d983a2183b72623b3ff8239f1f939d886471"
+    },
+    {
+      "path": "oracles/functional/scene-skin-two-skeletons/webgpu.json",
+      "sha256": "633cacad83d8fa229366dc0df064296792d31ad97530ab24b99f6ca54921d8e2"
+    }
+  ],
+  "requestId": "706eac6a-630d-403e-a9fb-ae2f7c6f2789",
+  "requestSha256": "977d3dab4e8d6769175a71c00eab79a7fa50c9ab3cc46e15e647f26685f64d43",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9436955084,
+    "digest": "sha256:55c88579a509bec3b3d3fa8fbfb064c675497124ed64bff1c33437e477630f0d",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32453759242
+  }
+}
