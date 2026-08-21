@@ -1,10 +1,10 @@
 {
   "$schema": "../../../schemas/oracle-record.schema.json",
-  "artifactSha256": "233726bdf050bc63b9ec326d82a8b1867db6436892d52208f750ed31589d1d99",
+  "artifactSha256": "1645c7e24669d9bc83698bf22f436494b8ca67bee75524bebd102e0c877f9276",
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "9eb98e11caee246589365df812ece128264ef638",
+  "flightCommit": "f69160b30438f81d8ec0f7641b68cd1acef88df2",
   "height": 600,
   "identity": {
     "entry": "effect-bokeh-dof",
@@ -13,7 +13,7 @@
   },
   "pack": "functional-images",
   "pixelFormat": "rgba8",
-  "pixelSha256": "5cfc7590ab897ea6f21bea970ad3380ced2a278434960a0d66e4af82186995ae",
+  "pixelSha256": "80a1c8385d1f837243090c3050b9e076ea96588bcbc8a6171f64ab2131403a3e",
   "provenance": {
     "frames": 1,
     "sourceHash": "210d575087e365fcfc2de97aff65076e4671e8c17c321057e2f475a1a8f7d319",
@@ -22,8 +22,8 @@
     "warmupFrames": 0
   },
   "request": {
-    "id": "bff8be95-e320-4f3a-8cc1-c1c3c3754324",
-    "sha256": "eca64ce6f2a7c97626e61697d16d027a34d659ec415f8730790c56e24c5cb54e"
+    "id": "ac613ce4-a4ea-434b-88ae-02dd05cb13fd",
+    "sha256": "e088abf31291ff34527cf018c84704e936b37cbbd7dbaa26c351130fc239572c"
   },
   "schemaVersion": 1,
   "width": 800

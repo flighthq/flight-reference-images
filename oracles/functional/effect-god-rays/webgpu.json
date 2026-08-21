@@ -4,7 +4,7 @@
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "9eb98e11caee246589365df812ece128264ef638",
+  "flightCommit": "f69160b30438f81d8ec0f7641b68cd1acef88df2",
   "height": 600,
   "identity": {
     "entry": "effect-god-rays",
@@ -22,8 +22,8 @@
     "warmupFrames": 0
   },
   "request": {
-    "id": "0ef899aa-6f2b-4406-a9e0-dc1bfa885da9",
-    "sha256": "25eff50212f09f80ce4f8fe3b3afbc87cd5e2f193869a4e889ba590760214db2"
+    "id": "161b1425-9817-4493-bd21-a38eb709ae4e",
+    "sha256": "5431098ec93d5e8ab81cdbe115393b8daaa596bd5e0675db445051e1c40cd930"
   },
   "schemaVersion": 1,
   "width": 800
