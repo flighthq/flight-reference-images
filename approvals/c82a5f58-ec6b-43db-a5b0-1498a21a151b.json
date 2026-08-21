@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/camera-orthographic/webgl.json",
+      "sha256": "e47e124697b53a1b30797bf3a25f9290a1edc5a45cfcb6ac59c2c237e79b4b20"
+    },
+    {
+      "path": "oracles/functional/camera-orthographic/webgpu.json",
+      "sha256": "187aa2518a2ff03991447a22332af4aebdb9dc6d1766fb67327ecdf79bc70d30"
+    }
+  ],
+  "candidateSha256": "eb63b76f2244c2a268f4df81d4b82976a06a5612a3d1febb7af47430c8ee74bb",
+  "flightCommit": "598ef6f62b6f1ae2873956501069ed824699021a",
+  "preparedArtifact": {
+    "artifactId": 9435955152,
+    "digest": "sha256:34ad3b4bb9ce60c9694ffd19292859ab83e87792f9367ce7c18d80e744fb998a",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32450632967
+  },
+  "records": [
+    {
+      "path": "oracles/functional/camera-orthographic/webgl.json",
+      "sha256": "ffa8493828ef87e4d4c52cab1a3c6721bd16f98d72472e8f78d68556f51cb207"
+    },
+    {
+      "path": "oracles/functional/camera-orthographic/webgpu.json",
+      "sha256": "9e09540b117e8621f6ea456bec4ca78ac71fa9837fb31ac2ec49dbd0337212c9"
+    }
+  ],
+  "requestId": "c82a5f58-ec6b-43db-a5b0-1498a21a151b",
+  "requestSha256": "fcfa8ff07cec9db96cff478308e981e960bc962f2b804aa82f9ef40889745c25",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9435259949,
+    "digest": "sha256:19eb34534ede8a9d3f0e82a187082e01d7bce4a47bf379b42ce0dbce2d094e2d",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32448690535
+  }
+}
