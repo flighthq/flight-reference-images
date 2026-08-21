@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/effect-screen-space-fog/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/effect-screen-space-fog/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "8b1fd997280f0a357ad666509a924040dd8f49c038056ee48d73b4b3786bad93",
+  "flightCommit": "598ef6f62b6f1ae2873956501069ed824699021a",
+  "preparedArtifact": {
+    "artifactId": 9435955719,
+    "digest": "sha256:8d3c9573b7c3248cce34861b1b49a2489b945bfd572803ca3064311234ba2e9a",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 32450632967
+  },
+  "records": [
+    {
+      "path": "oracles/functional/effect-screen-space-fog/webgl.json",
+      "sha256": "ac56f9ef75a574c242f045aef048e94198590210d168a048b55b6d49ed98b97f"
+    },
+    {
+      "path": "oracles/functional/effect-screen-space-fog/webgpu.json",
+      "sha256": "1ab9b15a451f51dc9fa03650ca1f9d05c8ba135ec0b8b0feed21863f39a987e4"
+    }
+  ],
+  "requestId": "c210e53f-52a9-47b1-996c-1c0e6629332e",
+  "requestSha256": "8c29607501b63cd9bfdb072e2e44e417528c87661338f3de70456c4de31f1d76",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9435221024,
+    "digest": "sha256:c6aeec87869ff18408dd46b5c141d131035b967b659ef73d92e6dd6f91d6ef43",
+    "repository": "flighthq/flight",
+    "workflowRunId": 32448690535
+  }
+}
