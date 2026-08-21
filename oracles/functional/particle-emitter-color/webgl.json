@@ -1,29 +1,29 @@
 {
   "$schema": "../../../schemas/oracle-record.schema.json",
-  "artifactSha256": "ed0200213c7f5750eceadf2c49aead8ab9365ff6a9d7517fb7f698b4103b0747",
+  "artifactSha256": "fa952bca2f4fffec40fe8ccfa87a2747ac789068b9845705bdef050d8f253501",
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
   "flightCommit": "f69160b30438f81d8ec0f7641b68cd1acef88df2",
-  "height": 600,
+  "height": 450,
   "identity": {
-    "entry": "camera-orthographic",
+    "entry": "particle-emitter-color",
     "renderer": "webgl",
     "subject": "functional"
   },
   "pack": "functional-other",
   "pixelFormat": "rgba8",
-  "pixelSha256": "4739a36b8538de3a4c1156f9e85c5d2b33a5155323d1a4a9215a52074dbc64d3",
+  "pixelSha256": "7e42e84230aeb3f33c08bc5659d780ea3fc32d274225d5df8c53c9ba26b3258a",
   "provenance": {
     "frames": 1,
-    "sourceHash": "50891f74ea03baf0e851671e76a8f7e1808bfe2fb00750748809c7d82c3fc985",
-    "targetKind": null,
+    "sourceHash": "1b0323c680d2eca938850fa07f21e02179103fce08e155b8cd16f155f25298a0",
+    "targetKind": "webgl",
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "83bde653-a344-446a-b842-e84a5a21613c",
-    "sha256": "b8eaef78ba0978f96a9d3ff6b4e1ec6dbc3058e2b316ffdba81ea82e786fa8d2"
+    "id": "8279b57d-3fa6-4efd-996a-57f4b6c0a97b",
+    "sha256": "9e2fa96c95d3776d4a21420c3d1a4ab3824c40b4a2ec38dad40d915d968afaa0"
   },
   "schemaVersion": 1,
   "width": 800
