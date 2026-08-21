@@ -1,0 +1,30 @@
+{
+  "$schema": "../../../schemas/oracle-record.schema.json",
+  "artifactSha256": "0b92dee2f374f2ae2a54e1efa9319190a66f45ba306732995a2104c86145cefb",
+  "colorSpace": "srgb",
+  "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
+  "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
+  "flightCommit": "b82d313abae5abbfe0568f8a0ecf7e7cf834d269",
+  "height": 600,
+  "identity": {
+    "entry": "material-lambert",
+    "renderer": "webgl",
+    "subject": "functional"
+  },
+  "pack": "functional-scene3d",
+  "pixelFormat": "rgba8",
+  "pixelSha256": "d5b92698c03271d29d1f0613c5bed25b66a77ede8ad1699daca0be11f675f784",
+  "provenance": {
+    "frames": 1,
+    "sourceHash": "3c45b1fcc1f6d6ad015dc6eae7efbe1c97374c9f979cd0e0a11ea516a457cda8",
+    "targetKind": null,
+    "verifyPublished": true,
+    "warmupFrames": 0
+  },
+  "request": {
+    "id": "65ff13ed-c4c2-4f0a-ab24-d87fedaf8a1f",
+    "sha256": "f8ccac5b94be51e61715ac4fa693d267ed6465e43d8ec243a768876bc931448a"
+  },
+  "schemaVersion": 1,
+  "width": 800
+}
