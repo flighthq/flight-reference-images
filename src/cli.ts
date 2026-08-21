@@ -4,6 +4,7 @@ import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { renderApprovalSummary, requestDisplayLabel } from './approval.js';
+import { resolveBatchApprovalArtifacts } from './batch-approval.js';
 import { completeFlight, reconcileFlight } from './completion.js';
 import { expandBatchDispatch } from './dispatch.js';
 import {
@@ -18,6 +19,7 @@ import {
 } from './intake.js';
 import { canonicalJson, errorMessage, hashBytes, isRecord, readJson } from './json.js';
 import { downloadReleasePacks, verifyReleasePacks } from './pack.js';
+import { requireCurrentRelease } from './release-readiness.js';
 import { readRepository } from './repository.js';
 import { assertSchema } from './schemas.js';
 import type { SchemaName } from './schemas.js';
@@ -62,6 +64,23 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === 'batch-approval-artifacts') {
+    const file = resolve(requiredOption(arguments_, '--file'));
+    const artifacts = resolveBatchApprovalArtifacts(
+      await readJson(file),
+      positiveIntegerOption(arguments_, '--workflow-run-id'),
+      positiveIntegerOption(arguments_, '--expected-count'),
+    );
+    console.log(
+      artifacts
+        .map(({ artifactDigest, artifactId, reportId, requestId }) =>
+          [requestId, artifactId, artifactDigest, reportId].join('\t'),
+        )
+        .join('\n'),
+    );
+    return;
+  }
+
   if (command === 'packs-download') {
     const root = resolve(option(arguments_, '--root') ?? '.');
     const output = resolve(requiredOption(arguments_, '--output'));
@@ -81,6 +100,26 @@ async function main(): Promise<void> {
       retryDelayMilliseconds: retryDelay === undefined ? 0 : parseNonNegativeInteger(retryDelay, '--retry-delay-ms'),
     });
     console.log(`downloaded and verified ${manifest.packs.length} packs in ${output}`);
+    return;
+  }
+
+  if (command === 'release-readiness') {
+    const root = resolve(option(arguments_, '--root') ?? '.');
+    const output = resolve(requiredOption(arguments_, '--output'));
+    const repository = option(arguments_, '--repository') ?? 'flighthq/flight-reference-images';
+    const state = await readRepository(root);
+    const attempts = option(arguments_, '--attempts');
+    const retryDelay = option(arguments_, '--retry-delay-ms');
+    await requireCurrentRelease({
+      attempts: attempts === undefined ? 1 : parsePositiveInteger(attempts, '--attempts'),
+      branch: option(arguments_, '--branch') ?? 'main',
+      manifest: state.manifest,
+      outputDirectory: output,
+      repository,
+      repositoryRoot: root,
+      retryDelayMilliseconds: retryDelay === undefined ? 0 : parseNonNegativeInteger(retryDelay, '--retry-delay-ms'),
+    });
+    console.log(`current release ready: ${state.manifest.releaseTag ?? 'bootstrap'}`);
     return;
   }
 

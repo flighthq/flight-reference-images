@@ -35,17 +35,20 @@ describe('GitHub Actions workflows', () => {
     }
   });
 
-  it('keeps image processing out of both privileged writers', async () => {
+  it('keeps image processing out of privileged writers', async () => {
+    const batch = parse(await readFile(join('.github', 'workflows', 'intake-batch.yml'), 'utf8'));
     const intake = parse(await readFile(join('.github', 'workflows', 'intake.yml'), 'utf8'));
     const release = parse(await readFile(join('.github', 'workflows', 'release.yml'), 'utf8'));
     const stage = parse(await readFile(join('.github', 'workflows', 'stage-release.yml'), 'utf8'));
 
+    expect(job(batch, 'open-batch-pr').permissions.contents).toBe('read');
     expect(job(intake, 'prepare').permissions.contents).toBe('read');
     expect(job(intake, 'open-pr').permissions.contents).toBe('read');
     expect(job(release, 'rebuild').permissions.contents).toBe('read');
     expect(job(release, 'publish').permissions.contents).toBe('write');
     expect(job(stage, 'prepare').permissions.contents).toBe('read');
     expect(job(stage, 'open-pr').permissions.contents).toBe('read');
+    expect(JSON.stringify(job(batch, 'open-batch-pr'))).not.toMatch(/intake:(prepare|replay)/u);
     expect(JSON.stringify(job(intake, 'open-pr'))).not.toMatch(/intake:(prepare|replay)/u);
     expect(JSON.stringify(job(release, 'publish'))).not.toContain('intake:replay');
   });
@@ -63,17 +66,30 @@ describe('GitHub Actions workflows', () => {
   });
 
   it('allows release publication to catch up before failing pack downloads', async () => {
-    for (const file of ['ci.yml', 'intake.yml', 'release.yml', 'stage-release.yml']) {
+    for (const file of ['ci.yml', 'intake.yml', 'intake-batch.yml', 'release.yml', 'stage-release.yml']) {
       const workflow = parse(await readFile(join('.github', 'workflows', file), 'utf8'));
       const downloads = Object.values(workflow.jobs)
         .flatMap((definition) => definition.steps ?? [])
-        .filter((step) => step.run?.includes('packs:download'));
+        .filter((step) => step.run?.includes('packs:download') || step.run?.includes('release:readiness'));
       expect(downloads.length).toBeGreaterThan(0);
       for (const step of downloads) {
         expect(step.run).toContain('--attempts 60');
         expect(step.run).toContain('--retry-delay-ms 10000');
       }
     }
+  });
+
+  it('gates batch fan-out on one actionable current-release readiness check', async () => {
+    const batchText = await readFile(join('.github', 'workflows', 'intake-batch.yml'), 'utf8');
+    const batch = parse(batchText);
+    const readiness = job(batch, 'release-ready');
+
+    expect(readiness.needs).toBe('validate');
+    expect(readiness.permissions).toEqual({ actions: 'read', contents: 'read' });
+    expect(readiness.steps?.filter((step) => step.run?.includes('release:readiness'))).toHaveLength(1);
+    expect(batchText).toContain('Current blessed release is unavailable');
+    expect(batchText).toContain('[Open Release blessed reference images](${workflow_url})');
+    expect(job(batch, 'intake').needs).toEqual(['validate', 'release-ready']);
   });
 
   it('qualifies upload-action digests before durable use or API comparison', async () => {
@@ -159,11 +175,29 @@ describe('GitHub Actions workflows', () => {
     expect(intakeJob.strategy).toMatchObject({ 'fail-fast': false, 'max-parallel': 12 });
     expect(intakeJob.uses).toBe('./.github/workflows/intake.yml');
     expect(JSON.stringify(intakeJob.with)).toContain('matrix.candidate.artifactDigest');
+    expect(intakeJob.with?.['approval_mode']).toBe('batch');
     expect(intake.on?.workflow_call?.inputs?.artifact_id).toMatchObject({ required: true, type: 'number' });
+    expect(intake.on?.workflow_call?.inputs?.approval_mode).toMatchObject({ required: false, type: 'string' });
+    expect(job(intake, 'open-pr').if).toBe("inputs.approval_mode != 'batch'");
     expect(intake.on?.workflow_call?.secrets).toEqual({
       ORACLE_APP_ID: { required: true },
       ORACLE_APP_PRIVATE_KEY: { required: true },
     });
+  });
+
+  it('opens one atomic approval PR for a complete successful batch', async () => {
+    const batchText = await readFile(join('.github', 'workflows', 'intake-batch.yml'), 'utf8');
+    const batch = parse(batchText);
+    const writer = job(batch, 'open-batch-pr');
+
+    expect(writer.needs).toEqual(['validate', 'intake']);
+    expect(writer.permissions).toEqual({ actions: 'read', contents: 'read' });
+    expect(batchText).toContain('npm run --silent batch:approval-artifacts');
+    expect(batchText).toContain('npm run intake:approve');
+    expect(batchText).toContain('refusing a partial batch approval PR');
+    expect(batchText).toContain('stable_branch="approval-batch/${SOURCE_RUN_ID}"');
+    expect(batchText.match(/gh pr create/gu)).toHaveLength(1);
+    expect(batchText).toContain('Merging blesses every approval record in this PR');
   });
 
   it('accumulates merged approvals into one deterministic publication PR', async () => {
@@ -222,6 +256,7 @@ interface Workflow {
     string,
     {
       if?: string;
+      needs?: string | string[];
       outputs?: Record<string, unknown>;
       permissions: Record<string, string>;
       strategy?: Record<string, unknown>;

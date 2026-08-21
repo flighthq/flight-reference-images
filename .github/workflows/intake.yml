@@ -26,6 +26,11 @@ on:
       artifact_digest:
         required: true
         type: string
+      approval_mode:
+        description: Use single normally; batch prepares artifacts without opening per-candidate PRs
+        required: false
+        type: string
+        default: single
     secrets:
       ORACLE_APP_ID:
         required: true
@@ -241,6 +246,7 @@ jobs:
   open-pr:
     name: Write allowlisted metadata and open approval PR
     needs: prepare
+    if: inputs.approval_mode != 'batch'
     runs-on: ubuntu-latest
     # GITHUB_TOKEN stays read-only; checkout, push, and gh use the scoped App token minted below.
     permissions:

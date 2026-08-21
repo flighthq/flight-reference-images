@@ -198,9 +198,9 @@ jobs:
           const batch = JSON.parse(readFileSync('.artifacts/batch/prepared-batch.json', 'utf8'));
           writeFileSync(
             '.artifacts/pr-body.md',
-            `Publishes ${batch.requestIds.length} independently approved candidate request(s) as \`${batch.releaseTag}\`.\n\n` +
+            `Publishes ${batch.requestIds.length} approved candidate request(s) as \`${batch.releaseTag}\`.\n\n` +
               batch.requestIds.map((id) => `- \`${id}\``).join('\n') +
-              '\n\nThis PR is deterministic release materialization; human image approval occurred in the individual approval PRs.\n',
+              '\n\nThis PR is deterministic release materialization; human image approval occurred in the approval PRs.\n',
           );
           NODE
           if [ "${count}" -eq 1 ]; then

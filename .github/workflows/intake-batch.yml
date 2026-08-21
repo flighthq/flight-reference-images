@@ -23,6 +23,7 @@ jobs:
     outputs:
       candidates: ${{ steps.expand.outputs.candidates }}
       count: ${{ steps.expand.outputs.count }}
+      source-run-id: ${{ steps.expand.outputs.source_run_id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,11 +54,52 @@ jobs:
           echo "candidates=${candidates}" >> "${GITHUB_OUTPUT}"
           count=$(jq length <<< "${candidates}")
           echo "count=${count}" >> "${GITHUB_OUTPUT}"
+          source_run_id=$(jq -r '.workflowRunId' .artifacts/dispatch-batch.json)
+          echo "source_run_id=${source_run_id}" >> "${GITHUB_OUTPUT}"
           echo "Accepted an atomic dispatch set of ${count} candidate request(s)." >> "${GITHUB_STEP_SUMMARY}"
+
+  release-ready:
+    name: Require the current blessed release before starting candidates
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Wait once for the complete current release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .artifacts
+          workflow_url="https://github.com/${GITHUB_REPOSITORY}/actions/workflows/release.yml"
+          if npm run release:readiness -- --attempts 60 --retry-delay-ms 10000 --output .artifacts/release-readiness 2>&1 | tee .artifacts/release-readiness.log; then
+            echo "Current blessed release is complete and verified." >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          detail=$(tail -n 1 .artifacts/release-readiness.log)
+          echo "::error title=Current blessed release is unavailable::${detail}"
+          {
+            echo "## Current blessed release is unavailable"
+            echo
+            echo "${detail}"
+            echo
+            echo "[Open Release blessed reference images](${workflow_url})"
+          } >> "${GITHUB_STEP_SUMMARY}"
+          exit 1
 
   intake:
     name: Intake ${{ matrix.candidate.requestPath }}
-    needs: validate
+    needs: [validate, release-ready]
     strategy:
       fail-fast: false
       max-parallel: 12
@@ -72,6 +114,167 @@ jobs:
       artifact_id: ${{ matrix.candidate.artifactId }}
       workflow_run_id: ${{ matrix.candidate.workflowRunId }}
       artifact_digest: ${{ matrix.candidate.artifactDigest }}
+      approval_mode: batch
     secrets:
       ORACLE_APP_ID: ${{ secrets.ORACLE_APP_ID }}
       ORACLE_APP_PRIVATE_KEY: ${{ secrets.ORACLE_APP_PRIVATE_KEY }}
+
+  open-batch-pr:
+    name: Write all allowlisted approvals into one batch PR
+    needs: [validate, intake]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Mint Oracle PR token
+        id: oracle-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.ORACLE_APP_ID }}
+          private-key: ${{ secrets.ORACLE_APP_PRIVATE_KEY }}
+          owner: flighthq
+          repositories: flight-reference-images
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ steps.oracle-token.outputs.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Resolve the exact prepared and review artifact set
+        env:
+          EXPECTED_COUNT: ${{ needs.validate.outputs.count }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .artifacts
+          gh api --paginate --slurp \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" \
+            > .artifacts/artifact-pages.json
+          npm run --silent batch:approval-artifacts -- \
+            --file .artifacts/artifact-pages.json \
+            --workflow-run-id "${GITHUB_RUN_ID}" \
+            --expected-count "${EXPECTED_COUNT}" \
+            > .artifacts/artifacts.tsv
+      - name: Download every prepared candidate
+        uses: actions/download-artifact@v4
+        with:
+          pattern: oracle-candidate-*-${{ github.run_id }}
+          path: .artifacts/prepared
+          merge-multiple: false
+      - name: Write every approval record and compact review index
+        env:
+          EXPECTED_COUNT: ${{ needs.validate.outputs.count }}
+          SOURCE_RUN_ID: ${{ needs.validate.outputs.source-run-id }}
+        run: |
+          : > .artifacts/approval-paths.txt
+          while IFS=$'\t' read -r request_id artifact_id artifact_digest report_id; do
+            prepared=".artifacts/prepared/oracle-candidate-${request_id}-${GITHUB_RUN_ID}"
+            test -f "${prepared}/prepared-intake.json" || {
+              echo "::error::prepared artifact for ${request_id} has an invalid archive root"
+              exit 1
+            }
+            npm run intake:approve -- \
+              --prepared "${prepared}" \
+              --artifact-id "${artifact_id}" \
+              --artifact-digest "${artifact_digest}" \
+              --workflow-run-id "${GITHUB_RUN_ID}"
+            approval_path="approvals/${request_id}.json"
+            if git ls-files --error-unmatch "${approval_path}" >/dev/null 2>&1; then
+              if git diff --quiet -- "${approval_path}"; then
+                echo "approval ${request_id} is already present on main"
+                continue
+              fi
+              echo "::error::approval ${request_id} is already merged with different artifact bindings; use a new request id"
+              exit 1
+            fi
+            echo "${approval_path}" >> .artifacts/approval-paths.txt
+          done < .artifacts/artifacts.tsv
+          new_count=$(wc -l < .artifacts/approval-paths.txt)
+          if [ "${new_count}" -ne 0 ] && [ "${new_count}" -ne "${EXPECTED_COUNT}" ]; then
+            echo "::error::${new_count} of ${EXPECTED_COUNT} batch approvals are new; refusing a partial batch approval PR"
+            exit 1
+          fi
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+
+          const artifacts = readFileSync('.artifacts/artifacts.tsv', 'utf8')
+            .trim()
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => {
+              const [requestId, , , reportId] = line.split('\t');
+              const url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}/artifacts/${reportId}`;
+              return { reportUrl: url, requestId };
+            });
+          const sourceUrl = `https://github.com/flighthq/flight/actions/runs/${process.env.SOURCE_RUN_ID}`;
+          const actionRunUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+          const introduction =
+            `## Batch reference image approval\n\n` +
+            `This PR atomically blesses ${artifacts.length} candidates from [Flight capture run ${process.env.SOURCE_RUN_ID}](${sourceUrl}).\n\n`;
+          const conclusion =
+            `\n\nMerging blesses every approval record in this PR. The final immutable release is assigned separately after merge.\n`;
+          const directRows = artifacts.map(
+            ({ reportUrl, requestId }) => `| \`${requestId}\` | [Open old/new/delta review](${reportUrl}) |`,
+          );
+          let body =
+            introduction + `| Request | Visual review |\n| --- | --- |\n${directRows.join('\n')}` + conclusion;
+          if (Buffer.byteLength(body) > 60_000) {
+            const compactRows = artifacts.map(({ requestId }) => `| \`${requestId}\` |`);
+            body =
+              introduction +
+              `[Open all old/new/delta review artifacts](${actionRunUrl}); artifact names include their request ids.\n\n` +
+              `| Request |\n| --- |\n${compactRows.join('\n')}` +
+              conclusion;
+          }
+          writeFileSync('.artifacts/pr-body.md', body);
+          NODE
+      - name: Commit and open or update one batch approval PR
+        env:
+          EXPECTED_COUNT: ${{ needs.validate.outputs.count }}
+          GH_TOKEN: ${{ steps.oracle-token.outputs.token }}
+          SOURCE_RUN_ID: ${{ needs.validate.outputs.source-run-id }}
+        run: |
+          mapfile -t approval_paths < .artifacts/approval-paths.txt
+          if [ "${#approval_paths[@]}" -eq 0 ]; then
+            echo "all ${EXPECTED_COUNT} batch approvals are already present on main"
+            exit 0
+          fi
+
+          stable_branch="approval-batch/${SOURCE_RUN_ID}"
+          pulls=$(gh pr list --base main --state open --limit 100 \
+            --json number,headRefName,headRefOid,isCrossRepository)
+          existing=$(jq --arg stable "${stable_branch}" \
+            '[.[] | select(.isCrossRepository == false and .headRefName == $stable)]' \
+            <<< "${pulls}")
+          count=$(jq length <<< "${existing}")
+          test "${count}" -le 1 || { echo "::error::multiple approval PRs are open for Flight batch ${SOURCE_RUN_ID}"; exit 1; }
+          if [ "${count}" -eq 1 ]; then
+            branch=$(jq -r '.[0].headRefName' <<< "${existing}")
+            expected=$(jq -r '.[0].headRefOid' <<< "${existing}")
+            pull_request=$(jq -r '.[0].number' <<< "${existing}")
+          else
+            branch="${stable_branch}"
+            expected=$(git ls-remote --heads origin "refs/heads/${branch}" | cut -f 1)
+          fi
+
+          git switch -c "${branch}"
+          git config user.name 'flight-reference-images[bot]'
+          git config user.email 'flight-reference-images[bot]@users.noreply.github.com'
+          for approval_path in "${approval_paths[@]}"; do git add "${approval_path}"; done
+          git -c core.hooksPath=/dev/null commit -m "feat(approvals): bless Flight batch ${SOURCE_RUN_ID}"
+          if [ -n "${expected}" ]; then
+            git push --force-with-lease="refs/heads/${branch}:${expected}" origin "HEAD:refs/heads/${branch}"
+          else
+            git push origin "HEAD:refs/heads/${branch}"
+          fi
+          title="feat(approvals): bless ${EXPECTED_COUNT}-candidate Flight batch"
+          if [ "${count}" -eq 1 ]; then
+            gh pr edit "${pull_request}" --title "${title}" --body-file .artifacts/pr-body.md
+          else
+            gh pr create --base main --head "${branch}" --title "${title}" --body-file .artifacts/pr-body.md
+          fi

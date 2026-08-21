@@ -34,7 +34,9 @@ Flight normally sends one `repository_dispatch` event of type `flight-reference-
 }
 ```
 
-The array is the complete membership for that Flight run. It must contain 1–256 candidates with unique request paths and artifact ids. The serialized GitHub `client_payload` must also remain within GitHub's 65,535-character limit. Batch intake validates the whole envelope before starting any candidate, then processes candidates independently with `fail-fast: false` and at most 12 concurrent reusable intake calls.
+The array is the complete membership for that Flight run. It must contain 1–256 candidates with unique request paths and artifact ids. The serialized GitHub `client_payload` must also remain within GitHub's 65,535-character limit. Batch intake validates the whole envelope before starting any candidate, then prepares candidates independently with `fail-fast: false` and at most 12 concurrent reusable intake calls. After every candidate succeeds, one scoped writer verifies the exact prepared/review artifact membership and opens one stable `approval-batch/<flight-run-id>` PR containing every approval record. Any candidate failure prevents the batch PR without hiding diagnostics from the other matrix jobs.
+
+After validating the complete payload, batch intake verifies the current blessed release once before starting the candidate matrix. A relevant failed release workflow stops the batch immediately with a link to the failed run. Otherwise this gate allows the normal publication window, downloads and verifies the complete current pack set, and starts candidate jobs only after the release is ready. If the release remains unavailable, the batch summary links **Release blessed reference images** and directs recovery from the current default branch instead of leaving every matrix job to report the same missing tag independently.
 
 The legacy `flight-reference-image-candidate` event remains available during migration and has this version-1 camel-case payload:
 
@@ -58,9 +60,9 @@ Oracle intake adds the landed commit's GitHub-reported committer time and applie
 
 ## Review
 
-Download the `oracle-review-*` artifact linked by the approval PR and open `index.html`. Rows are sorted by mismatch magnitude and show old, new, and per-channel delta images. Missing and dimension-changed rows are visually distinct. `within policy` is diagnostic in the approval report; an intentional re-bless may exceed the current regression threshold and still be approved by merging.
+Open each `oracle-review-*` artifact linked by the approval PR and load `index.html`. Rows are sorted by mismatch magnitude and show old, new, and per-channel delta images. Missing and dimension-changed rows are visually distinct. `within policy` is diagnostic in the approval report; an intentional re-bless may exceed the current regression threshold and still be approved by merging.
 
-Each approval PR changes only `approvals/<request-id>.json`, so merge the reviewed approvals in any order. No refresh, draft promotion, special ordering, or textual conflict resolution is part of the normal path. Merged approvals accumulate in one `publication/*` PR. Merge that mechanical PR whenever the desired group is ready; its CI reconstructs and verifies the complete release.
+A version-2 batch approval PR changes one `approvals/<request-id>.json` per dispatched candidate and merging it blesses the complete set atomically. Legacy single-candidate approval PRs change one record. Separate PRs with disjoint targets can be merged in any order; no refresh, draft promotion, special ordering, or textual conflict resolution is part of the normal path. Merged approvals accumulate in one `publication/*` PR. Merge that mechanical PR whenever the desired group is ready; its CI reconstructs and verifies the complete release.
 
 If the compact Oracle-owned candidate artifact expires before the approval is published, redispatch and review the replacement approval. Release never recaptures or substitutes bytes. Increase `retention-days` if ordinary review plus publication time approaches the configured 30 days. The rolling batch artifact is also retained for 30 days and is replaced whenever **Stage approved reference image release** runs.
 

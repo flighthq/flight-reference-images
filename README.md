@@ -12,15 +12,15 @@ The repository intentionally starts with no blessed images, capture environment,
 flowchart LR
   A[Flight request lands] --> B[Flight captures requested cells]
   B --> C[Read-only Oracle intake]
-  C --> D[Oracle-owned candidate artifact]
-  D --> E[Independent approval PR]
+  C --> D[Oracle-owned candidate artifacts]
+  D --> E[One batch approval PR]
   E -->|merge blesses exact bytes| F[Rolling publication PR]
   F -->|merge materializes batch| G[Rebuild exact deterministic packs]
   G --> H[Immutable GitHub release]
   H --> I[Flight lock-bump PR]
 ```
 
-The capture job never receives an Oracle write credential. Intake processes candidate-controlled PNGs with read-only repository permissions. The first privileged writer can add only `approvals/<request-id>.json`. A separate staging workflow verifies every merged approval and its immutable artifact, then updates one rolling publication PR with only `manifest.json`, `oracles/**`, and `candidates/**`. Release reconstruction also runs without contents-write permission; a separate publisher receives already-verified pack bytes and checks their fixed hashes without decoding candidate images.
+The capture job never receives an Oracle write credential. Intake processes candidate-controlled PNGs with read-only repository permissions. The first privileged writer can add only `approvals/<request-id>.json`; a version-2 batch writes all validated members into one approval PR. A separate staging workflow verifies every merged approval and its immutable artifact, then updates one rolling publication PR with only `manifest.json`, `oracles/**`, and `candidates/**`. Release reconstruction also runs without contents-write permission; a separate publisher receives already-verified pack bytes and checks their fixed hashes without decoding candidate images.
 
 ## Stored records
 
