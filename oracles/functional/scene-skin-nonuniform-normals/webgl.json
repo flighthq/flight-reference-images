@@ -1,10 +1,10 @@
 {
   "$schema": "../../../schemas/oracle-record.schema.json",
-  "artifactSha256": "8319a0d83d3d74aa08284a9c0ca7f185ac3fb28687c7838c994de618241a06af",
+  "artifactSha256": "b7d5e2db71d9e72b04e11e922c61a089d9479094f294c52ff46e70873ee29942",
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "00028b0f581f46010a9ba6f4d34a54cbfbe90ac0",
+  "flightCommit": "93f6f63eca2b6864dedc151c301be624236f131b",
   "height": 600,
   "identity": {
     "entry": "scene-skin-nonuniform-normals",
@@ -13,17 +13,17 @@
   },
   "pack": "functional-other",
   "pixelFormat": "rgba8",
-  "pixelSha256": "57a1d321ae7b1b990f4220740042de4d395f2ef358dfe69fadb29a11af76684b",
+  "pixelSha256": "c901bbc10910b387296683b396f1f76d493b9aa5d4f3655be9b0ec26744eccf7",
   "provenance": {
     "frames": 1,
-    "sourceHash": "56b0d818d198633e9450136ee71dbc2d26f1d9a0ef7f0511b609bfea1a38121c",
+    "sourceHash": "cbcd08860c0636d1f5784fa63531a920d030935cb2066a0074a7a9e3fbf0d292",
     "targetKind": null,
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "e5f8aa28-6cf5-460f-8ed3-de6ac97ef955",
-    "sha256": "fe44050a2ad8643684076ecfc048c7af69c49d2e1d97a5466958037c87adeb0d"
+    "id": "91a444f3-03aa-482e-a233-a1b8f44e291f",
+    "sha256": "2f727a5db6e43d1eca213f464f440420922418dacee3b5f565612002ef9394d4"
   },
   "schemaVersion": 1,
   "width": 800

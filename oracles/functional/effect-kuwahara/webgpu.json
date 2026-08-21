@@ -1,0 +1,30 @@
+{
+  "$schema": "../../../schemas/oracle-record.schema.json",
+  "artifactSha256": "2cea859291a3ca10a1e9ef61542fe9ae76d9930fffd3b29e68acc5f1f0888e58",
+  "colorSpace": "srgb",
+  "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
+  "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
+  "flightCommit": "93f6f63eca2b6864dedc151c301be624236f131b",
+  "height": 600,
+  "identity": {
+    "entry": "effect-kuwahara",
+    "renderer": "webgpu",
+    "subject": "functional"
+  },
+  "pack": "functional-images",
+  "pixelFormat": "rgba8",
+  "pixelSha256": "4663cf1a1c4edd15f0d7720e9aa4aed7b013ce8d93da9313ab19727e56b30c31",
+  "provenance": {
+    "frames": 1,
+    "sourceHash": "02b2c5e2d71653c9d4822bc35f52d7fb80a084cec44d58d4d45afe86b6f58f33",
+    "targetKind": "webgpu",
+    "verifyPublished": true,
+    "warmupFrames": 0
+  },
+  "request": {
+    "id": "b12ff38e-a368-48f6-aca5-faaf94994023",
+    "sha256": "badeae5e0a4ae9168a91a8304dbd17179f595134bb9172cb3be2200c87fae5b1"
+  },
+  "schemaVersion": 1,
+  "width": 800
+}
