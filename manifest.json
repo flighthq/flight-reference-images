@@ -2,43 +2,43 @@
   "$schema": "./schemas/manifest.schema.json",
   "packs": [
     {
-      "file": "functional-images-oracle-batch-bd5b91e8a807.tgz",
+      "file": "functional-images-oracle-batch-124534d42016.tgz",
       "id": "functional-images",
-      "imageCount": 114,
-      "sha256": "0f9a3f761ca106d670afb3194e49cb5e15a55f9c911f865a33b70f94dc275e44",
-      "size": 4940805
+      "imageCount": 116,
+      "sha256": "d08e0f47768c9299775b07d9b33e342ea2850942b357adabad8b0d68122ae053",
+      "size": 5072103
     },
     {
-      "file": "functional-other-oracle-batch-bd5b91e8a807.tgz",
+      "file": "functional-other-oracle-batch-124534d42016.tgz",
       "id": "functional-other",
       "imageCount": 148,
       "sha256": "1aeeaf4cc7b9ca75cd0b952001664b2ff82825ba6c7177253acc7661b112fd3b",
       "size": 1680749
     },
     {
-      "file": "functional-scene3d-oracle-batch-bd5b91e8a807.tgz",
+      "file": "functional-scene3d-oracle-batch-124534d42016.tgz",
       "id": "functional-scene3d",
-      "imageCount": 68,
-      "sha256": "a1102fda8b963c60e1ac6bec89f2d79283abea5d007c04a0a09078ec294cf875",
-      "size": 1006671
+      "imageCount": 70,
+      "sha256": "43d61acfdb32cad8247c49932ff73c48db8ad6a4fbc85f49b54985c082f17eb4",
+      "size": 1021344
     },
     {
-      "file": "functional-shapes-oracle-batch-bd5b91e8a807.tgz",
+      "file": "functional-shapes-oracle-batch-124534d42016.tgz",
       "id": "functional-shapes",
       "imageCount": 34,
       "sha256": "209872a5f82e96eee3d3548e976883eafca1c01131aa88051bf6248e75f78842",
       "size": 474109
     },
     {
-      "file": "functional-text-oracle-batch-bd5b91e8a807.tgz",
+      "file": "functional-text-oracle-batch-124534d42016.tgz",
       "id": "functional-text",
       "imageCount": 44,
       "sha256": "9b55b01955bb9a3c55b7d9290250cb184c19e86629c879c9924ffed840832fb6",
       "size": 242140
     }
   ],
-  "parentReleaseTag": "oracle-batch-31220a104dc5",
-  "releaseTag": "oracle-batch-bd5b91e8a807",
+  "parentReleaseTag": "oracle-batch-bd5b91e8a807",
+  "releaseTag": "oracle-batch-124534d42016",
   "schemaVersion": 1,
   "sourceRequests": [
     {
@@ -1060,6 +1060,21 @@
       "flightCommit": "b3eea5f93b4df315e1bc80cc7af37a9fce30e49d",
       "id": "e4492c94-9938-4fe4-a6f5-68b25b259f34",
       "requestSha256": "e749cd4000b4c003dadc4ad36d313652957b27341aabbc191cdcded2da4c6cfd"
+    },
+    {
+      "flightCommit": "50bfa67f3f2a3be13410ae4eb2fa3300687b20d9",
+      "id": "0e9ee6f5-fca8-4e1d-864f-d63388a28fb9",
+      "requestSha256": "95dda7f1415ded4feaf4963720628382ebb2ddf0c09828cbf1c5fde12d3e10a1"
+    },
+    {
+      "flightCommit": "50bfa67f3f2a3be13410ae4eb2fa3300687b20d9",
+      "id": "38243ef6-a7d5-4c71-a507-464b0fce2bfe",
+      "requestSha256": "3180e5dbf3fd8c8462f7ce688affdcd659cb25b949bbf1237e84af312b38105c"
+    },
+    {
+      "flightCommit": "50bfa67f3f2a3be13410ae4eb2fa3300687b20d9",
+      "id": "904e5902-5624-4c1f-ae8c-7cdbd149a233",
+      "requestSha256": "f2c06593f941c4a5c61b6690d83ccfa0e8a8b151fd4e5788ece005c9e252346c"
     }
   ]
 }

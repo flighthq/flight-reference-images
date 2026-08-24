@@ -1,29 +1,29 @@
 {
   "$schema": "../../../schemas/oracle-record.schema.json",
-  "artifactSha256": "aed3c30913a2aa6a859cd1217350ed611940d8e2af9faec6d98b69f6f452ebb0",
+  "artifactSha256": "a3d7f3ffd2f0ccbcf8fb6a09f5bc3997bfffa96fe2efdf96451633706eb1b3ca",
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
   "flightCommit": "50bfa67f3f2a3be13410ae4eb2fa3300687b20d9",
   "height": 600,
   "identity": {
-    "entry": "mesh-cone",
-    "renderer": "webgpu",
+    "entry": "material-wireframe",
+    "renderer": "webgl",
     "subject": "functional"
   },
   "pack": "functional-scene3d",
   "pixelFormat": "rgba8",
-  "pixelSha256": "b77db0a0a07c3d96a17aea3089fc37f290cb0cfc83cfeb78f8b429bd03bb966f",
+  "pixelSha256": "487157adcaf6ea2e771b0008d8c6a8935517371fa03539ee960dd45925aaa67c",
   "provenance": {
     "frames": 1,
-    "sourceHash": "53577899b041d935dd6a4719022bd976dd01e8381cf00129b8c849d7bd34bc44",
-    "targetKind": "webgpu",
+    "sourceHash": "5ce3ee4a4fe8e33e507c7f0b0e1ad10190758c05d9cea4fbfd669a251123da17",
+    "targetKind": null,
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "0e9ee6f5-fca8-4e1d-864f-d63388a28fb9",
-    "sha256": "95dda7f1415ded4feaf4963720628382ebb2ddf0c09828cbf1c5fde12d3e10a1"
+    "id": "904e5902-5624-4c1f-ae8c-7cdbd149a233",
+    "sha256": "f2c06593f941c4a5c61b6690d83ccfa0e8a8b151fd4e5788ece005c9e252346c"
   },
   "schemaVersion": 1,
   "width": 800
