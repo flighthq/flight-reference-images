@@ -1,0 +1,56 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/shape-stroke/canvas.json",
+      "sha256": "c76433ca936e77102f9211fc395b1c5173e99611e02ebae103fd97f0b215b6fc"
+    },
+    {
+      "path": "oracles/functional/shape-stroke/dom.json",
+      "sha256": "841c2bc0e0d899471e1b102856373750b64b074670bef1fb395c14abe21ec620"
+    },
+    {
+      "path": "oracles/functional/shape-stroke/webgl.json",
+      "sha256": "0fb1a0ab8c23d403186583323d6aad0a434a9b3603dd78acbc353def9261e0ac"
+    },
+    {
+      "path": "oracles/functional/shape-stroke/webgpu.json",
+      "sha256": "818cc633ca179069a487e98cb82b50218ccdae6e0c2269fb3df836284f3dcbfc"
+    }
+  ],
+  "candidateSha256": "b62f55378f4ccdb1f22ed1b1c0a73754a4010ca568d855b3a893dde3d207ac10",
+  "flightCommit": "af147bb8e319e0a6dcd85d4f628fd6daa7e7caca",
+  "preparedArtifact": {
+    "artifactId": 9746873738,
+    "digest": "sha256:6a7309a3c9fd09cd4f13521f4bfc8cf7d78bece9264a024fe8db8c8ced5e77bb",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 33361569386
+  },
+  "records": [
+    {
+      "path": "oracles/functional/shape-stroke/canvas.json",
+      "sha256": "dbbab09b731ae5a88f1863d1b8ab861d47cc96b5db4b936b5576c839df23f2be"
+    },
+    {
+      "path": "oracles/functional/shape-stroke/dom.json",
+      "sha256": "510eb9032751dda2cab46e6a44a9877baf9c4d5a80ad1fdb6107b81f902caca8"
+    },
+    {
+      "path": "oracles/functional/shape-stroke/webgl.json",
+      "sha256": "cbe88000e0ad62fd732f80ca780e37eb85e1370da0eb1abe5840e5eb4215e77f"
+    },
+    {
+      "path": "oracles/functional/shape-stroke/webgpu.json",
+      "sha256": "3e31df60cd64dab4af320eeb3f5c43976f9552a620d924a5fa1eb53ff9392354"
+    }
+  ],
+  "requestId": "a2de0b5b-26fb-470e-9895-769d0b09b904",
+  "requestSha256": "4ad31c039cd2d3caf565aac5ffc8092587f2664e24fa3af12862ce637ea38b87",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 9746845185,
+    "digest": "sha256:27a4cde9e15b97e7729d52be4b11ccec70be0192866bc2118fb9e41458fafff8",
+    "repository": "flighthq/flight",
+    "workflowRunId": 33361413193
+  }
+}
