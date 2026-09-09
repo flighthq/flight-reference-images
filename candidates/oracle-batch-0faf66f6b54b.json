@@ -1,0 +1,26 @@
+{
+  "$schema": "../schemas/candidate-locator.schema.json",
+  "manifestSha256": "edef853d318b75101e1b3af8a01886e5f2bae35f8189a67e024e05efdf02837f",
+  "preparedArtifact": {
+    "artifactId": 10090961796,
+    "digest": "sha256:4799c074f1c5a279028435e8b1ac73c91dcf944610933c274d07de299aa2d55b",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 34318510056
+  },
+  "releaseTag": "oracle-batch-0faf66f6b54b",
+  "requestIds": [
+    "2aae7e3a-15d5-442b-92d2-828bcdc822c6",
+    "2ac7b917-2c9a-4b17-9768-ee81dade7a11",
+    "532f40cc-3882-4431-9d27-256096f546e4",
+    "5fa1ed49-87de-4c6c-8e2a-aa9f0a6bcfd3",
+    "660a3925-39ad-4bc0-b080-03a48877df48",
+    "96de115c-5bd3-4f61-98dc-6dbbd90908c8",
+    "9d6e66ed-2a22-4d43-90c0-892cf32c0569",
+    "a2de0b5b-26fb-470e-9895-769d0b09b904",
+    "cba0f867-85d5-409a-9610-11d2c0cd58ed",
+    "e28248eb-6b7b-41e0-bd81-71e9ec95b204",
+    "ee304d21-8311-49e0-8ed3-aef29558c281",
+    "fe99c100-f3ba-4a72-a798-6c1bd89afafc"
+  ],
+  "schemaVersion": 2
+}
