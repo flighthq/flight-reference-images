@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/material-blinn-phong-maps/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/material-blinn-phong-maps/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "aed0b7374beda5326d2fe513cc57126bd8f765f20a0165e8b82f5f580ce20775",
+  "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+  "preparedArtifact": {
+    "artifactId": 10090852658,
+    "digest": "sha256:cb8f87de00775387797032ad32dca35c03f0a320f65ec60b311ee04e544c5196",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 34318114063
+  },
+  "records": [
+    {
+      "path": "oracles/functional/material-blinn-phong-maps/webgl.json",
+      "sha256": "a3a10820a90d1c27739203b6010f701596c4ab1c55a13fcdf78f5e59cf923edf"
+    },
+    {
+      "path": "oracles/functional/material-blinn-phong-maps/webgpu.json",
+      "sha256": "8d6942e153735b18b8466589fc3e2c55e1a1b4d2f4b9603f43db83cfee1a5333"
+    }
+  ],
+  "requestId": "cba0f867-85d5-409a-9610-11d2c0cd58ed",
+  "requestSha256": "15c301e54ede7e281912b82b88c7753f42a912ec42f6fe587f3f7397778ba5f2",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 10090778037,
+    "digest": "sha256:86670768826776debe5712648bd5fe7592408e8041dcb48cb00c3321e9bee319",
+    "repository": "flighthq/flight",
+    "workflowRunId": 34317892553
+  }
+}
