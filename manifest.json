@@ -2,43 +2,43 @@
   "$schema": "./schemas/manifest.schema.json",
   "packs": [
     {
-      "file": "functional-images-oracle-batch-124534d42016.tgz",
+      "file": "functional-images-oracle-batch-0faf66f6b54b.tgz",
       "id": "functional-images",
       "imageCount": 116,
       "sha256": "d08e0f47768c9299775b07d9b33e342ea2850942b357adabad8b0d68122ae053",
       "size": 5072103
     },
     {
-      "file": "functional-other-oracle-batch-124534d42016.tgz",
+      "file": "functional-other-oracle-batch-0faf66f6b54b.tgz",
       "id": "functional-other",
-      "imageCount": 148,
-      "sha256": "1aeeaf4cc7b9ca75cd0b952001664b2ff82825ba6c7177253acc7661b112fd3b",
-      "size": 1680749
+      "imageCount": 164,
+      "sha256": "a1c09da920fe78eb20e1660ed264cb489fbe46f990a116f70d437053a4e0a29c",
+      "size": 1743642
     },
     {
-      "file": "functional-scene3d-oracle-batch-124534d42016.tgz",
+      "file": "functional-scene3d-oracle-batch-0faf66f6b54b.tgz",
       "id": "functional-scene3d",
-      "imageCount": 70,
-      "sha256": "43d61acfdb32cad8247c49932ff73c48db8ad6a4fbc85f49b54985c082f17eb4",
-      "size": 1021344
+      "imageCount": 72,
+      "sha256": "a2aad12992b2ce4b7c568712ee84b05301caaab78bba068aef9e472576d35a54",
+      "size": 1026913
     },
     {
-      "file": "functional-shapes-oracle-batch-124534d42016.tgz",
+      "file": "functional-shapes-oracle-batch-0faf66f6b54b.tgz",
       "id": "functional-shapes",
       "imageCount": 34,
-      "sha256": "209872a5f82e96eee3d3548e976883eafca1c01131aa88051bf6248e75f78842",
-      "size": 474109
+      "sha256": "9a1882926ce6a82ad920a866168371ee754f186570a633fd94606fef893142bf",
+      "size": 478794
     },
     {
-      "file": "functional-text-oracle-batch-124534d42016.tgz",
+      "file": "functional-text-oracle-batch-0faf66f6b54b.tgz",
       "id": "functional-text",
       "imageCount": 44,
       "sha256": "9b55b01955bb9a3c55b7d9290250cb184c19e86629c879c9924ffed840832fb6",
       "size": 242140
     }
   ],
-  "parentReleaseTag": "oracle-batch-bd5b91e8a807",
-  "releaseTag": "oracle-batch-124534d42016",
+  "parentReleaseTag": "oracle-batch-124534d42016",
+  "releaseTag": "oracle-batch-0faf66f6b54b",
   "schemaVersion": 1,
   "sourceRequests": [
     {
@@ -1075,6 +1075,66 @@
       "flightCommit": "50bfa67f3f2a3be13410ae4eb2fa3300687b20d9",
       "id": "904e5902-5624-4c1f-ae8c-7cdbd149a233",
       "requestSha256": "f2c06593f941c4a5c61b6690d83ccfa0e8a8b151fd4e5788ece005c9e252346c"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "2aae7e3a-15d5-442b-92d2-828bcdc822c6",
+      "requestSha256": "2372ba9a466b9f8d29af3cd5511091ef13a5b5430150ffcde3f67882110a150d"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "2ac7b917-2c9a-4b17-9768-ee81dade7a11",
+      "requestSha256": "6b01f3cf9dc9b958e622689256b0da8d4567fb504eb69ab4df3060d9ee80ca1f"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "532f40cc-3882-4431-9d27-256096f546e4",
+      "requestSha256": "0f9141779198bec57dc3af93c5124a43248db1bed053e098c708d1fdcca9f2e0"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "5fa1ed49-87de-4c6c-8e2a-aa9f0a6bcfd3",
+      "requestSha256": "d137ca359e029636f4b2013d983d20e40430c7275cd87ea1c0dbd3f72373f818"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "660a3925-39ad-4bc0-b080-03a48877df48",
+      "requestSha256": "68a68117324cc7d7ce5a7a7b16367c23e44d7c740363d2a2727f26788d2a1651"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "96de115c-5bd3-4f61-98dc-6dbbd90908c8",
+      "requestSha256": "326b5485ea13f694c0d69b3b7ff82eee7550f715667b84b7946980c09ca7f7d8"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "9d6e66ed-2a22-4d43-90c0-892cf32c0569",
+      "requestSha256": "990640efec3b0c4729c322cba13b00ba7a684d62298f8ec550aba6d7ae3778d8"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "a2de0b5b-26fb-470e-9895-769d0b09b904",
+      "requestSha256": "4ad31c039cd2d3caf565aac5ffc8092587f2664e24fa3af12862ce637ea38b87"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "cba0f867-85d5-409a-9610-11d2c0cd58ed",
+      "requestSha256": "15c301e54ede7e281912b82b88c7753f42a912ec42f6fe587f3f7397778ba5f2"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "e28248eb-6b7b-41e0-bd81-71e9ec95b204",
+      "requestSha256": "90b2737415652a96155078cdddab53a3045ba63735321968ed3def180b4d28fc"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "ee304d21-8311-49e0-8ed3-aef29558c281",
+      "requestSha256": "6358dd861ab2ee713982f69ff76490fd1cd3586d8e5e9072822e443f77fdb87c"
+    },
+    {
+      "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+      "id": "fe99c100-f3ba-4a72-a798-6c1bd89afafc",
+      "requestSha256": "189195f5f7015507c8415e5fcf517b7aed26be0006dcb592bdd50945db811acf"
     }
   ]
 }
