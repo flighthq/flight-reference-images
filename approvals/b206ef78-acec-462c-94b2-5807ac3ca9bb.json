@@ -1,0 +1,56 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/bitmap-transform-rotation/canvas.json",
+      "sha256": "840f77f5e06ead3ad9aad4a7eca0a21801fd6768e4b9637736734c69ac276e94"
+    },
+    {
+      "path": "oracles/functional/bitmap-transform-rotation/dom.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/bitmap-transform-rotation/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/bitmap-transform-rotation/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "668122cb759759f8cbf4b7c8321e186b93f39fab48eb492b98a64ae3187b8433",
+  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
+  "preparedArtifact": {
+    "artifactId": 10310887017,
+    "digest": "sha256:1838a52dae28b151e6a9d52a900fac21738137e28bcb87cdfe8f8e70adfd4e62",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 34735312753
+  },
+  "records": [
+    {
+      "path": "oracles/functional/bitmap-transform-rotation/canvas.json",
+      "sha256": "1b840dc79b2ab4c7ef676b00b37da41a96b175148e6390e36aa8affa9903fe70"
+    },
+    {
+      "path": "oracles/functional/bitmap-transform-rotation/dom.json",
+      "sha256": "a99ffbba5fe58489bdcec20804bc9f2e93fd6149de3017408d4324d064168b9b"
+    },
+    {
+      "path": "oracles/functional/bitmap-transform-rotation/webgl.json",
+      "sha256": "011e02ab290682f23dfb59db057ed8299134a691a8c97ea86594880fb6a819c0"
+    },
+    {
+      "path": "oracles/functional/bitmap-transform-rotation/webgpu.json",
+      "sha256": "28ea6a72ef9ae737a9915d7ce7b657dead520f0cd6495fa7b6ecc3fbef492a50"
+    }
+  ],
+  "requestId": "b206ef78-acec-462c-94b2-5807ac3ca9bb",
+  "requestSha256": "f384230e1c55542c1284255b07fa8a1bf77d97ec38acea144ef8bb2f3da1137e",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 10311091123,
+    "digest": "sha256:36c0fc0ca29e4f8b096f79dab5d01847aeb07360f70d2797275bb38440f8f911",
+    "repository": "flighthq/flight",
+    "workflowRunId": 34734854651
+  }
+}
