@@ -1,0 +1,48 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/per-node-effect-lane/canvas.json",
+      "sha256": "b298d31e1d6ad490f3cc3a5d431937b5f4e9c2e7df4d606ccd023d4176fdc85a"
+    },
+    {
+      "path": "oracles/functional/per-node-effect-lane/webgl.json",
+      "sha256": "2c1c60042a4afc8b842a5179f0fb7caf1f1f8c02fdd3139d9d77ff0362edf2e1"
+    },
+    {
+      "path": "oracles/functional/per-node-effect-lane/webgpu.json",
+      "sha256": "9b5af77903e53b3aae789d73908b6d41add59c20aa20bef128f85e3dd1155c65"
+    }
+  ],
+  "candidateSha256": "0bc6fdc1d412be0346ff04a7d40dcd0ddbae45a458136fc826a9620958513eae",
+  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
+  "preparedArtifact": {
+    "artifactId": 10310259067,
+    "digest": "sha256:0e9c677ef92acfbbd52334904eb42fa9e9f7ea71fff9e010242f45370d3c0153",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 34735312753
+  },
+  "records": [
+    {
+      "path": "oracles/functional/per-node-effect-lane/canvas.json",
+      "sha256": "183fff5a08e7f8e30838d4a64ee40a89bb93ed75954ef1e27c1d32a172af8d06"
+    },
+    {
+      "path": "oracles/functional/per-node-effect-lane/webgl.json",
+      "sha256": "f6640940e167f99bbfedf5d78d4fd9f6436a175c58094d23756dca39451e53da"
+    },
+    {
+      "path": "oracles/functional/per-node-effect-lane/webgpu.json",
+      "sha256": "a713cbd63588cf780ccc9b19549a5a12498250786500515d982d503d1c9dcb66"
+    }
+  ],
+  "requestId": "4a57a19f-89b2-43df-bb60-17c77c6b0969",
+  "requestSha256": "93dea4f59ced32ab287e16953db02887134eca08a3692625cb8559a1f8b9d230",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 10310487857,
+    "digest": "sha256:51a0a30d7d2cf853273cf94d228486dd676801739bb277f9c06897fb9cca7dac",
+    "repository": "flighthq/flight",
+    "workflowRunId": 34734854651
+  }
+}

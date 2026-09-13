@@ -1,0 +1,48 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/sprite-atlas/canvas.json",
+      "sha256": "9c4bfb5768c9f9ed27297eb4c570df7bfc9b5366aab113d0b23eae9e78dcf875"
+    },
+    {
+      "path": "oracles/functional/sprite-atlas/webgl.json",
+      "sha256": "136543fb5276f5bc8760a9b3bf9af2443bd21d9f77c329325fe40fc6a52130a5"
+    },
+    {
+      "path": "oracles/functional/sprite-atlas/webgpu.json",
+      "sha256": "db923f85decda6932bfc3e981c4ea5c4b270f3fd5b5d8868850dfd4723e2ec96"
+    }
+  ],
+  "candidateSha256": "04e6b40acf365f2bfcda6b4a4257917f02eddaf5bd0988c6e2aa31c7bd1580d4",
+  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
+  "preparedArtifact": {
+    "artifactId": 10310538133,
+    "digest": "sha256:92ef1673dddde3cdd626e80c1fa6a7eff21d1f7a07cf8176b2e322ed4c76ec00",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 34735312753
+  },
+  "records": [
+    {
+      "path": "oracles/functional/sprite-atlas/canvas.json",
+      "sha256": "a2fa42ce545f2d6aea67881278295e553e4dfa958f4e5ee3e9c44edcf0d7fdd7"
+    },
+    {
+      "path": "oracles/functional/sprite-atlas/webgl.json",
+      "sha256": "38cea4d056354d2453052d2a64879487f2169e6eba941cae9680e3e233e29252"
+    },
+    {
+      "path": "oracles/functional/sprite-atlas/webgpu.json",
+      "sha256": "cf36f6930ca362cbed6a2ea7419f7dec906203849fe89a1773b09018f8fa15a3"
+    }
+  ],
+  "requestId": "be4ca7b5-b128-40e4-9f63-4db4965a8550",
+  "requestSha256": "57307ed1f4b7d9c0c17f8d96b86a66afad6b0117da4cc52f8eb84667447aeaae",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 10311030863,
+    "digest": "sha256:e05495c889db592cd3271d0d991406af25586bba871cd7806e8b00a44ecf604b",
+    "repository": "flighthq/flight",
+    "workflowRunId": 34734854651
+  }
+}

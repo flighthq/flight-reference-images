@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/effect-gradient-bevel/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/effect-gradient-bevel/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "0ce5ee2f4904fe0fde5ecdf3013e83116c14d1a6de23bf4db64621f2b43c82b2",
+  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
+  "preparedArtifact": {
+    "artifactId": 10311245121,
+    "digest": "sha256:e10558dabe879c5b71952bf35c554bc57d1190cebdec64d5d1c83091d80bec41",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 34735312753
+  },
+  "records": [
+    {
+      "path": "oracles/functional/effect-gradient-bevel/webgl.json",
+      "sha256": "e07617c14939fdcc561087c50f337fb8aa8ac85a7780f65f4f647c4d8cdc9ce8"
+    },
+    {
+      "path": "oracles/functional/effect-gradient-bevel/webgpu.json",
+      "sha256": "9f3fac740d1a7207f27231bb89d72b63f8dfb6fb22096bb5eee85606d3873a9d"
+    }
+  ],
+  "requestId": "37205821-1c29-4601-ba98-0f20f4eaad97",
+  "requestSha256": "23226bbf8fd918da9d37a44c9cbebc654a5a0b83957b10a7a1b44d0cce9e2490",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 10310666782,
+    "digest": "sha256:995f62f2a6c3bd6d5d7ff00d282df9179d55023f250ffc2d3c2498c62ca2eb72",
+    "repository": "flighthq/flight",
+    "workflowRunId": 34734854651
+  }
+}

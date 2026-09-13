@@ -1,0 +1,56 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/shape-polygon-fill/canvas.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/shape-polygon-fill/dom.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/shape-polygon-fill/webgl.json",
+      "sha256": null
+    },
+    {
+      "path": "oracles/functional/shape-polygon-fill/webgpu.json",
+      "sha256": null
+    }
+  ],
+  "candidateSha256": "524ca788939e8fe7e977dfbe013dfe9df6475e924e20ee940ee2cc40dff752aa",
+  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
+  "preparedArtifact": {
+    "artifactId": 10309649794,
+    "digest": "sha256:6c14fc9f26514f8fbb7c4ed9d8a90c1c0087fbc9245be4bc117dd1ba93518dfc",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 34735312753
+  },
+  "records": [
+    {
+      "path": "oracles/functional/shape-polygon-fill/canvas.json",
+      "sha256": "1630327dc9ff7c5c3c9fd03245629d360a77290d6936a3c8232179f043570ca9"
+    },
+    {
+      "path": "oracles/functional/shape-polygon-fill/dom.json",
+      "sha256": "d39a648f4b1c3ed6cfb3d633a563049fb60a78de670363ea56887649fd102978"
+    },
+    {
+      "path": "oracles/functional/shape-polygon-fill/webgl.json",
+      "sha256": "237cef30aa69fd0c711521da2fac9e91c2c93cd9b96976eeac6c7f2ff315bd57"
+    },
+    {
+      "path": "oracles/functional/shape-polygon-fill/webgpu.json",
+      "sha256": "3c984592a4d87a84c1887550c4f8bfdfeadc6a140cb3f4ddf3a448a8160694f9"
+    }
+  ],
+  "requestId": "b6817c38-f7d9-4d5f-b067-6e05a6e61616",
+  "requestSha256": "31577f8e734c3575184896d432d38a663e29b05bb697dab470c5a8c0d6f04f3f",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 10310896316,
+    "digest": "sha256:b845dc482ceb1a0d09ce169d273d66222f5877cd55ecc23d0ab23dcadeda0fa4",
+    "repository": "flighthq/flight",
+    "workflowRunId": 34734854651
+  }
+}
