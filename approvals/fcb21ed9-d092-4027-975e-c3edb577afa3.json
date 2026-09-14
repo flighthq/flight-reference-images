@@ -1,0 +1,48 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/shape-stroke-ring-fallback/canvas.json",
+      "sha256": "22074289b59f2e234b68cbc74a594e40fca656c2ab5888212e18b586fb43dbef"
+    },
+    {
+      "path": "oracles/functional/shape-stroke-ring-fallback/webgl.json",
+      "sha256": "ce53fdf9f578d85c329c1048eecd83b0b5eecebc7ca7a2909efe7fd4d4744fbd"
+    },
+    {
+      "path": "oracles/functional/shape-stroke-ring-fallback/webgpu.json",
+      "sha256": "76c8e597697ccb73488a74829116dc2a1ac2e0c7a66a6f2d98521b2aa9dbf315"
+    }
+  ],
+  "candidateSha256": "32f11617a414c64150cea6c6f646e430825fb42bed1385c636a4e85096666bea",
+  "flightCommit": "2ab4a06667b0db0751b848e22fd7999f391b29b2",
+  "preparedArtifact": {
+    "artifactId": 10329642525,
+    "digest": "sha256:55f1f22dbea5b703d932f0eac6215e5c3a253c274b110ed37ed8f25d3b226295",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 34795274347
+  },
+  "records": [
+    {
+      "path": "oracles/functional/shape-stroke-ring-fallback/canvas.json",
+      "sha256": "bf7c54b02058473823e7a4bc3c68971c8a5b478b8017fa57569b819282544173"
+    },
+    {
+      "path": "oracles/functional/shape-stroke-ring-fallback/webgl.json",
+      "sha256": "f3c9ce88cc047c4a8465fe619234e78ec02d76774bb4a4b5ee52bf0623949d5c"
+    },
+    {
+      "path": "oracles/functional/shape-stroke-ring-fallback/webgpu.json",
+      "sha256": "5e3bac80427ef939bdde51887b4c4e37a5a263c169b16218956a24ace488785f"
+    }
+  ],
+  "requestId": "fcb21ed9-d092-4027-975e-c3edb577afa3",
+  "requestSha256": "4f356843d2e076d19305f22f3a6a6cf0a0d37cd3da8079216f6ee824d946571d",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 10327363204,
+    "digest": "sha256:b073f0d110042e652bed1d1c1ce854adf1804d871d09f0c0a1205ae7655f029e",
+    "repository": "flighthq/flight",
+    "workflowRunId": 34788510597
+  }
+}
