@@ -4,7 +4,7 @@
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "43bcb37d9a5a44d81b8490439b9e43ac5d1e82f7",
+  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
   "height": 600,
   "identity": {
     "entry": "render-texture-sprite-axes",
@@ -16,14 +16,14 @@
   "pixelSha256": "0e7da407064377b8f36348f87d5b9d04ba57a9eb4a5622711c6ecb5c20e74d85",
   "provenance": {
     "frames": 1,
-    "sourceHash": "757ff6b03945a263fda5d0a3f33a670d78a3b5bc84a0232820a1474914ba2a66",
+    "sourceHash": "5d51e591efd36e9d1df526bf56b077c4fbc9ca23481f06987255e82a05179a92",
     "targetKind": "webgl",
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "4f67e9f8-bbe1-48b6-8213-22ffcb145e0b",
-    "sha256": "0cd69e0cbc24f0fb1e92d11186e2126f471c0ebd076880312c163ff3f882b303"
+    "id": "0832a083-94c3-4862-895b-73c4d1790228",
+    "sha256": "3db5cced2774ace610f0387a365396d763cc3907c744b11f8b1ec07afe62d69c"
   },
   "schemaVersion": 1,
   "width": 800
