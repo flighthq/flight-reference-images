@@ -4,7 +4,7 @@
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "1274ec5c923947dc64d5ffedcbd8169fc758cd9f",
+  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
   "height": 600,
   "identity": {
     "entry": "sprite-atlas",
@@ -16,14 +16,14 @@
   "pixelSha256": "7958c1e5cce1089e7b835cafceb85e366040f3c1eaaff624c117841abe2c334b",
   "provenance": {
     "frames": 1,
-    "sourceHash": "ddfeb31995ec9cc058cd5ffbf816c4a6de0a8f2aa39b75ad6f152780463c92ae",
+    "sourceHash": "f7fa20f0312a303ef62ddb22d99b139bb1736314418c94548027b992229da4df",
     "targetKind": "canvas",
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "e28248eb-6b7b-41e0-bd81-71e9ec95b204",
-    "sha256": "90b2737415652a96155078cdddab53a3045ba63735321968ed3def180b4d28fc"
+    "id": "be4ca7b5-b128-40e4-9f63-4db4965a8550",
+    "sha256": "57307ed1f4b7d9c0c17f8d96b86a66afad6b0117da4cc52f8eb84667447aeaae"
   },
   "schemaVersion": 1,
   "width": 800

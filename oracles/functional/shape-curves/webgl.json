@@ -4,7 +4,7 @@
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "b82d313abae5abbfe0568f8a0ecf7e7cf834d269",
+  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
   "height": 600,
   "identity": {
     "entry": "shape-curves",
@@ -22,8 +22,8 @@
     "warmupFrames": 0
   },
   "request": {
-    "id": "561695d1-61da-4c25-ae1a-f8ecb893bf36",
-    "sha256": "0a98a48f5c77859bf6cbbe4dc13f9d08395ffeb136d2e5aa35a92d186f6080ce"
+    "id": "2700a823-b316-422f-9b46-32abf64aae08",
+    "sha256": "728f1fe37cf216331a6e23638ab7e327d9850e5caad0a982ed08f0523131aff4"
   },
   "schemaVersion": 1,
   "width": 800

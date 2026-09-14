@@ -4,7 +4,7 @@
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "f69160b30438f81d8ec0f7641b68cd1acef88df2",
+  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
   "height": 600,
   "identity": {
     "entry": "bitmap-smoothing",
@@ -16,14 +16,14 @@
   "pixelSha256": "3a066bd38f858b56582490e909f2d17f19ec832d0a9e2a0179e124b4cd53772d",
   "provenance": {
     "frames": 1,
-    "sourceHash": "32ddc26d2147b7a9dda397b0ed0ac99534f6365b297f7ff1cb33b665ce5a5949",
+    "sourceHash": "ef9b72dc495c4300a8e2da775bb4712d5235d0a0311de1038bd5e32facf5063e",
     "targetKind": "webgl",
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "b099215a-0376-475e-b27b-67e2fc238a2c",
-    "sha256": "3327d15700e39669fd2198bca92a6d207704321492470d8fd997c33996886511"
+    "id": "d814ef8a-ddee-4307-9a4d-943afdab3290",
+    "sha256": "018fc3716ced2b5e2053d662eaa722e7b30b390d5bb2a17c7190941adbe51c06"
   },
   "schemaVersion": 1,
   "width": 800

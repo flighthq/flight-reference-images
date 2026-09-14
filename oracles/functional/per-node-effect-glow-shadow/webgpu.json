@@ -1,10 +1,10 @@
 {
   "$schema": "../../../schemas/oracle-record.schema.json",
-  "artifactSha256": "e87eaea503b7743ee27a3e7e6c987e7583ae1b81468a1a26aca9beb67a0df84b",
+  "artifactSha256": "dc5891dd17f80b0bad412cb46c64a2e2fab04f715504e26d6b0a4c157c1ec94f",
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "ef4fae7fcce4981f09353ef665113c0034491f34",
+  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
   "height": 600,
   "identity": {
     "entry": "per-node-effect-glow-shadow",
@@ -13,17 +13,17 @@
   },
   "pack": "functional-other",
   "pixelFormat": "rgba8",
-  "pixelSha256": "876576ab41990c73ac3bef64a776522c63f358c7d36af74fc3356a65dcd9fd5a",
+  "pixelSha256": "dd0cb4e891a97e57079a6c6e41f23bd55453fb1f180b091f3053c6e96f101bed",
   "provenance": {
     "frames": 1,
-    "sourceHash": "d69267c6404e3bf3bd90a954f1f58a57c538b70ff19596707a45c99b27d47acf",
+    "sourceHash": "3f0202c68f7e5bce14030f3f88f5a0d281f226c5e5a7ad2b4a901bd179c7dd65",
     "targetKind": "webgpu",
     "verifyPublished": true,
     "warmupFrames": 0
   },
   "request": {
-    "id": "1024f6e7-017d-4810-b5d3-0a98aca1e2c9",
-    "sha256": "15c253253a76f55e1eb9b9c07432e1c832f9f1112fb4279aaa6a767e44bd2603"
+    "id": "91954f6c-67d9-438e-b6d6-5fd10ff37d02",
+    "sha256": "b0fedf714413c09f64f570477b79d79a22c513146570bd44b82b4fc66abc2bfe"
   },
   "schemaVersion": 1,
   "width": 800
