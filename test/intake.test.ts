@@ -702,6 +702,28 @@ describe('completeFlight', () => {
     await expect(readFile(join(requestRoot, `${fixture.request.id}.json`))).rejects.toThrow();
     await expect(readFile(join(requestRoot, 'historical-changed.json'))).resolves.toBeDefined();
   });
+
+  it('treats an already absent newly fulfilled request as reconciled', async () => {
+    const fixture = await makeFixture('captured');
+    await installFirstRelease(fixture, join(workspace, 'already-absent-request-prepared'));
+    const flightRoot = join(workspace, 'already-absent-flight');
+    await mkdir(join(flightRoot, 'reference-image-requests'), { recursive: true });
+    await mkdir(join(flightRoot, 'scripts'), { recursive: true });
+
+    const result = await reconcileFlight({
+      flightRoot,
+      oracleCommit: '8'.repeat(40),
+      oracleRoot: fixture.repositoryRoot,
+      requestIds: [fixture.request.id],
+    });
+
+    expect(result.alreadyAbsentRequestIds).toEqual([fixture.request.id]);
+    expect(result.removedRequestIds).toEqual([]);
+    expect(result.retainedChangedRequestIds).toEqual([]);
+    await expect(readFile(join(flightRoot, 'scripts', 'reference-image-lock.json'), 'utf8')).resolves.toContain(
+      '"oracleCommit": "8888888888888888888888888888888888888888"',
+    );
+  });
 });
 
 interface Fixture {

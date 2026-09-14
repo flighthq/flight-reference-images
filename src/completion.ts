@@ -23,6 +23,7 @@ export interface ReconcileFlightOptions {
 }
 
 export interface ReconcileFlightResult {
+  alreadyAbsentRequestIds: string[];
   lock: ReferenceImageLock;
   removedRequestIds: string[];
   retainedChangedRequestIds: string[];
@@ -52,12 +53,13 @@ export async function reconcileFlight(options: Readonly<ReconcileFlightOptions>)
   for (const requestId of requiredRequestIds) requireCurrentSourceRequest(context.state, requestId);
 
   const removable: Array<{ id: string; path: string }> = [];
+  const alreadyAbsentRequestIds: string[] = [];
   const retainedChangedRequestIds: string[] = [];
   for (const sourceRequest of context.state.manifest.sourceRequests) {
     const path = join(context.flightRoot, 'reference-image-requests', `${sourceRequest.id}.json`);
     const actualRequestSha256 = await hashFileIfPresent(path);
     if (actualRequestSha256 === null) {
-      if (requiredRequestIds.has(sourceRequest.id)) throw new Error(`Flight request ${sourceRequest.id} is missing`);
+      if (requiredRequestIds.has(sourceRequest.id)) alreadyAbsentRequestIds.push(sourceRequest.id);
       continue;
     }
     if (actualRequestSha256 === sourceRequest.requestSha256) {
@@ -73,6 +75,7 @@ export async function reconcileFlight(options: Readonly<ReconcileFlightOptions>)
   await writeCanonicalJson(join(context.flightRoot, 'scripts', 'reference-image-lock.json'), context.lock);
   for (const request of removable) await unlink(request.path);
   return {
+    alreadyAbsentRequestIds,
     lock: context.lock,
     removedRequestIds: removable.map((request) => request.id),
     retainedChangedRequestIds,
