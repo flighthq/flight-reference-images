@@ -3,54 +3,54 @@
   "baseRecords": [
     {
       "path": "oracles/functional/camera2d-viewport/canvas.json",
-      "sha256": "bfba32df29fa1fc29138ea39248a60b4893fec298bb06a750c4f8e39bb5cde97"
+      "sha256": "ebaf311edfde2e75ef2ccef7b08bd527a8f9c1966ce3a8af77b5eedf2212d2f4"
     },
     {
       "path": "oracles/functional/camera2d-viewport/dom.json",
-      "sha256": null
+      "sha256": "27ad9cfa1c019e6e4ce11d912ba359b7fa3632f92907ff68b9b1a8ed7e6609e4"
     },
     {
       "path": "oracles/functional/camera2d-viewport/webgl.json",
-      "sha256": null
+      "sha256": "41e32537b9cf95b56c725f0dbd17b598e623785710861e3bbd710cc3a9870a71"
     },
     {
       "path": "oracles/functional/camera2d-viewport/webgpu.json",
-      "sha256": null
+      "sha256": "3f634b9ec42283a1eb308c8cc358232f0e7b7d7210ce91563d5f4b130cc457d5"
     }
   ],
   "candidateSha256": "76b2862327fb80305831f417479b8acfbe773a6378c38a3f436ee4a4348e7696",
-  "flightCommit": "2ab4a06667b0db0751b848e22fd7999f391b29b2",
+  "flightCommit": "2b6bfa33110e26cbdd959441a6c36a4c78109ab8",
   "preparedArtifact": {
-    "artifactId": 10329581574,
-    "digest": "sha256:929398218d1c1add539eb01572d132ba397ccf9835044face6c090cde4373cbb",
+    "artifactId": 10366849657,
+    "digest": "sha256:301c9a83b75aa47fc6b289951628b6bb1dba132da3e8beed2c0a1b81ed28d406",
     "repository": "flighthq/flight-reference-images",
-    "workflowRunId": 34795274347
+    "workflowRunId": 34892125858
   },
   "records": [
     {
       "path": "oracles/functional/camera2d-viewport/canvas.json",
-      "sha256": "aae53afa601c6827b460694a33e5445609d8ea96d217ed56a4220e5ae0f0e0e0"
+      "sha256": "5feac880d22ded1c9d2d01666d3ac631f32432b4660f16a09e4ba5f43a58488e"
     },
     {
       "path": "oracles/functional/camera2d-viewport/dom.json",
-      "sha256": "77be49e7427562d6bea340b175a51f0f74e1117b7aa2f2b680a21a43c85cf9ba"
+      "sha256": "e53678368673f1b8712e1305b354da1976ea42aa2102bf8ce3d1ac11ef98b587"
     },
     {
       "path": "oracles/functional/camera2d-viewport/webgl.json",
-      "sha256": "c39278452428ad5d8b13500d197268eb95f2fec303091be966fa00bf8e98e958"
+      "sha256": "7394da2c8782b4c47dbe514da11e60cb1daf348d4d46b76f16586c5f8fe5341e"
     },
     {
       "path": "oracles/functional/camera2d-viewport/webgpu.json",
-      "sha256": "6b78d5269912e1c8163b605540a2e79d5c6b5ebae482ef3ae04c5a5a14f3b32e"
+      "sha256": "6767b814b237ac766ceed12c99b7914f477295a683a455d4008c428d0f09928f"
     }
   ],
   "requestId": "9db25a20-74c1-4ba8-ac48-60aafc2410a0",
   "requestSha256": "7d905a59f40ff8e530a6545c8221cc28445f8e9491dc5f522dcf4bcdc75414fc",
   "schemaVersion": 1,
   "sourceArtifact": {
-    "artifactId": 10327034074,
-    "digest": "sha256:db1f2e3c683b542fe261a7236301d77e563a616f79c20e2e64e4865ee03c27ee",
+    "artifactId": 10367226255,
+    "digest": "sha256:495e72520a85818cd18c238324c944112edfc7f9d06086f6c8117a2c54c280c5",
     "repository": "flighthq/flight",
-    "workflowRunId": 34788510597
+    "workflowRunId": 34891265939
   }
 }

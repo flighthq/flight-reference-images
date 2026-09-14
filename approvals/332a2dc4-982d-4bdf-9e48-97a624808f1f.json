@@ -3,38 +3,38 @@
   "baseRecords": [
     {
       "path": "oracles/functional/effect-gradient-bevel/webgl.json",
-      "sha256": null
+      "sha256": "e07617c14939fdcc561087c50f337fb8aa8ac85a7780f65f4f647c4d8cdc9ce8"
     },
     {
       "path": "oracles/functional/effect-gradient-bevel/webgpu.json",
-      "sha256": null
+      "sha256": "9f3fac740d1a7207f27231bb89d72b63f8dfb6fb22096bb5eee85606d3873a9d"
     }
   ],
   "candidateSha256": "0723643a4371314b79c9dfa7da63279b23ddbec46ea89e29549edb026414e7c1",
-  "flightCommit": "2ab4a06667b0db0751b848e22fd7999f391b29b2",
+  "flightCommit": "2b6bfa33110e26cbdd959441a6c36a4c78109ab8",
   "preparedArtifact": {
-    "artifactId": 10329228350,
-    "digest": "sha256:42ecb1f95a0475f5794e6f5b2d3df92cb4a5a117b1214dcec591ee1a2dcb9008",
+    "artifactId": 10366933923,
+    "digest": "sha256:d1096f892dabee159840ff7de054cc748ac7c005f6d88190c26e166c472375a6",
     "repository": "flighthq/flight-reference-images",
-    "workflowRunId": 34795274347
+    "workflowRunId": 34892125858
   },
   "records": [
     {
       "path": "oracles/functional/effect-gradient-bevel/webgl.json",
-      "sha256": "3aab87cb8c711c4771d67ddd73d64d94784eace7078758714077ffda62e050bd"
+      "sha256": "23fda3b7752db3cc977f8663d4ba55c33a3562a03908e8bc5154fd9f881e5ec9"
     },
     {
       "path": "oracles/functional/effect-gradient-bevel/webgpu.json",
-      "sha256": "788753db5e32acd33bb489203f25b68ef488f15ad06e7305e1f9814fa4a52773"
+      "sha256": "83d5fe1b1d022c4bcff8606219fd011d38eb7336f95a971c6d886b1d115c669b"
     }
   ],
   "requestId": "332a2dc4-982d-4bdf-9e48-97a624808f1f",
   "requestSha256": "dc07841e224d9d7349757538b36b2d8a437c319878a7fafeb1fc36007514f7bb",
   "schemaVersion": 1,
   "sourceArtifact": {
-    "artifactId": 10326664373,
-    "digest": "sha256:36762914bc6f77a8127059fb252a424df9bd92bc1a17c4cd541c1fd84a130299",
+    "artifactId": 10367201039,
+    "digest": "sha256:a7e0a65a9eb0de09b7a0626a4ae7a8034b67b35dde9d4bfdec1deb515cbfb436",
     "repository": "flighthq/flight",
-    "workflowRunId": 34788510597
+    "workflowRunId": 34891265939
   }
 }

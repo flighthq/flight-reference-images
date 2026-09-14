@@ -3,54 +3,54 @@
   "baseRecords": [
     {
       "path": "oracles/functional/rive-import/canvas.json",
-      "sha256": "3d6599a46d3ebe71c5b096befd35a3ecea65e4b48a50f1052f453b3dddc98249"
+      "sha256": "9a1ecb87d43c47da574290a9d5b9d0bfdb226cdb722f0ea4010fe5b2b28b1f3c"
     },
     {
       "path": "oracles/functional/rive-import/dom.json",
-      "sha256": "4bfd97dc542d260d5764c6be363c24e75ada61d7157e94c6a5d272e7b91c2649"
+      "sha256": "f62004856ddde68731b9ea0026697191e2ee6d34e91b88fba3e62b53f94f4855"
     },
     {
       "path": "oracles/functional/rive-import/webgl.json",
-      "sha256": "d7958ecfb68c5f6f5a7c584ddeb5a9793c80a9e53a8cb166a0bd0859d4a37e9e"
+      "sha256": "e61e37bfd4dcfd108e332cd8f747856c09981c25b75a9b9a29bce12fe3de61f8"
     },
     {
       "path": "oracles/functional/rive-import/webgpu.json",
-      "sha256": "305cc91353b442ff796f241586a95862dab48f0fdd3e29c3aa045eae514fcda1"
+      "sha256": "2a9666e6afc8b1b8b69b79a81f46a22e09dc6c9b6dd3a5edf5abfadb0cd47aa1"
     }
   ],
   "candidateSha256": "29ac2badaa9c8727b100396d121ce7b757becb6b527cc48ef06e6996cc42f6df",
-  "flightCommit": "2ab4a06667b0db0751b848e22fd7999f391b29b2",
+  "flightCommit": "2b6bfa33110e26cbdd959441a6c36a4c78109ab8",
   "preparedArtifact": {
-    "artifactId": 10329373070,
-    "digest": "sha256:1a00232057407f6460abffb104c5e3317ee9a236349fb8a5691bf31795c76999",
+    "artifactId": 10367506848,
+    "digest": "sha256:debdad2795dee75f10dd7fa94e8b11efb98f0dc159d2e1f096af80ac5ce2e116",
     "repository": "flighthq/flight-reference-images",
-    "workflowRunId": 34795274347
+    "workflowRunId": 34892125858
   },
   "records": [
     {
       "path": "oracles/functional/rive-import/canvas.json",
-      "sha256": "236515af4fee7e6d41868153bc29dba433270efc4df4b1dcfa93bb1f933616ef"
+      "sha256": "b778104d579e533e590aa8f403ee96aded1d51e4d7c3482b878e009b1ad5b12e"
     },
     {
       "path": "oracles/functional/rive-import/dom.json",
-      "sha256": "16db2b920bb4e57500633a881945f24190ad74ff0489e682f2499316f0ccd729"
+      "sha256": "7af34413b54cbfef9c065585de79e677ff9a505987d0c4026ecc17d25e5c3e69"
     },
     {
       "path": "oracles/functional/rive-import/webgl.json",
-      "sha256": "2a145b56540e12d4e02b5e87796e31ab26b79265d402677b3c22975384540c7f"
+      "sha256": "4f5f1c9106a131eaeb3e4e6e150b95258a1cf3995d118317417f0c4801dd21ec"
     },
     {
       "path": "oracles/functional/rive-import/webgpu.json",
-      "sha256": "6c3d3457d0602c40c449fc3147d368491682daa4a13514ae2a39ff248b70cdef"
+      "sha256": "7d7a0f699c4dc3e2b22938b1d6a22cbc5680f8f3860e4330bda8b8fec357194b"
     }
   ],
   "requestId": "e0f19f3c-283f-4670-baf9-7995c93994e9",
   "requestSha256": "f5e0197ad989bf05c30feb9a6af84805744b5c2ddcbea79f48d49ac412331554",
   "schemaVersion": 1,
   "sourceArtifact": {
-    "artifactId": 10327213547,
-    "digest": "sha256:11b72e228477696926b44320bdac9f40c52c75e57f40d77371685cccdfd89a12",
+    "artifactId": 10367315341,
+    "digest": "sha256:b3f9d998de0aa7a861f32dfdcc434909eaf561dd7862521eccb9f45e238e646a",
     "repository": "flighthq/flight",
-    "workflowRunId": 34788510597
+    "workflowRunId": 34891265939
   }
 }

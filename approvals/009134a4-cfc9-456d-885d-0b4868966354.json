@@ -3,38 +3,38 @@
   "baseRecords": [
     {
       "path": "oracles/functional/effect-drop-shadow/webgl.json",
-      "sha256": null
+      "sha256": "16c854e0af50f7be4f3a44e1ac31440d483d3105c809434ed244590ed07d73a0"
     },
     {
       "path": "oracles/functional/effect-drop-shadow/webgpu.json",
-      "sha256": null
+      "sha256": "f280051e345fd59d273fb7e9f8942955a0517d28f373adfa78dee9da3cb81a8c"
     }
   ],
   "candidateSha256": "9f206c21518a2a49c1b08355f7c5859621efe44e3fe23b4a3723257e609a4ae1",
-  "flightCommit": "2ab4a06667b0db0751b848e22fd7999f391b29b2",
+  "flightCommit": "2b6bfa33110e26cbdd959441a6c36a4c78109ab8",
   "preparedArtifact": {
-    "artifactId": 10329243234,
-    "digest": "sha256:3907cbef06cfc0be901a4878154e5a26a87478f421225f96128ff08b47d64f6d",
+    "artifactId": 10367641092,
+    "digest": "sha256:289838febe26bee52c002e81eca034be85203b7b8d907ea003f7bb9970d830bc",
     "repository": "flighthq/flight-reference-images",
-    "workflowRunId": 34795274347
+    "workflowRunId": 34892125858
   },
   "records": [
     {
       "path": "oracles/functional/effect-drop-shadow/webgl.json",
-      "sha256": "19fd36990135572b2c86a2bfdd1a8a879b2e08fabb1383f5bf4911da161ea3ac"
+      "sha256": "a34718b6e0f76ec5b4a45bc6908c0bfb2df35fb38aca295e9fa931c2d9162a25"
     },
     {
       "path": "oracles/functional/effect-drop-shadow/webgpu.json",
-      "sha256": "2bea498c1086a431ae33e0f0027ced312f2b2f126f5721ddee3c08eaa755099f"
+      "sha256": "93a90940a6c922a2696c099489ff4d7dc7a7d601ccec1cc9853cd09906b00f9e"
     }
   ],
   "requestId": "009134a4-cfc9-456d-885d-0b4868966354",
   "requestSha256": "eb277b2c753b27910338395ecb8ca30dfb6c9c08000a2c010bf10aba1b9cfabc",
   "schemaVersion": 1,
   "sourceArtifact": {
-    "artifactId": 10327084091,
-    "digest": "sha256:bfa9926b2ca5570d3fffb19685928e5e69df49d3eb559feef74ee27bbb333a12",
+    "artifactId": 10367695050,
+    "digest": "sha256:9007ed56eee1a333e470623bab4a32270c91edb8eba2edbda9cff3adc7a36a42",
     "repository": "flighthq/flight",
-    "workflowRunId": 34788510597
+    "workflowRunId": 34891265939
   }
 }

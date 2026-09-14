@@ -3,54 +3,54 @@
   "baseRecords": [
     {
       "path": "oracles/functional/shape-arc-fill/canvas.json",
-      "sha256": null
+      "sha256": "a30079c19108c5497bd8fffcb5fc45309e8ff6d19669a300fa50adf7003f1151"
     },
     {
       "path": "oracles/functional/shape-arc-fill/dom.json",
-      "sha256": null
+      "sha256": "5b3788cdb6d3c2b1cd09fccb7c06b8dea84e8d3db37f84d7d414337b3b4e19b9"
     },
     {
       "path": "oracles/functional/shape-arc-fill/webgl.json",
-      "sha256": null
+      "sha256": "434d3da3741c6906006c8d657fe1191460e3dd4227f2b76834febf297cc8fe81"
     },
     {
       "path": "oracles/functional/shape-arc-fill/webgpu.json",
-      "sha256": null
+      "sha256": "6cca8418f241e754b00919a519f22f398ab69582caa72419ee1f0631968be092"
     }
   ],
   "candidateSha256": "a4e85da4df1a6e4227d8a523f16e78c2642071a40b695deb7bf28df0cf464d68",
-  "flightCommit": "2ab4a06667b0db0751b848e22fd7999f391b29b2",
+  "flightCommit": "2b6bfa33110e26cbdd959441a6c36a4c78109ab8",
   "preparedArtifact": {
-    "artifactId": 10329183382,
-    "digest": "sha256:bc2c7040fb1a0699d4122f965d6d950627fb8afe7d83f81d0cc41b93fb5f7941",
+    "artifactId": 10367601022,
+    "digest": "sha256:246bed68d82eb1cc649c99143fb2830f85ec9f3b1686eaa87d0250c875350054",
     "repository": "flighthq/flight-reference-images",
-    "workflowRunId": 34795274347
+    "workflowRunId": 34892125858
   },
   "records": [
     {
       "path": "oracles/functional/shape-arc-fill/canvas.json",
-      "sha256": "452ea830204c4376ee34d8898af8a22d73e6c14b6de9ba22791aef64e55fb7db"
+      "sha256": "69083b5062a050c8d36520f75187e3f30ce55613d3eb86bf628ea6f4f81b8f35"
     },
     {
       "path": "oracles/functional/shape-arc-fill/dom.json",
-      "sha256": "a0d47f92693c6b51e008a7a4ae7614082bd026cfc80434b1ed7f177bbe6f1fad"
+      "sha256": "0e67356795e193c3e80f0c3a1c8104b4c2e85f05932f560e0d5ca52a82e3a508"
     },
     {
       "path": "oracles/functional/shape-arc-fill/webgl.json",
-      "sha256": "a62b557ca9feeae66b06aeecfee52cc08f5632e92d8a0df5ced12126c58738cc"
+      "sha256": "36430fa7bb0306468430335f870c861aee320ea960a5c97f398fad79841020b7"
     },
     {
       "path": "oracles/functional/shape-arc-fill/webgpu.json",
-      "sha256": "81ec58dee325d0b8bf7a800a38a0977263e978e80bd0780c9e726303a2c373f6"
+      "sha256": "6933ec1c6cfcfa7003cf48b5247d009f6eca9ad3b7ade255764145c1332cb9a5"
     }
   ],
   "requestId": "4019545d-93b9-423e-b552-830a7218db34",
   "requestSha256": "3de6fa5c074dde6cd5d5f35d045bfe88bfd417de3be0965c14e82fc13364b307",
   "schemaVersion": 1,
   "sourceArtifact": {
-    "artifactId": 10326969310,
-    "digest": "sha256:926a5f0545e448efc6d325a766a048f0ac8d46d1d3b64e7b826849788ad9364d",
+    "artifactId": 10367190738,
+    "digest": "sha256:a1defe767b4dd53985d8a2c780b79d52985ea79a1bf5b9d59dda6d55e26a829b",
     "repository": "flighthq/flight",
-    "workflowRunId": 34788510597
+    "workflowRunId": 34891265939
   }
 }

@@ -3,38 +3,38 @@
   "baseRecords": [
     {
       "path": "oracles/functional/effect-bevel/webgl.json",
-      "sha256": null
+      "sha256": "37b4e1d09f8123d08ec63080323bbb34c0d788a61d1fe8cf18d62c05a750f290"
     },
     {
       "path": "oracles/functional/effect-bevel/webgpu.json",
-      "sha256": null
+      "sha256": "486663e054c6618dddde0f9836323703d586b1737576cd8496fead167f580bab"
     }
   ],
   "candidateSha256": "5e5d6075ed73cb808f78a1af0d737939d91671698dbad4f02c61c25952fd2a05",
-  "flightCommit": "2ab4a06667b0db0751b848e22fd7999f391b29b2",
+  "flightCommit": "2b6bfa33110e26cbdd959441a6c36a4c78109ab8",
   "preparedArtifact": {
-    "artifactId": 10329826192,
-    "digest": "sha256:e6c99ee4f6b980225f4d71ec058c5d2602e8cad46b058bcdd81665be6a1bc071",
+    "artifactId": 10367740821,
+    "digest": "sha256:d328ba97599295bc2039bf628fd59cb39365086f0c5e466e335cae83284742db",
     "repository": "flighthq/flight-reference-images",
-    "workflowRunId": 34795274347
+    "workflowRunId": 34892125858
   },
   "records": [
     {
       "path": "oracles/functional/effect-bevel/webgl.json",
-      "sha256": "ddedfe987e1e9c63561206df4822e0d6aa3e7b44a9aaa33e7769c82d26658d4f"
+      "sha256": "f97a35dcf1029961679f616c1831a5d869702b2911ddcbf35d99ef1ad4f4c82b"
     },
     {
       "path": "oracles/functional/effect-bevel/webgpu.json",
-      "sha256": "9851adaa4a1fc52cdf88b7c51633a00b1069bbc0203b3f592f3d92ce1612b990"
+      "sha256": "033abf2a3961fe5c861b503cb23b3e49445f97ea00a562478b6866355ba85ae8"
     }
   ],
   "requestId": "ef42b07b-476b-4644-a4f0-520db4ee19c2",
   "requestSha256": "7dfcb44b1847216b6dcea4a8c9fc17b03bcdd6aaae6c4eac2acf63d9243d13c4",
   "schemaVersion": 1,
   "sourceArtifact": {
-    "artifactId": 10326539713,
-    "digest": "sha256:de139de24f98d91f540214e3036e49a9a126ac359728dd272beb66c7b9bc2824",
+    "artifactId": 10367330837,
+    "digest": "sha256:0940b3633889ec073d1026d4d0fc2889640e4dee540a9cecd7ac13cd39aab24f",
     "repository": "flighthq/flight",
-    "workflowRunId": 34788510597
+    "workflowRunId": 34891265939
   }
 }
