@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { renderApprovalSummary, requestDisplayLabel } from './approval.js';
 import { resolveBatchApprovalArtifacts } from './batch-approval.js';
 import { completeFlight, reconcileFlight } from './completion.js';
-import { expandBatchDispatch } from './dispatch.js';
+import { expandBatchDispatch, planBatchDispatch } from './dispatch.js';
 import {
   applyPreparedIntake,
   applyPreparedBatch,
@@ -64,20 +64,29 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === 'dispatch-plan') {
+    const file = resolve(requiredOption(arguments_, '--file'));
+    const root = resolve(option(arguments_, '--root') ?? '.');
+    const pendingPath = resolve(requiredOption(arguments_, '--pending'));
+    const pendingRequestIds = identifierArray(await readJson(pendingPath), pendingPath);
+    const repository = await readRepository(root);
+    const mergedRequestIds = new Set([
+      ...[...repository.approvals.values()].map((approval) => approval.requestId),
+      ...repository.manifest.sourceRequests.map((request) => request.id),
+    ]);
+    console.log(JSON.stringify(planBatchDispatch(await readJson(file), mergedRequestIds, new Set(pendingRequestIds))));
+    return;
+  }
+
   if (command === 'batch-approval-artifacts') {
     const file = resolve(requiredOption(arguments_, '--file'));
+    const expectedPath = resolve(requiredOption(arguments_, '--expected-request-ids'));
     const artifacts = resolveBatchApprovalArtifacts(
       await readJson(file),
       positiveIntegerOption(arguments_, '--workflow-run-id'),
-      positiveIntegerOption(arguments_, '--expected-count'),
+      identifierArray(await readJson(expectedPath), expectedPath),
     );
-    console.log(
-      artifacts
-        .map(({ artifactDigest, artifactId, reportId, requestId }) =>
-          [requestId, artifactId, artifactDigest, reportId].join('\t'),
-        )
-        .join('\n'),
-    );
+    console.log(JSON.stringify(artifacts));
     return;
   }
 
@@ -298,6 +307,18 @@ function option(arguments_: readonly string[], name: string): string | undefined
   const value = arguments_[index + 1];
   if (value === undefined || value.startsWith('--')) throw new Error(`${name} requires a value`);
   return value;
+}
+
+function identifierArray(value: unknown, source: string): string[] {
+  if (
+    !Array.isArray(value) ||
+    value.some((item) => typeof item !== 'string' || !/^[a-z0-9][a-z0-9-]{0,119}$/u.test(item))
+  ) {
+    throw new Error(`${source} must contain an array of request ids`);
+  }
+  const requestIds = value as string[];
+  if (new Set(requestIds).size !== requestIds.length) throw new Error(`${source} repeats a request id`);
+  return requestIds;
 }
 
 main().catch((error: unknown) => {

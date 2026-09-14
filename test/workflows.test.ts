@@ -157,6 +157,8 @@ describe('GitHub Actions workflows', () => {
     expect(intakeText).not.toContain('startswith($stable + "-")');
     expect(intakeText).toContain('--force-with-lease="refs/heads/${branch}:${expected}"');
     expect(intakeText).toContain('gh pr edit "${pull_request}"');
+    expect(intakeText).toContain('ignoring retried artifact bindings');
+    expect(intakeText).not.toContain('already merged with different artifact bindings');
     expect(intakeText).not.toContain('create_options+=(--draft)');
     expect(intakeText).not.toContain('git add manifest.json oracles candidates');
     for (const name of ['prepare', 'open-pr']) {
@@ -171,13 +173,15 @@ describe('GitHub Actions workflows', () => {
     const intakeJob = job(batch, 'intake');
 
     expect(batchText).toContain('npm run schema:check -- --schema dispatch-batch');
-    expect(batchText).toContain('npm run --silent dispatch:expand');
+    expect(batchText).toContain('npm run --silent dispatch:plan');
+    expect(batchText).toContain('Candidate already accepted');
     expect(intakeJob.strategy).toMatchObject({ 'fail-fast': false, 'max-parallel': 12 });
     expect(intakeJob.uses).toBe('./.github/workflows/intake.yml');
     expect(JSON.stringify(intakeJob.with)).toContain('matrix.candidate.artifactDigest');
     expect(intakeJob.with?.['approval_mode']).toBe('batch');
     expect(intake.on?.workflow_call?.inputs?.artifact_id).toMatchObject({ required: true, type: 'number' });
     expect(intake.on?.workflow_call?.inputs?.approval_mode).toMatchObject({ required: false, type: 'string' });
+    expect(job(intake, 'prepare')['continue-on-error']).toBe("${{ inputs.approval_mode == 'batch' }}");
     expect(job(intake, 'open-pr').if).toBe("inputs.approval_mode != 'batch'");
     expect(intake.on?.workflow_call?.secrets).toEqual({
       ORACLE_APP_ID: { required: true },
@@ -185,17 +189,23 @@ describe('GitHub Actions workflows', () => {
     });
   });
 
-  it('opens one atomic approval PR for a complete successful batch', async () => {
+  it('opens one approval PR for every successful member of a best-effort batch', async () => {
     const batchText = await readFile(join('.github', 'workflows', 'intake-batch.yml'), 'utf8');
     const batch = parse(batchText);
     const writer = job(batch, 'open-batch-pr');
 
-    expect(writer.needs).toEqual(['validate', 'intake']);
+    expect(batch.concurrency).toEqual({ group: 'reference-image-candidate-batch-intake', 'cancel-in-progress': false });
+    expect(writer.needs).toEqual(['validate', 'release-ready', 'intake']);
+    expect(writer.if).toContain('always()');
     expect(writer.permissions).toEqual({ actions: 'read', contents: 'read' });
     expect(batchText).toContain('npm run --silent batch:approval-artifacts');
     expect(batchText).toContain('npm run intake:approve');
-    expect(batchText).toContain('refusing a partial batch approval PR');
+    expect(batchText).toContain('a later Flight run can retry it');
+    expect(batchText).toContain('git pull --ff-only origin main');
+    expect(batchText).not.toContain('refusing a partial batch approval PR');
+    expect(batchText).not.toContain('already merged with different artifact bindings');
     expect(batchText).toContain('stable_branch="approval-batch/${SOURCE_RUN_ID}"');
+    expect(batchText).toContain('placing only newly recovered candidates in a supplemental PR');
     expect(batchText.match(/gh pr create/gu)).toHaveLength(1);
     expect(batchText).toContain('Merging blesses every approval record in this PR');
   });
@@ -259,8 +269,15 @@ interface Workflow {
       needs?: string | string[];
       outputs?: Record<string, unknown>;
       permissions: Record<string, string>;
+      'continue-on-error'?: boolean | string;
       strategy?: Record<string, unknown>;
-      steps?: { name?: string; run?: string; uses?: string; with?: Record<string, unknown> }[];
+      steps?: {
+        'continue-on-error'?: boolean | string;
+        name?: string;
+        run?: string;
+        uses?: string;
+        with?: Record<string, unknown>;
+      }[];
       uses?: string;
       with?: Record<string, unknown>;
     }

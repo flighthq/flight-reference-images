@@ -1,6 +1,14 @@
 import { assertSchema } from './schemas.js';
 import type { BatchDispatchEnvelope, DispatchEnvelope } from './types.js';
 
+export interface BatchDispatchPlan {
+  candidates: DispatchEnvelope[];
+  skipped: Array<{
+    reason: 'already-merged' | 'already-under-review';
+    requestId: string;
+  }>;
+}
+
 export function expandBatchDispatch(value: unknown): DispatchEnvelope[] {
   assertSchema<BatchDispatchEnvelope>('dispatch-batch', value);
   const requestPaths = new Set<string>();
@@ -28,4 +36,24 @@ export function expandBatchDispatch(value: unknown): DispatchEnvelope[] {
       schemaVersion: 1,
       workflowRunId: value.workflowRunId,
     }));
+}
+
+export function planBatchDispatch(
+  value: unknown,
+  mergedRequestIds: ReadonlySet<string>,
+  pendingRequestIds: ReadonlySet<string>,
+): BatchDispatchPlan {
+  const candidates: DispatchEnvelope[] = [];
+  const skipped: BatchDispatchPlan['skipped'] = [];
+  for (const candidate of expandBatchDispatch(value)) {
+    const requestId = candidate.requestPath.slice('reference-image-requests/'.length, -'.json'.length);
+    if (mergedRequestIds.has(requestId)) {
+      skipped.push({ reason: 'already-merged', requestId });
+    } else if (pendingRequestIds.has(requestId)) {
+      skipped.push({ reason: 'already-under-review', requestId });
+    } else {
+      candidates.push(candidate);
+    }
+  }
+  return { candidates, skipped };
 }

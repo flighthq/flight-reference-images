@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { expandBatchDispatch } from '../src/dispatch.js';
+import { expandBatchDispatch, planBatchDispatch } from '../src/dispatch.js';
 import type { BatchDispatchEnvelope } from '../src/types.js';
 
 describe('expandBatchDispatch', () => {
@@ -81,6 +81,32 @@ describe('expandBatchDispatch', () => {
     expect(() => expandBatchDispatch({ ...batch, candidates: [withoutDigest] })).toThrow(
       "must have required property 'artifactDigest'",
     );
+  });
+
+  it('keeps only requests that are neither merged nor already under review', () => {
+    const batch = makeBatch();
+    batch.candidates.push(
+      {
+        artifactDigest: `sha256:${'6'.repeat(64)}`,
+        artifactId: 124,
+        requestPath: 'reference-image-requests/merged.json',
+        requestSha256: '5'.repeat(64),
+      },
+      {
+        artifactDigest: `sha256:${'8'.repeat(64)}`,
+        artifactId: 125,
+        requestPath: 'reference-image-requests/pending.json',
+        requestSha256: '7'.repeat(64),
+      },
+    );
+
+    const plan = planBatchDispatch(batch, new Set(['merged']), new Set(['pending']));
+
+    expect(plan.candidates.map((candidate) => candidate.requestPath)).toEqual(['reference-image-requests/zulu.json']);
+    expect(plan.skipped).toEqual([
+      { reason: 'already-merged', requestId: 'merged' },
+      { reason: 'already-under-review', requestId: 'pending' },
+    ]);
   });
 });
 

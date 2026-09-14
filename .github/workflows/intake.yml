@@ -65,6 +65,7 @@ jobs:
   prepare:
     name: Validate and stage candidate without repository write credentials
     runs-on: ubuntu-latest
+    continue-on-error: ${{ inputs.approval_mode == 'batch' }}
     permissions:
       actions: write
       contents: read
@@ -307,11 +308,11 @@ jobs:
           approval_path="approvals/${REQUEST_ID}.json"
           if git ls-files --error-unmatch "${approval_path}" >/dev/null 2>&1; then
             if git diff --quiet -- "${approval_path}"; then
-              echo "approval ${REQUEST_ID} is already present on main"
+              echo "::warning title=Candidate already accepted::Approval ${REQUEST_ID} is already present on main"
               exit 0
             fi
-            echo "::error::approval ${REQUEST_ID} is already merged with different artifact bindings; use a new request id"
-            exit 1
+            echo "::warning title=Candidate already accepted::Approval ${REQUEST_ID} is already present on main; ignoring retried artifact bindings"
+            exit 0
           fi
 
           stable_branch="approval/${REQUEST_ID}"
