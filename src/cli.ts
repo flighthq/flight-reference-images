@@ -4,6 +4,7 @@ import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { renderApprovalSummary, requestDisplayLabel } from './approval.js';
+import { approvalBaseMismatch, selectPublishableApprovals } from './approval-selection.js';
 import { resolveBatchApprovalArtifacts } from './batch-approval.js';
 import { completeFlight, reconcileFlight } from './completion.js';
 import { expandBatchDispatch, planBatchDispatch } from './dispatch.js';
@@ -58,6 +59,23 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === 'approval-status') {
+    const root = resolve(option(arguments_, '--root') ?? '.');
+    const requestId = requiredIdentifierOption(arguments_, '--request-id');
+    const repository = await readRepository(root);
+    if (repository.manifest.sourceRequests.some((request) => request.id === requestId)) {
+      console.log('released');
+      return;
+    }
+    const approval = repository.approvals.get(`approvals/${requestId}.json`);
+    if (approval === undefined) {
+      console.log('absent');
+      return;
+    }
+    console.log(approvalBaseMismatch(approval, repository.records) === undefined ? 'publishable' : 'stale');
+    return;
+  }
+
   if (command === 'dispatch-expand') {
     const file = resolve(requiredOption(arguments_, '--file'));
     console.log(JSON.stringify(expandBatchDispatch(await readJson(file))));
@@ -71,7 +89,9 @@ async function main(): Promise<void> {
     const pendingRequestIds = identifierArray(await readJson(pendingPath), pendingPath);
     const repository = await readRepository(root);
     const mergedRequestIds = new Set([
-      ...[...repository.approvals.values()].map((approval) => approval.requestId),
+      ...[...repository.approvals.values()]
+        .filter((approval) => approvalBaseMismatch(approval, repository.records) === undefined)
+        .map((approval) => approval.requestId),
       ...repository.manifest.sourceRequests.map((request) => request.id),
     ]);
     console.log(JSON.stringify(planBatchDispatch(await readJson(file), mergedRequestIds, new Set(pendingRequestIds))));
@@ -87,6 +107,42 @@ async function main(): Promise<void> {
       identifierArray(await readJson(expectedPath), expectedPath),
     );
     console.log(JSON.stringify(artifacts));
+    return;
+  }
+
+  if (command === 'batch-pending-approvals') {
+    const root = resolve(option(arguments_, '--root') ?? '.');
+    const repository = await readRepository(root);
+    const released = new Set(repository.manifest.sourceRequests.map((request) => request.id));
+    const pending = [...repository.approvals.values()].filter((approval) => !released.has(approval.requestId));
+    const selection = selectPublishableApprovals(pending, repository.records);
+    console.log(JSON.stringify({ deferred: selection.deferred, selected: selection.selected }));
+    return;
+  }
+
+  if (command === 'batch-select-approvals') {
+    const root = resolve(option(arguments_, '--root') ?? '.');
+    const requestIdsPath = resolve(requiredOption(arguments_, '--request-ids'));
+    const requestIds = identifierArray(await readJson(requestIdsPath), requestIdsPath);
+    const requested = new Set(requestIds);
+    const repository = await readRepository(root);
+    const released = new Set(repository.manifest.sourceRequests.map((request) => request.id));
+    const candidates = requestIds.map((requestId) => {
+      if (released.has(requestId)) throw new Error(`cannot select released approval ${requestId}`);
+      const approval = repository.approvals.get(`approvals/${requestId}.json`);
+      if (approval === undefined) throw new Error(`cannot select missing approval ${requestId}`);
+      return approval;
+    });
+    const reserved = [...repository.approvals.values()].filter(
+      (approval) => !released.has(approval.requestId) && !requested.has(approval.requestId),
+    );
+    const selection = selectPublishableApprovals(candidates, repository.records, reserved);
+    console.log(
+      JSON.stringify({
+        deferred: selection.deferred,
+        selectedRequestIds: selection.selected.map((approval) => approval.requestId),
+      }),
+    );
     return;
   }
 
@@ -281,6 +337,12 @@ async function main(): Promise<void> {
 
 function positiveIntegerOption(arguments_: readonly string[], name: string): number {
   return parsePositiveInteger(requiredOption(arguments_, name), name);
+}
+
+function requiredIdentifierOption(arguments_: readonly string[], name: string): string {
+  const value = requiredOption(arguments_, name);
+  if (!/^[a-z0-9][a-z0-9-]{0,119}$/u.test(value)) throw new Error(`${name} must be a request id, got ${value}`);
+  return value;
 }
 
 function parsePositiveInteger(text: string, name: string): number {

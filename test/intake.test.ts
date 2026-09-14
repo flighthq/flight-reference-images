@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { PNG } from 'pngjs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { approvalBaseMismatch } from '../src/approval-selection.js';
 import { completeFlight, reconcileFlight } from '../src/completion.js';
 import {
   applyPreparedIntake,
@@ -118,7 +119,7 @@ describe('prepareIntake', () => {
     expect(replay).toEqual(batch);
   });
 
-  it('refuses to materialize approvals that change the same oracle record', async () => {
+  it('materializes a deterministic winner and defers approvals for the same oracle record', async () => {
     const fixture = await makeFixture('captured');
     const overlap = await makeSiblingFixture(fixture, 'shape-basic', 'shape-basic-webgl-second-2026-08-14');
     const preparedRoot = join(workspace, 'overlapping-approved-inputs');
@@ -133,15 +134,60 @@ describe('prepareIntake', () => {
         workflowRunId: 400 + index,
       });
     }
+    await rm(join(preparedRoot, overlap.request.id), { recursive: true });
 
+    const batchDirectory = join(workspace, 'overlapping-batch');
+    const batch = await prepareApprovedBatch({
+      outputDirectory: batchDirectory,
+      preparedRoot,
+      previousPackDirectory: join(workspace, 'previous-packs'),
+      repositoryRoot: fixture.repositoryRoot,
+    });
+
+    expect(batch.requestIds).toEqual([fixture.request.id]);
+    expect(batch.deferredApprovals).toEqual([
+      {
+        reason: `overlaps oracles/functional/shape-basic/webgl.json claimed by request ${fixture.request.id}`,
+        requestId: overlap.request.id,
+        sha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
+      },
+    ]);
+    const deferredPath = join(fixture.repositoryRoot, 'approvals', `${overlap.request.id}.json`);
+    const originalDeferred = await readFile(deferredPath, 'utf8');
+    const movedDeferred = JSON.parse(originalDeferred) as { preparedArtifact: { artifactId: number } };
+    movedDeferred.preparedArtifact.artifactId += 1;
+    await writeCanonicalJson(deferredPath, movedDeferred);
     await expect(
-      prepareApprovedBatch({
-        outputDirectory: join(workspace, 'overlapping-batch'),
-        preparedRoot,
+      applyPreparedBatch({
+        artifactDigest: `sha256:${'8'.repeat(64)}`,
+        artifactId: 444,
+        preparedDirectory: batchDirectory,
+        repositoryRoot: fixture.repositoryRoot,
+        workflowRunId: 555,
+      }),
+    ).rejects.toThrow('repository deferred approval set moved after batch preparation');
+    await writeFile(deferredPath, originalDeferred);
+    await expect(
+      applyPreparedBatch({
+        artifactDigest: `sha256:${'8'.repeat(64)}`,
+        artifactId: 444,
+        preparedDirectory: batchDirectory,
+        repositoryRoot: fixture.repositoryRoot,
+        workflowRunId: 555,
+      }),
+    ).resolves.toMatchObject({ requestIds: [fixture.request.id] });
+    const applied = await readRepository(fixture.repositoryRoot);
+    const deferred = applied.approvals.get(`approvals/${overlap.request.id}.json`);
+    expect(deferred).toBeDefined();
+    expect(approvalBaseMismatch(deferred!, applied.records)).toBe('oracles/functional/shape-basic/webgl.json');
+    await expect(
+      replayPreparedBatch({
+        outputDirectory: join(workspace, 'overlapping-replay'),
+        preparedDirectory: batchDirectory,
         previousPackDirectory: join(workspace, 'previous-packs'),
         repositoryRoot: fixture.repositoryRoot,
       }),
-    ).rejects.toThrow('approved candidates overlap oracles/functional/shape-basic/webgl.json');
+    ).resolves.toEqual(batch);
   });
 
   it('refuses to apply a batch after its committed approval changes', async () => {

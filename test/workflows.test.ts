@@ -200,6 +200,8 @@ describe('GitHub Actions workflows', () => {
     expect(writer.permissions).toEqual({ actions: 'read', contents: 'read' });
     expect(batchText).toContain('npm run --silent batch:approval-artifacts');
     expect(batchText).toContain('npm run intake:approve');
+    expect(batchText).toContain('npm run --silent batch:select-approvals');
+    expect(batchText).toContain('Overlapping candidate deferred');
     expect(batchText).toContain('a later Flight run can retry it');
     expect(batchText).toContain('git pull --ff-only origin main');
     expect(batchText).not.toContain('refusing a partial batch approval PR');
@@ -215,8 +217,11 @@ describe('GitHub Actions workflows', () => {
     const stage = parse(stageText);
 
     expect(stage.on?.push?.paths).toEqual(['approvals/*.json']);
+    expect(stageText).toContain('npm run --silent batch:pending-approvals');
     expect(stageText).toContain('npm run batch:prepare');
     expect(stageText).toContain('npm run batch:apply');
+    expect(stageText).toContain('Approval deferred');
+    expect(stageText).toContain('Deferred overlapping or stale approvals');
     expect(stageText).toMatch(/startswith\(['"]publication\/['"]\)/u);
     expect(stageText).toContain('--force-with-lease=');
     expect(stage.concurrency).toEqual({ group: 'oracle-batch-stage', 'cancel-in-progress': true });

@@ -20,7 +20,7 @@ flowchart LR
   H --> I[Flight lock-bump PR]
 ```
 
-The capture job never receives an Oracle write credential. Intake processes candidate-controlled PNGs with read-only repository permissions. The first privileged writer can add only `approvals/<request-id>.json`; a version-2 batch writes every successfully validated, not-yet-pending member into one approval PR and defers the rest with warnings. A separate staging workflow verifies every merged approval and its immutable artifact, then updates one rolling publication PR with only `manifest.json`, `oracles/**`, and `candidates/**`. Release reconstruction also runs without contents-write permission; a separate publisher receives already-verified pack bytes and checks their fixed hashes without decoding candidate images.
+The capture job never receives an Oracle write credential. Intake processes candidate-controlled PNGs with read-only repository permissions. The first privileged writer can add only `approvals/<request-id>.json`; a version-2 batch writes every successfully validated, non-overlapping, not-yet-pending member into one approval PR and defers the rest with warnings. A separate staging workflow verifies every merged approval and its immutable artifact, deterministically defers overlapping or stale reviews, then updates one rolling publication PR with only `manifest.json`, `oracles/**`, and `candidates/**`. Release reconstruction also runs without contents-write permission; a separate publisher receives already-verified pack bytes and checks their fixed hashes without decoding candidate images.
 
 ## Stored records
 
@@ -49,10 +49,12 @@ npm run check
 
 ```sh
 npm run repository:check
+npm run batch:pending-approvals
 npm run dispatch:expand -- --file <dispatch-batch.json>
 npm run packs:download -- --output .artifacts/previous-packs [--attempts 60 --retry-delay-ms 10000]
 npm run intake:prepare -- --candidate <dir> --request <request.json> --envelope <envelope.json> --previous-packs <dir> --output <new-dir>
 npm run intake:approve -- --prepared <dir> --artifact-id <id> --artifact-digest sha256:<hash> --workflow-run-id <id>
+npm run approval:status -- --request-id <id>
 npm run batch:prepare -- --prepared-root <dir> --previous-packs <dir> --output <new-dir>
 npm run batch:apply -- --prepared <dir> --artifact-id <id> --artifact-digest sha256:<hash> --workflow-run-id <id>
 npm run batch:replay -- --prepared <dir> --previous-packs <dir> --output <new-dir>

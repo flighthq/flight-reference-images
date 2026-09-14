@@ -273,7 +273,20 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Check whether this request still needs approval
+        id: current-approval
+        env:
+          REQUEST_ID: ${{ needs.prepare.outputs.request-id }}
+        run: |
+          state=$(npm run --silent approval:status -- --request-id "${REQUEST_ID}")
+          echo "state=${state}" >> "${GITHUB_OUTPUT}"
+          if [ "${state}" = 'released' ] || [ "${state}" = 'publishable' ]; then
+            echo "::warning title=Candidate already accepted::Approval ${REQUEST_ID} is ${state}; ignoring retried artifact bindings"
+          elif [ "${state}" = 'stale' ]; then
+            echo "::warning title=Refreshing deferred approval::Approval ${REQUEST_ID} has an unpublished stale review base; replacing it with this freshly reviewed candidate"
+          fi
       - name: Download prepared candidate
+        if: steps.current-approval.outputs.state == 'absent' || steps.current-approval.outputs.state == 'stale'
         uses: actions/download-artifact@v4
         with:
           artifact-ids: ${{ needs.prepare.outputs.artifact-id }}
@@ -282,11 +295,13 @@ jobs:
           # prepared-intake.json contract is rooted at the directory passed to intake:apply.
           merge-multiple: true
       - name: Write independently mergeable approval record
+        if: steps.current-approval.outputs.state == 'absent' || steps.current-approval.outputs.state == 'stale'
         run: >-
           npm run intake:approve -- --prepared .artifacts/prepared --artifact-id ${{ needs.prepare.outputs.artifact-id }} --artifact-digest ${{ needs.prepare.outputs.artifact-digest }} --workflow-run-id ${{ github.run_id }}
 
 
       - name: Build approval PR summary
+        if: steps.current-approval.outputs.state == 'absent' || steps.current-approval.outputs.state == 'stale'
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.release-tag }}
           REPORT_ID: ${{ needs.prepare.outputs.report-id }}
@@ -300,21 +315,13 @@ jobs:
             > /dev/null
 
       - name: Commit and open or update approval PR
+        if: steps.current-approval.outputs.state == 'absent' || steps.current-approval.outputs.state == 'stale'
         env:
           GH_TOKEN: ${{ steps.oracle-token.outputs.token }}
           REQUEST_ID: ${{ needs.prepare.outputs.request-id }}
           REQUEST_LABEL: ${{ needs.prepare.outputs.request-label }}
         run: |
           approval_path="approvals/${REQUEST_ID}.json"
-          if git ls-files --error-unmatch "${approval_path}" >/dev/null 2>&1; then
-            if git diff --quiet -- "${approval_path}"; then
-              echo "::warning title=Candidate already accepted::Approval ${REQUEST_ID} is already present on main"
-              exit 0
-            fi
-            echo "::warning title=Candidate already accepted::Approval ${REQUEST_ID} is already present on main; ignoring retried artifact bindings"
-            exit 0
-          fi
-
           stable_branch="approval/${REQUEST_ID}"
           pulls=$(gh pr list --base main --state open --limit 100 \
             --json number,headRefName,headRefOid,isCrossRepository)

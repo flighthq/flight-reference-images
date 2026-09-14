@@ -3,6 +3,7 @@ import { copyFile, cp, mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'n
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
+import { selectPublishableApprovals, type DeferredApproval } from './approval-selection.js';
 import { canonicalJson, errorMessage, hashBytes, hashFile, readJson, writeCanonicalJson } from './json.js';
 import { buildReleasePacks, extractVerifiedReleasePacks, verifyReleasePacks } from './pack.js';
 import {
@@ -314,6 +315,14 @@ export async function prepareApprovedBatch(options: Readonly<PrepareBatchOptions
     .filter((approval) => !released.has(approval.requestId))
     .sort((left, right) => left.requestId.localeCompare(right.requestId));
   if (approvals.length === 0) throw new Error('there are no approved candidates awaiting release');
+  const selection = selectPublishableApprovals(approvals, repository.records);
+  if (selection.selected.length === 0) {
+    throw new Error(
+      `there are no compatible approved candidates awaiting release; deferred: ${selection.deferred
+        .map((approval) => approval.requestId)
+        .join(', ')}`,
+    );
+  }
   return produceApprovedBatch(
     {
       environments: repository.environments,
@@ -323,12 +332,13 @@ export async function prepareApprovedBatch(options: Readonly<PrepareBatchOptions
       policies: repository.policies,
       records: repository.records,
     },
-    approvals.map((approval) => ({
+    selection.selected.map((approval) => ({
       approval,
       directory: join(resolve(options.preparedRoot), approval.requestId),
       fullyPrepared: true,
     })),
     options,
+    selection.deferred,
   );
 }
 
@@ -343,12 +353,13 @@ export async function applyPreparedBatch(options: Readonly<ApplyBatchOptions>): 
   if (hashRecordMap(base.records) !== prepared.baseRecordsSha256)
     throw new Error('repository oracle records moved after batch preparation');
   const released = new Set(base.manifest.sourceRequests.map((request) => request.id));
-  const pendingRequestIds = [...base.approvals.values()]
-    .filter((approval) => !released.has(approval.requestId))
-    .map((approval) => approval.requestId)
-    .sort();
+  const pendingApprovals = [...base.approvals.values()].filter((approval) => !released.has(approval.requestId));
+  const selection = selectPublishableApprovals(pendingApprovals, base.records);
+  const pendingRequestIds = selection.selected.map((approval) => approval.requestId);
   if (canonicalJson(pendingRequestIds) !== canonicalJson(prepared.requestIds))
     throw new Error('repository pending approval set moved after batch preparation');
+  if (canonicalJson(selection.deferred) !== canonicalJson(prepared.deferredApprovals ?? []))
+    throw new Error('repository deferred approval set moved after batch preparation');
   for (const expected of prepared.approvalSha256s) {
     const approval = base.approvals.get(`approvals/${expected.requestId}.json`);
     if (approval === undefined || hashBytes(canonicalJson(approval)) !== expected.sha256)
@@ -410,6 +421,7 @@ export async function replayPreparedBatch(options: Readonly<ReplayIntakeOptions>
     },
     approvals,
     options,
+    original.deferredApprovals ?? [],
   );
   if (canonicalJson(replayed) !== canonicalJson(original)) throw new Error('replayed batch descriptor differs');
   const output = resolve(options.outputDirectory);
@@ -439,6 +451,7 @@ async function produceApprovedBatch(
   originalBase: Readonly<IntakeBase>,
   inputs: readonly BatchInput[],
   options: Readonly<ProduceBatchOptions>,
+  deferredApprovals: readonly DeferredApproval[] = [],
 ): Promise<PreparedBatch> {
   const outputDirectory = resolve(options.outputDirectory);
   await createNewDirectory(outputDirectory);
@@ -558,6 +571,7 @@ async function produceApprovedBatch(
       approvalSha256s,
       baseManifestSha256,
       baseRecordsSha256,
+      ...(deferredApprovals.length > 0 ? { deferredApprovals: [...deferredApprovals] } : {}),
       expectedManifestSha256: hashBytes(canonicalJson(manifest)),
       packs,
       records,
@@ -984,6 +998,16 @@ async function validatePreparedBatchFiles(directory: string, prepared: Readonly<
     throw new Error('prepared batch request and approval identities differ');
   if (new Set(prepared.requestIds).size !== prepared.requestIds.length)
     throw new Error('prepared batch repeats a request');
+  const deferredRequestIds = (prepared.deferredApprovals ?? []).map((approval) => approval.requestId);
+  if (new Set(deferredRequestIds).size !== deferredRequestIds.length)
+    throw new Error('prepared batch repeats a deferred request');
+  if (deferredRequestIds.some((requestId) => prepared.requestIds.includes(requestId)))
+    throw new Error('prepared batch both selects and defers a request');
+  if (
+    canonicalJson(deferredRequestIds) !==
+    canonicalJson([...deferredRequestIds].sort((left, right) => left.localeCompare(right)))
+  )
+    throw new Error('prepared batch deferred requests are not sorted');
   if (new Set(prepared.records.map((record) => record.path)).size !== prepared.records.length)
     throw new Error('prepared batch repeats an oracle record');
   if (new Set(prepared.packs.map((pack) => pack.id)).size !== prepared.packs.length)

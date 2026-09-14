@@ -235,9 +235,16 @@ jobs:
           : > .artifacts/accepted-artifacts.tsv
           while IFS=$'\t' read -r request_id artifact_id artifact_digest report_id; do
             approval_path="approvals/${request_id}.json"
+            approval_state='absent'
             if git ls-files --error-unmatch "${approval_path}" >/dev/null 2>&1; then
+              approval_state=$(npm run --silent approval:status -- --request-id "${request_id}")
+            fi
+            if [ "${approval_state}" = 'released' ] || [ "${approval_state}" = 'publishable' ]; then
               echo "::warning title=Candidate already accepted::Approval ${request_id} reached main while this batch was running; ignoring the retried artifact bindings"
               continue
+            fi
+            if [ "${approval_state}" = 'stale' ]; then
+              echo "::warning title=Refreshing deferred approval::Approval ${request_id} has an unpublished stale review base; replacing it with this freshly reviewed candidate"
             fi
             prepared=".artifacts/prepared/oracle-candidate-${request_id}-${GITHUB_RUN_ID}"
             if [ ! -f "${prepared}/prepared-intake.json" ]; then
@@ -254,10 +261,31 @@ jobs:
               continue
             fi
             echo "${approval_output}"
-            echo "${approval_path}" >> .artifacts/approval-paths.txt
             printf '%s\t%s\t%s\t%s\n' "${request_id}" "${artifact_id}" "${artifact_digest}" "${report_id}" \
               >> .artifacts/accepted-artifacts.tsv
           done < .artifacts/artifacts.tsv
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const requestIds = readFileSync('.artifacts/accepted-artifacts.tsv', 'utf8')
+            .trim().split('\n').filter(Boolean).map((line) => line.split('\t')[0]);
+          writeFileSync('.artifacts/candidate-approval-ids.json', `${JSON.stringify(requestIds)}\n`);
+          NODE
+          npm run --silent batch:select-approvals -- \
+            --request-ids .artifacts/candidate-approval-ids.json \
+            > .artifacts/approval-selection.json
+          jq -r '.deferred[] | "::warning title=Overlapping candidate deferred::Request \(.requestId) \(.reason); a later Flight run can retry it"' \
+            .artifacts/approval-selection.json
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const selected = new Set(JSON.parse(readFileSync('.artifacts/approval-selection.json', 'utf8')).selectedRequestIds);
+          const lines = readFileSync('.artifacts/accepted-artifacts.tsv', 'utf8')
+            .trim().split('\n').filter(Boolean).filter((line) => selected.has(line.split('\t')[0]));
+          writeFileSync('.artifacts/accepted-artifacts.tsv', lines.length === 0 ? '' : `${lines.join('\n')}\n`);
+          writeFileSync(
+            '.artifacts/approval-paths.txt',
+            lines.length === 0 ? '' : `${lines.map((line) => `approvals/${line.split('\t')[0]}.json`).join('\n')}\n`,
+          );
+          NODE
           new_count=$(wc -l < .artifacts/approval-paths.txt)
           echo "new_count=${new_count}" >> "${GITHUB_OUTPUT}"
           echo "Accepted ${new_count} of ${EXPECTED_COUNT} candidate(s) attempted by this batch." >> "${GITHUB_STEP_SUMMARY}"

@@ -40,19 +40,14 @@ jobs:
         id: pending
         run: |
           mkdir -p .artifacts
-          node --input-type=module <<'NODE'
-          import { appendFileSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-
-          const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
-          const released = new Set(manifest.sourceRequests.map((request) => request.id));
-          const approvals = readdirSync('approvals')
-            .filter((file) => file.endsWith('.json'))
-            .map((file) => JSON.parse(readFileSync(`approvals/${file}`, 'utf8')))
-            .filter((approval) => !released.has(approval.requestId))
-            .sort((left, right) => left.requestId.localeCompare(right.requestId));
-          writeFileSync('.artifacts/pending.json', `${JSON.stringify(approvals, null, 2)}\n`);
-          appendFileSync(process.env.GITHUB_OUTPUT, `found=${approvals.length > 0}\n`);
-          NODE
+          npm run --silent batch:pending-approvals > .artifacts/pending-plan.json
+          jq '.selected' .artifacts/pending-plan.json > .artifacts/pending.json
+          selected=$(jq '.selected | length' .artifacts/pending-plan.json)
+          deferred=$(jq '.deferred | length' .artifacts/pending-plan.json)
+          echo "found=$([ "${selected}" -gt 0 ] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
+          echo "Selected ${selected} compatible approval(s); deferred ${deferred}." >> "${GITHUB_STEP_SUMMARY}"
+          jq -r '.deferred[] | "::warning title=Approval deferred::Request \(.requestId) \(.reason); it remains pending for a fresh review after a compatible release"' \
+            .artifacts/pending-plan.json
       - name: Verify and download approved candidates
         if: steps.pending.outputs.found == 'true'
         env:
@@ -114,6 +109,8 @@ jobs:
           import { appendFileSync, readFileSync } from 'node:fs';
           const batch = JSON.parse(readFileSync('.artifacts/batch/prepared-batch.json', 'utf8'));
           appendFileSync(process.env.GITHUB_OUTPUT, `release_tag=${batch.releaseTag}\n`);
+          for (const approval of batch.deferredApprovals ?? [])
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, `- Deferred \`${approval.requestId}\`: ${approval.reason}.\n`);
           NODE
       - name: Store prepared batch
         id: upload
@@ -196,10 +193,16 @@ jobs:
           node --input-type=module <<'NODE'
           import { readFileSync, writeFileSync } from 'node:fs';
           const batch = JSON.parse(readFileSync('.artifacts/batch/prepared-batch.json', 'utf8'));
+          const deferred = batch.deferredApprovals ?? [];
+          const deferredSection = deferred.length === 0
+            ? ''
+            : '\n\nDeferred overlapping or stale approvals remain unpublished and may be freshly reviewed after this release:\n\n' +
+              deferred.map((approval) => `- \`${approval.requestId}\`: ${approval.reason}`).join('\n');
           writeFileSync(
             '.artifacts/pr-body.md',
             `Publishes ${batch.requestIds.length} approved candidate request(s) as \`${batch.releaseTag}\`.\n\n` +
               batch.requestIds.map((id) => `- \`${id}\``).join('\n') +
+              deferredSection +
               '\n\nThis PR is deterministic release materialization; human image approval occurred in the approval PRs.\n',
           );
           NODE

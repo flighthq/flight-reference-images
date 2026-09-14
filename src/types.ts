@@ -248,6 +248,7 @@ export interface PreparedBatch {
   approvalSha256s: Array<{ requestId: string; sha256: string }>;
   baseManifestSha256: string;
   baseRecordsSha256: string;
+  deferredApprovals?: Array<{ reason: string; requestId: string; sha256: string }>;
   expectedManifestSha256: string;
   packs: ManifestPack[];
   records: Array<{ path: string; sha256: string }>;
