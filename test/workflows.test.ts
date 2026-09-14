@@ -223,6 +223,8 @@ describe('GitHub Actions workflows', () => {
     expect(stageText).toContain('Approval deferred');
     expect(stageText).toContain('Approved artifact deferred');
     expect(stageText).toContain('intake:verify-approval');
+    expect(stageText).toContain("expired=$(jq -r '.expired | tostring'");
+    expect(stageText).not.toContain("expired=$(jq -r '.expired // empty'");
     expect(stageText).toContain('Deferred unavailable, overlapping, or stale approvals');
     expect(stageText).toMatch(/startswith\(['"]publication\/['"]\)/u);
     expect(stageText).toContain('--force-with-lease=');

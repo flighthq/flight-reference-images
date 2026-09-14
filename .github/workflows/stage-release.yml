@@ -74,7 +74,7 @@ jobs:
             fi
             actual_run=$(jq -r '.workflow_run.id // empty' .artifacts/artifact.json)
             actual_digest=$(jq -r '.digest // empty' .artifacts/artifact.json)
-            expired=$(jq -r '.expired // empty' .artifacts/artifact.json)
+            expired=$(jq -r '.expired | tostring' .artifacts/artifact.json)
             actual_name=$(jq -r '.name // empty' .artifacts/artifact.json)
             expected_name="oracle-candidate-${request_id}-${expected_run}"
             if [ "${actual_run}" != "${expected_run}" ] || [ "${actual_digest}" != "${expected_digest}" ] || \
