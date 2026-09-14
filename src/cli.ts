@@ -4,7 +4,12 @@ import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { renderApprovalSummary, requestDisplayLabel } from './approval.js';
-import { approvalBaseMismatch, selectPublishableApprovals } from './approval-selection.js';
+import {
+  approvalBaseMismatch,
+  deferApproval,
+  selectPublishableApprovals,
+  type DeferredApproval,
+} from './approval-selection.js';
 import { resolveBatchApprovalArtifacts } from './batch-approval.js';
 import { completeFlight, reconcileFlight } from './completion.js';
 import { expandBatchDispatch, planBatchDispatch } from './dispatch.js';
@@ -114,9 +119,17 @@ async function main(): Promise<void> {
     const root = resolve(option(arguments_, '--root') ?? '.');
     const repository = await readRepository(root);
     const released = new Set(repository.manifest.sourceRequests.map((request) => request.id));
-    const pending = [...repository.approvals.values()].filter((approval) => !released.has(approval.requestId));
-    const selection = selectPublishableApprovals(pending, repository.records);
-    console.log(JSON.stringify({ deferred: selection.deferred, selected: selection.selected }));
+    const pending = [...repository.approvals.values()]
+      .filter((approval) => !released.has(approval.requestId))
+      .sort((left, right) => left.requestId.localeCompare(right.requestId));
+    const candidates: CandidateApproval[] = [];
+    const deferred: DeferredApproval[] = [];
+    for (const approval of pending) {
+      const stalePath = approvalBaseMismatch(approval, repository.records);
+      if (stalePath === undefined) candidates.push(approval);
+      else deferred.push(deferApproval(approval, `review base no longer matches ${stalePath}`));
+    }
+    console.log(JSON.stringify({ candidates, deferred }));
     return;
   }
 

@@ -29,12 +29,14 @@ export function selectPublishableApprovals(
   for (const approval of [...approvals].sort(compareApprovals)) {
     const stalePath = approvalBaseMismatch(approval, records);
     if (stalePath !== undefined) {
-      deferred.push(defer(approval, `review base no longer matches ${stalePath}`));
+      deferred.push(deferApproval(approval, `review base no longer matches ${stalePath}`));
       continue;
     }
     const overlap = approval.records.find((record) => claimedPaths.has(record.path));
     if (overlap !== undefined) {
-      deferred.push(defer(approval, `overlaps ${overlap.path} claimed by request ${claimedPaths.get(overlap.path)!}`));
+      deferred.push(
+        deferApproval(approval, `overlaps ${overlap.path} claimed by request ${claimedPaths.get(overlap.path)!}`),
+      );
       continue;
     }
     selected.push(approval);
@@ -58,7 +60,7 @@ function compareApprovals(left: Readonly<CandidateApproval>, right: Readonly<Can
   return left.requestId.localeCompare(right.requestId);
 }
 
-function defer(approval: Readonly<CandidateApproval>, reason: string): DeferredApproval {
+export function deferApproval(approval: Readonly<CandidateApproval>, reason: string): DeferredApproval {
   return {
     reason,
     requestId: approval.requestId,

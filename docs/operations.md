@@ -72,7 +72,7 @@ The batch locator remains as current-release audit metadata after publishing, bu
 
 **Migrate queued approvals** runs once when the independent-approval contract lands and converts open legacy `oracle/*` PRs to approval-only diffs. Rerun it manually if a transient API or branch update failure leaves a legacy locator PR open. It ignores PRs already converted.
 
-**Stage approved reference image release** runs on every merged approval. Rerun it manually if staging fails or if the rolling publication PR's batch artifact expires. It deterministically rebuilds the PR from every compatible merged approval not yet named by `manifest.json`; overlapping or stale approvals are named as deferred warnings and do not block the release.
+**Stage approved reference image release** runs on every merged approval. Rerun it manually if staging fails or if the rolling publication PR's batch artifact expires. It attempts every current-base merged approval not yet named by `manifest.json`, warns and defers missing, expired, mismatched, or invalid artifacts, then deterministically rebuilds the PR from the available compatible subset. Overlapping or stale approvals are also named as deferred warnings and do not block the release. An unavailable candidate does not reserve its target against an available overlapping candidate, and an approval merged during preparation waits for the next run rather than invalidating the prepared subset.
 
 ## Release recovery
 

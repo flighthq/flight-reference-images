@@ -3,7 +3,12 @@ import { copyFile, cp, mkdir, mkdtemp, readFile, rm, unlink, writeFile } from 'n
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
-import { selectPublishableApprovals, type DeferredApproval } from './approval-selection.js';
+import {
+  approvalBaseMismatch,
+  deferApproval,
+  selectPublishableApprovals,
+  type DeferredApproval,
+} from './approval-selection.js';
 import { canonicalJson, errorMessage, hashBytes, hashFile, readJson, writeCanonicalJson } from './json.js';
 import { buildReleasePacks, extractVerifiedReleasePacks, verifyReleasePacks } from './pack.js';
 import {
@@ -315,10 +320,27 @@ export async function prepareApprovedBatch(options: Readonly<PrepareBatchOptions
     .filter((approval) => !released.has(approval.requestId))
     .sort((left, right) => left.requestId.localeCompare(right.requestId));
   if (approvals.length === 0) throw new Error('there are no approved candidates awaiting release');
-  const selection = selectPublishableApprovals(approvals, repository.records);
+  const available: CandidateApproval[] = [];
+  const deferred: DeferredApproval[] = [];
+  for (const approval of approvals) {
+    const stalePath = approvalBaseMismatch(approval, repository.records);
+    if (stalePath !== undefined) {
+      deferred.push(deferApproval(approval, `review base no longer matches ${stalePath}`));
+      continue;
+    }
+    try {
+      await verifyPreparedApproval(approval, join(resolve(options.preparedRoot), approval.requestId));
+      available.push(approval);
+    } catch {
+      deferred.push(deferApproval(approval, 'prepared artifact is unavailable or failed verification'));
+    }
+  }
+  const selection = selectPublishableApprovals(available, repository.records);
+  deferred.push(...selection.deferred);
+  deferred.sort((left, right) => left.requestId.localeCompare(right.requestId));
   if (selection.selected.length === 0) {
     throw new Error(
-      `there are no compatible approved candidates awaiting release; deferred: ${selection.deferred
+      `there are no available compatible approved candidates awaiting release; deferred: ${deferred
         .map((approval) => approval.requestId)
         .join(', ')}`,
     );
@@ -338,7 +360,7 @@ export async function prepareApprovedBatch(options: Readonly<PrepareBatchOptions
       fullyPrepared: true,
     })),
     options,
-    selection.deferred,
+    deferred,
   );
 }
 
@@ -352,18 +374,23 @@ export async function applyPreparedBatch(options: Readonly<ApplyBatchOptions>): 
     throw new Error('repository manifest moved after batch preparation');
   if (hashRecordMap(base.records) !== prepared.baseRecordsSha256)
     throw new Error('repository oracle records moved after batch preparation');
-  const released = new Set(base.manifest.sourceRequests.map((request) => request.id));
-  const pendingApprovals = [...base.approvals.values()].filter((approval) => !released.has(approval.requestId));
-  const selection = selectPublishableApprovals(pendingApprovals, base.records);
-  const pendingRequestIds = selection.selected.map((approval) => approval.requestId);
-  if (canonicalJson(pendingRequestIds) !== canonicalJson(prepared.requestIds))
-    throw new Error('repository pending approval set moved after batch preparation');
-  if (canonicalJson(selection.deferred) !== canonicalJson(prepared.deferredApprovals ?? []))
-    throw new Error('repository deferred approval set moved after batch preparation');
+  const selectedApprovals: CandidateApproval[] = [];
   for (const expected of prepared.approvalSha256s) {
     const approval = base.approvals.get(`approvals/${expected.requestId}.json`);
     if (approval === undefined || hashBytes(canonicalJson(approval)) !== expected.sha256)
       throw new Error(`repository approval ${expected.requestId} moved after batch preparation`);
+    selectedApprovals.push(approval);
+  }
+  const selection = selectPublishableApprovals(selectedApprovals, base.records);
+  if (
+    selection.deferred.length > 0 ||
+    canonicalJson(selection.selected.map((approval) => approval.requestId)) !== canonicalJson(prepared.requestIds)
+  )
+    throw new Error('repository selected approval set is no longer publishable');
+  for (const expected of prepared.deferredApprovals ?? []) {
+    const approval = base.approvals.get(`approvals/${expected.requestId}.json`);
+    if (approval === undefined || hashBytes(canonicalJson(approval)) !== expected.sha256)
+      throw new Error(`repository deferred approval ${expected.requestId} moved after batch preparation`);
   }
 
   const expected = join(preparedDirectory, 'expected');

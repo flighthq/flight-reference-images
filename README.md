@@ -20,7 +20,7 @@ flowchart LR
   H --> I[Flight lock-bump PR]
 ```
 
-The capture job never receives an Oracle write credential. Intake processes candidate-controlled PNGs with read-only repository permissions. The first privileged writer can add only `approvals/<request-id>.json`; a version-2 batch writes every successfully validated, non-overlapping, not-yet-pending member into one approval PR and defers the rest with warnings. A separate staging workflow verifies every merged approval and its immutable artifact, deterministically defers overlapping or stale reviews, then updates one rolling publication PR with only `manifest.json`, `oracles/**`, and `candidates/**`. Release reconstruction also runs without contents-write permission; a separate publisher receives already-verified pack bytes and checks their fixed hashes without decoding candidate images.
+The capture job never receives an Oracle write credential. Intake processes candidate-controlled PNGs with read-only repository permissions. The first privileged writer can add only `approvals/<request-id>.json`; a version-2 batch writes every successfully validated, non-overlapping, not-yet-pending member into one approval PR and defers the rest with warnings. A separate staging workflow verifies every merged approval and its immutable artifact, deterministically defers unavailable, overlapping, or stale reviews, then updates one rolling publication PR with only `manifest.json`, `oracles/**`, and `candidates/**`. Release reconstruction also runs without contents-write permission; a separate publisher receives already-verified pack bytes and checks their fixed hashes without decoding candidate images.
 
 ## Stored records
 

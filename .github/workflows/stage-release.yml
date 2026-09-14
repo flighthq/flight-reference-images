@@ -25,7 +25,7 @@ jobs:
     outputs:
       artifact-digest: sha256:${{ steps.upload.outputs.artifact-digest }}
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
-      found: ${{ steps.pending.outputs.found }}
+      found: ${{ steps.candidates.outputs.found }}
       release-tag: ${{ steps.identity.outputs.release_tag }}
     steps:
       - uses: actions/checkout@v4
@@ -41,14 +41,15 @@ jobs:
         run: |
           mkdir -p .artifacts
           npm run --silent batch:pending-approvals > .artifacts/pending-plan.json
-          jq '.selected' .artifacts/pending-plan.json > .artifacts/pending.json
-          selected=$(jq '.selected | length' .artifacts/pending-plan.json)
+          jq '.candidates' .artifacts/pending-plan.json > .artifacts/pending.json
+          selected=$(jq '.candidates | length' .artifacts/pending-plan.json)
           deferred=$(jq '.deferred | length' .artifacts/pending-plan.json)
           echo "found=$([ "${selected}" -gt 0 ] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
-          echo "Selected ${selected} compatible approval(s); deferred ${deferred}." >> "${GITHUB_STEP_SUMMARY}"
+          echo "Found ${selected} current-base approval candidate(s); deferred ${deferred} stale approval(s)." >> "${GITHUB_STEP_SUMMARY}"
           jq -r '.deferred[] | "::warning title=Approval deferred::Request \(.requestId) \(.reason); it remains pending for a fresh review after a compatible release"' \
             .artifacts/pending-plan.json
       - name: Verify and download approved candidates
+        id: candidates
         if: steps.pending.outputs.found == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -65,45 +66,56 @@ jobs:
           }
           NODE
           mkdir -p .artifacts/prepared
+          : > .artifacts/available-request-ids.txt
           while IFS=$'\t' read -r request_id artifact_id expected_digest expected_run; do
-            mapfile -t fields < <(
-              gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}" \
-                --jq '[.workflow_run.id, .digest, .expired, .name] | .[]'
-            )
-            test "${fields[0]}" = "${expected_run}"
-            test "${fields[1]}" = "${expected_digest}"
-            test "${fields[2]}" = 'false' || {
-              echo "::error::approved artifact for ${request_id} has expired"
-              exit 1
-            }
+            if ! gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}" > .artifacts/artifact.json; then
+              echo "::warning title=Approved artifact deferred::Request ${request_id} artifact ${artifact_id} is unavailable; a later Flight run can replace it"
+              continue
+            fi
+            actual_run=$(jq -r '.workflow_run.id // empty' .artifacts/artifact.json)
+            actual_digest=$(jq -r '.digest // empty' .artifacts/artifact.json)
+            expired=$(jq -r '.expired // empty' .artifacts/artifact.json)
+            actual_name=$(jq -r '.name // empty' .artifacts/artifact.json)
             expected_name="oracle-candidate-${request_id}-${expected_run}"
-            test "${fields[3]}" = "${expected_name}" || {
-              echo "::error::approved artifact for ${request_id} is named ${fields[3]}, expected ${expected_name}"
-              exit 1
-            }
-            gh run download "${expected_run}" \
+            if [ "${actual_run}" != "${expected_run}" ] || [ "${actual_digest}" != "${expected_digest}" ] || \
+              [ "${expired}" != 'false' ] || [ "${actual_name}" != "${expected_name}" ]; then
+              echo "::warning title=Approved artifact deferred::Request ${request_id} artifact metadata no longer matches its approval; a later Flight run can replace it"
+              continue
+            fi
+            prepared_directory=".artifacts/prepared/${request_id}"
+            if ! gh run download "${expected_run}" \
               --repo "${GITHUB_REPOSITORY}" \
               --name "${expected_name}" \
-              --dir ".artifacts/prepared/${request_id}"
-            test -f ".artifacts/prepared/${request_id}/prepared-intake.json" || {
-              echo "::error::approved artifact for ${request_id} has an invalid archive root"
-              exit 1
-            }
+              --dir "${prepared_directory}"; then
+              rm -rf -- "${prepared_directory}"
+              echo "::warning title=Approved artifact deferred::Request ${request_id} artifact could not be downloaded; a later Flight run can replace it"
+              continue
+            fi
+            if ! npm run --silent intake:verify-approval -- \
+              --approval "approvals/${request_id}.json" --prepared "${prepared_directory}"; then
+              rm -rf -- "${prepared_directory}"
+              echo "::warning title=Approved artifact deferred::Request ${request_id} artifact failed verification; a later Flight run can replace it"
+              continue
+            fi
+            echo "${request_id}" >> .artifacts/available-request-ids.txt
           done < .artifacts/artifacts.tsv
+          available=$(wc -l < .artifacts/available-request-ids.txt)
+          echo "found=$([ "${available}" -gt 0 ] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
+          echo "Verified ${available} downloadable approval artifact(s)." >> "${GITHUB_STEP_SUMMARY}"
       - name: Download current blessed packs
-        if: steps.pending.outputs.found == 'true'
+        if: steps.candidates.outputs.found == 'true'
         run: npm run packs:download -- --attempts 60 --retry-delay-ms 10000 --output .artifacts/previous-packs
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Build deterministic batch
-        if: steps.pending.outputs.found == 'true'
+        if: steps.candidates.outputs.found == 'true'
         run: >-
           npm run batch:prepare -- --prepared-root .artifacts/prepared --previous-packs .artifacts/previous-packs --output .artifacts/batch
 
 
       - name: Read batch identity
         id: identity
-        if: steps.pending.outputs.found == 'true'
+        if: steps.candidates.outputs.found == 'true'
         run: |
           node --input-type=module <<'NODE'
           import { appendFileSync, readFileSync } from 'node:fs';
@@ -114,7 +126,7 @@ jobs:
           NODE
       - name: Store prepared batch
         id: upload
-        if: steps.pending.outputs.found == 'true'
+        if: steps.candidates.outputs.found == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: oracle-batch-${{ github.run_id }}
@@ -196,7 +208,7 @@ jobs:
           const deferred = batch.deferredApprovals ?? [];
           const deferredSection = deferred.length === 0
             ? ''
-            : '\n\nDeferred overlapping or stale approvals remain unpublished and may be freshly reviewed after this release:\n\n' +
+            : '\n\nDeferred unavailable, overlapping, or stale approvals remain unpublished and may be freshly reviewed after this release:\n\n' +
               deferred.map((approval) => `- \`${approval.requestId}\`: ${approval.reason}`).join('\n');
           writeFileSync(
             '.artifacts/pr-body.md',

@@ -221,7 +221,9 @@ describe('GitHub Actions workflows', () => {
     expect(stageText).toContain('npm run batch:prepare');
     expect(stageText).toContain('npm run batch:apply');
     expect(stageText).toContain('Approval deferred');
-    expect(stageText).toContain('Deferred overlapping or stale approvals');
+    expect(stageText).toContain('Approved artifact deferred');
+    expect(stageText).toContain('intake:verify-approval');
+    expect(stageText).toContain('Deferred unavailable, overlapping, or stale approvals');
     expect(stageText).toMatch(/startswith\(['"]publication\/['"]\)/u);
     expect(stageText).toContain('--force-with-lease=');
     expect(stage.concurrency).toEqual({ group: 'oracle-batch-stage', 'cancel-in-progress': true });

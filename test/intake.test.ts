@@ -134,8 +134,6 @@ describe('prepareIntake', () => {
         workflowRunId: 400 + index,
       });
     }
-    await rm(join(preparedRoot, overlap.request.id), { recursive: true });
-
     const batchDirectory = join(workspace, 'overlapping-batch');
     const batch = await prepareApprovedBatch({
       outputDirectory: batchDirectory,
@@ -165,7 +163,7 @@ describe('prepareIntake', () => {
         repositoryRoot: fixture.repositoryRoot,
         workflowRunId: 555,
       }),
-    ).rejects.toThrow('repository deferred approval set moved after batch preparation');
+    ).rejects.toThrow(`repository deferred approval ${overlap.request.id} moved after batch preparation`);
     await writeFile(deferredPath, originalDeferred);
     await expect(
       applyPreparedBatch({
@@ -188,6 +186,92 @@ describe('prepareIntake', () => {
         repositoryRoot: fixture.repositoryRoot,
       }),
     ).resolves.toEqual(batch);
+  });
+
+  it('publishes an available overlap when the lexical winner artifact is unavailable', async () => {
+    const fixture = await makeFixture('captured');
+    const overlap = await makeSiblingFixture(fixture, 'shape-basic', 'zz-shape-basic-webgl-2026-08-14');
+    const preparedRoot = join(workspace, 'partially-available-approved-inputs');
+    for (const [index, input] of [fixture, overlap].entries()) {
+      const preparedDirectory = join(preparedRoot, input.request.id);
+      await prepareFixture(input, preparedDirectory);
+      await approvePreparedIntake({
+        artifactDigest: `sha256:${String(index + 7).repeat(64)}`,
+        artifactId: 300 + index,
+        preparedDirectory,
+        repositoryRoot: fixture.repositoryRoot,
+        workflowRunId: 400 + index,
+      });
+    }
+    await rm(join(preparedRoot, fixture.request.id), { recursive: true });
+
+    const batchDirectory = join(workspace, 'partially-available-batch');
+    const batch = await prepareApprovedBatch({
+      outputDirectory: batchDirectory,
+      preparedRoot,
+      previousPackDirectory: join(workspace, 'previous-packs'),
+      repositoryRoot: fixture.repositoryRoot,
+    });
+
+    expect(batch.requestIds).toEqual([overlap.request.id]);
+    expect(batch.deferredApprovals).toEqual([
+      {
+        reason: 'prepared artifact is unavailable or failed verification',
+        requestId: fixture.request.id,
+        sha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
+      },
+    ]);
+    await expect(
+      applyPreparedBatch({
+        artifactDigest: `sha256:${'8'.repeat(64)}`,
+        artifactId: 444,
+        preparedDirectory: batchDirectory,
+        repositoryRoot: fixture.repositoryRoot,
+        workflowRunId: 555,
+      }),
+    ).resolves.toMatchObject({ requestIds: [overlap.request.id] });
+  });
+
+  it('allows a newly merged approval to wait for the next prepared batch', async () => {
+    const fixture = await makeFixture('captured');
+    const preparedRoot = join(workspace, 'racing-approved-inputs');
+    const preparedDirectory = join(preparedRoot, fixture.request.id);
+    await prepareFixture(fixture, preparedDirectory);
+    await approvePreparedIntake({
+      artifactDigest: `sha256:${'9'.repeat(64)}`,
+      artifactId: 222,
+      preparedDirectory,
+      repositoryRoot: fixture.repositoryRoot,
+      workflowRunId: 333,
+    });
+    const batchDirectory = join(workspace, 'racing-batch');
+    await prepareApprovedBatch({
+      outputDirectory: batchDirectory,
+      preparedRoot,
+      previousPackDirectory: join(workspace, 'previous-packs'),
+      repositoryRoot: fixture.repositoryRoot,
+    });
+
+    const late = await makeSiblingFixture(fixture);
+    const latePreparedDirectory = join(preparedRoot, late.request.id);
+    await prepareFixture(late, latePreparedDirectory);
+    await approvePreparedIntake({
+      artifactDigest: `sha256:${'7'.repeat(64)}`,
+      artifactId: 223,
+      preparedDirectory: latePreparedDirectory,
+      repositoryRoot: fixture.repositoryRoot,
+      workflowRunId: 334,
+    });
+
+    await expect(
+      applyPreparedBatch({
+        artifactDigest: `sha256:${'8'.repeat(64)}`,
+        artifactId: 444,
+        preparedDirectory: batchDirectory,
+        repositoryRoot: fixture.repositoryRoot,
+        workflowRunId: 555,
+      }),
+    ).resolves.toMatchObject({ requestIds: [fixture.request.id] });
   });
 
   it('refuses to apply a batch after its committed approval changes', async () => {
