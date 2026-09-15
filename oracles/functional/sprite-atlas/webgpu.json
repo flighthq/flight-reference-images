@@ -1,10 +1,10 @@
 {
   "$schema": "../../../schemas/oracle-record.schema.json",
-  "artifactSha256": "0d6bba94d125a72b1a7351e7e245571b7cabd66926bef6d6987cef3ba73fec4e",
+  "artifactSha256": "65d947c43f550cb55965b9c27fd573c617ae33c91687a31efa4583df4ddd3102",
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
+  "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
   "height": 600,
   "identity": {
     "entry": "sprite-atlas",
@@ -13,7 +13,7 @@
   },
   "pack": "functional-other",
   "pixelFormat": "rgba8",
-  "pixelSha256": "5a36808bfa65bcf60b241185ad62583f24ab73b3aa14bcf08f6c1e9a75dc56f5",
+  "pixelSha256": "7958c1e5cce1089e7b835cafceb85e366040f3c1eaaff624c117841abe2c334b",
   "provenance": {
     "frames": 1,
     "sourceHash": "c8818e2d62880e05212d6e3ee476440cb407bd64595c51e33c8da593d6bf31c9",
@@ -22,8 +22,8 @@
     "warmupFrames": 0
   },
   "request": {
-    "id": "be4ca7b5-b128-40e4-9f63-4db4965a8550",
-    "sha256": "57307ed1f4b7d9c0c17f8d96b86a66afad6b0117da4cc52f8eb84667447aeaae"
+    "id": "378d3f61-1f75-4765-84aa-f3d73b4f0f05",
+    "sha256": "2fbe5155199d7ec17261afb58af7e272de76af2344e03b832551b908f9eb10f7"
   },
   "schemaVersion": 1,
   "width": 800

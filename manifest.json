@@ -2,43 +2,43 @@
   "$schema": "./schemas/manifest.schema.json",
   "packs": [
     {
-      "file": "functional-images-oracle-batch-6ebc6f6e452a.tgz",
+      "file": "functional-images-oracle-batch-91a5fb2aedda.tgz",
       "id": "functional-images",
       "imageCount": 128,
-      "sha256": "e61365b51f75963146ecd7196bf0a6b377506d12e77639c09790582a1039b724",
-      "size": 5241682
+      "sha256": "d9ecbfe622a0b999a879214b1ff9f51fcd7f21c8fece0d854b4823e24f87bcfb",
+      "size": 5239206
     },
     {
-      "file": "functional-other-oracle-batch-6ebc6f6e452a.tgz",
+      "file": "functional-other-oracle-batch-91a5fb2aedda.tgz",
       "id": "functional-other",
       "imageCount": 185,
-      "sha256": "1e42eeb8b7217e23cba8fbc945111c5876a3cd23ea3e1eff652b9ed5ca3f3ff0",
-      "size": 1859647
+      "sha256": "12faa8a4ea839239a9b4e8e480ef4533cda63ba696e98470fe488067cf4b7beb",
+      "size": 1804012
     },
     {
-      "file": "functional-scene3d-oracle-batch-6ebc6f6e452a.tgz",
+      "file": "functional-scene3d-oracle-batch-91a5fb2aedda.tgz",
       "id": "functional-scene3d",
       "imageCount": 72,
-      "sha256": "a2aad12992b2ce4b7c568712ee84b05301caaab78bba068aef9e472576d35a54",
-      "size": 1026913
+      "sha256": "321dbe17a0108731e0f3bd53dee5110c94faa4bb79e9f2392f5be9757965a209",
+      "size": 1026902
     },
     {
-      "file": "functional-shapes-oracle-batch-6ebc6f6e452a.tgz",
+      "file": "functional-shapes-oracle-batch-91a5fb2aedda.tgz",
       "id": "functional-shapes",
       "imageCount": 66,
-      "sha256": "90c7bfd691184422fcabed478ea5fe9a84f2d94ea7b374e4ad6775a20a9ea120",
-      "size": 518993
+      "sha256": "3dfc8bbec7c6c3cb61fb23f24bc8b19dbf9a07e9d3204bbdede5f62ba55ebd03",
+      "size": 519703
     },
     {
-      "file": "functional-text-oracle-batch-6ebc6f6e452a.tgz",
+      "file": "functional-text-oracle-batch-91a5fb2aedda.tgz",
       "id": "functional-text",
       "imageCount": 44,
       "sha256": "9b55b01955bb9a3c55b7d9290250cb184c19e86629c879c9924ffed840832fb6",
       "size": 242140
     }
   ],
-  "parentReleaseTag": "oracle-batch-8520fa0b38aa",
-  "releaseTag": "oracle-batch-6ebc6f6e452a",
+  "parentReleaseTag": "oracle-batch-6ebc6f6e452a",
+  "releaseTag": "oracle-batch-91a5fb2aedda",
   "schemaVersion": 1,
   "sourceRequests": [
     {
@@ -1485,6 +1485,91 @@
       "flightCommit": "54f97d868253fefb8e74e59b3d615ea9df99d8d5",
       "id": "fc323b29-e45f-4350-a08b-dfd587f4bf55",
       "requestSha256": "7f590701af8e0463d11234f1baee539306f6d2f0ac19014a0a01f6fa2330f6e8"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "1051b4c7-49f9-4db0-a75b-8df28cd75f02",
+      "requestSha256": "09e942dd3487602b80b1a5554ae499fbd8ae9874313a24ffed1193024f995430"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "2486f547-1e73-4ec5-83ce-af13ce040b71",
+      "requestSha256": "d0306b44c41cf4e95e84bd445dc41b82e9d626ebb57cf7e7a0491212c64386ec"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "378d3f61-1f75-4765-84aa-f3d73b4f0f05",
+      "requestSha256": "2fbe5155199d7ec17261afb58af7e272de76af2344e03b832551b908f9eb10f7"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "490d8d41-9fc1-4d4c-b53f-142052a99e9a",
+      "requestSha256": "94621674141f393d7d4ad6d10b4aed0a6cd6ffe582bab73b75d2c05ec0348aa2"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "4b3f901f-2165-4ee3-9590-8556ae5cfbd8",
+      "requestSha256": "0ee7ce5f53bfd18f6cd062595affe9202bc154805d9afbad5392f4461f41422c"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "5088a5eb-384f-4864-805a-a13e9ed4684c",
+      "requestSha256": "5de464b5836b5bdfc49e0d091c5f03dba72bc3efac4c5301fbc45c8fc00da00f"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "67b8ac97-d269-48c6-8f14-a7ba016b7b92",
+      "requestSha256": "35993241903a0d8deab04416d62d214659a36fdde824125699de0a8fcb90f4e2"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "81f55b5f-01db-4db3-85bc-a6770a3a8068",
+      "requestSha256": "c4d4e12c7a15238a024e6a4047c521c068b97f37c75a665d6d0e1b8ba3f53dc7"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "8821612f-f463-40d2-a231-5e9e6f6e3ae1",
+      "requestSha256": "af865eccf36082f15a6038fcc36a12fb50b9e28ee3e8acc2947aadef59c87420"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "981b399e-68a0-484a-bb3e-a87c0cd6c24d",
+      "requestSha256": "b7be61b8e9ab0bfeaaa200901b14575c84012248bcef9c8519422c7353739451"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "ac5fbd82-2822-4656-9d35-211dcb1cf4b2",
+      "requestSha256": "6f953d78743238735123c98d6b5fa0e31a0cf516d9792942fadcc84abddb75d4"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "bdc56b8b-0c39-4866-a364-9b7022a0a76b",
+      "requestSha256": "13c0657f4b0d82e3c19dfc0774a23ad21fd4116a89e09f75939690352cad4471"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "c159e140-81a9-47ba-ab14-8a35d9efd8a4",
+      "requestSha256": "fe9ff55ccf3b0e3ef23c35cc2fa6141183a7052e9451f13040c55d958fcac98d"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "c84acac4-63e9-44f0-9eac-0b78ee70ed99",
+      "requestSha256": "6fc44ed6fdbea0e63d51159cca65f88c4fee2087032048a3cde1dfe84edc1d8a"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "e029d819-f4a1-470b-bd00-931d667205f1",
+      "requestSha256": "6bb9538acdf1a72cd736bca053d0c5e866815fe6876a968873f5d601bef7ea7b"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "e31a2115-f675-4c8f-8b65-8eb74bbddd4d",
+      "requestSha256": "764cdbe7d5257d2bbd9ed1794d388438fe12d04992f1d9649165f2761c7f6e71"
+    },
+    {
+      "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+      "id": "e49cb298-6e7c-44af-8fd3-1d7b3e9a1e99",
+      "requestSha256": "c4dab96b4aa2c3c925b5376a3d45ec6b7a3d8c365747bbc2d9e7fe4e7d258536"
     }
   ]
 }

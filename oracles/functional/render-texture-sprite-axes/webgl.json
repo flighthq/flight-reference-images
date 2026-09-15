@@ -4,7 +4,7 @@
   "colorSpace": "srgb",
   "comparisonPolicyId": "pixel-exact-swiftshader-pw-1-61-v1",
   "environmentId": "sha256-48ce42bae26460428ad4bcc1bb526ddd00abc7a5960f62919bb88026bdb1a084",
-  "flightCommit": "129b76d4025138e3fbbe6fcdccc31a89f6bfd500",
+  "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
   "height": 600,
   "identity": {
     "entry": "render-texture-sprite-axes",
@@ -22,8 +22,8 @@
     "warmupFrames": 0
   },
   "request": {
-    "id": "0832a083-94c3-4862-895b-73c4d1790228",
-    "sha256": "3db5cced2774ace610f0387a365396d763cc3907c744b11f8b1ec07afe62d69c"
+    "id": "e029d819-f4a1-470b-bd00-931d667205f1",
+    "sha256": "6bb9538acdf1a72cd736bca053d0c5e866815fe6876a968873f5d601bef7ea7b"
   },
   "schemaVersion": 1,
   "width": 800
