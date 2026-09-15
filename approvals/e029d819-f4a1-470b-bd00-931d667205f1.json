@@ -1,0 +1,40 @@
+{
+  "$schema": "../schemas/approval.schema.json",
+  "baseRecords": [
+    {
+      "path": "oracles/functional/render-texture-sprite-axes/webgl.json",
+      "sha256": "d62960c2d620b1e87a8de1cfcd7cb91a368b93aa8d1b68c1cd1e5c912314d1d3"
+    },
+    {
+      "path": "oracles/functional/render-texture-sprite-axes/webgpu.json",
+      "sha256": "1bd877780efad662f6b16810e29827ca638128a37648962acae422ed7465c708"
+    }
+  ],
+  "candidateSha256": "d4aec7c10797443dc7faf7e47ba6d804d2f521f507e708cca99441c4619e5798",
+  "flightCommit": "05b053d22f5f4864112afbed6f0d255d360c783f",
+  "preparedArtifact": {
+    "artifactId": 10392443312,
+    "digest": "sha256:c5dcc620ffa112acb644b55f20412ff805104840332ebfdc0d8c62dbe2b6c9b7",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 34959394336
+  },
+  "records": [
+    {
+      "path": "oracles/functional/render-texture-sprite-axes/webgl.json",
+      "sha256": "3c317c588a7f99c8167ea5c9cccd5170eadb1a640d93848f439eb1b0042ca2dc"
+    },
+    {
+      "path": "oracles/functional/render-texture-sprite-axes/webgpu.json",
+      "sha256": "decf49c14078b31492117d89599e5b29af5bf7673352996ef6142d13f2192a20"
+    }
+  ],
+  "requestId": "e029d819-f4a1-470b-bd00-931d667205f1",
+  "requestSha256": "6bb9538acdf1a72cd736bca053d0c5e866815fe6876a968873f5d601bef7ea7b",
+  "schemaVersion": 1,
+  "sourceArtifact": {
+    "artifactId": 10392805073,
+    "digest": "sha256:58242a0104ca7c4b100b5ea4f32a9671a821752e235a62bdea4782c6083376e7",
+    "repository": "flighthq/flight",
+    "workflowRunId": 34958391810
+  }
+}
