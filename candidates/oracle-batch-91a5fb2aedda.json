@@ -1,0 +1,31 @@
+{
+  "$schema": "../schemas/candidate-locator.schema.json",
+  "manifestSha256": "632c30e4eaeeb85097a12cd246f704e624643f92d4a18df1a76ca4a778726d5c",
+  "preparedArtifact": {
+    "artifactId": 10405136873,
+    "digest": "sha256:fd8c85c49ac2abc38d060032aa13a3a9129943e5d0a44a1175e8267d4963d8b7",
+    "repository": "flighthq/flight-reference-images",
+    "workflowRunId": 34990069255
+  },
+  "releaseTag": "oracle-batch-91a5fb2aedda",
+  "requestIds": [
+    "1051b4c7-49f9-4db0-a75b-8df28cd75f02",
+    "2486f547-1e73-4ec5-83ce-af13ce040b71",
+    "378d3f61-1f75-4765-84aa-f3d73b4f0f05",
+    "490d8d41-9fc1-4d4c-b53f-142052a99e9a",
+    "4b3f901f-2165-4ee3-9590-8556ae5cfbd8",
+    "5088a5eb-384f-4864-805a-a13e9ed4684c",
+    "67b8ac97-d269-48c6-8f14-a7ba016b7b92",
+    "81f55b5f-01db-4db3-85bc-a6770a3a8068",
+    "8821612f-f463-40d2-a231-5e9e6f6e3ae1",
+    "981b399e-68a0-484a-bb3e-a87c0cd6c24d",
+    "ac5fbd82-2822-4656-9d35-211dcb1cf4b2",
+    "bdc56b8b-0c39-4866-a364-9b7022a0a76b",
+    "c159e140-81a9-47ba-ab14-8a35d9efd8a4",
+    "c84acac4-63e9-44f0-9eac-0b78ee70ed99",
+    "e029d819-f4a1-470b-bd00-931d667205f1",
+    "e31a2115-f675-4c8f-8b65-8eb74bbddd4d",
+    "e49cb298-6e7c-44af-8fd3-1d7b3e9a1e99"
+  ],
+  "schemaVersion": 2
+}
